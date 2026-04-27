@@ -628,63 +628,255 @@ function renderRound(roundKey) {
   container.innerHTML = html;
 }
 
-// Chi tiết popup cho từng mức điểm
+// Chi tiết popup chung (level + action) - dùng làm fallback
 const SCORE_POPUP_DATA = {
-  1: {
-    level: 'YẾU - Không phù hợp',
-    criteria: [
-      '✗ Không trả lời được hoặc trả lời sai hoàn toàn',
-      '✗ Không hiểu vấn đề / khái niệm cơ bản',
-      '✗ Không có kiến thức / kỹ năng tối thiểu',
-      '✗ Thái độ: thiếu nghiêm túc, không quan tâm',
-      '✗ Có dấu hiệu RED FLAGS (gian dối, đổ lỗi...)',
-    ],
-    action: 'NO HIRE - Phản hồi lịch sự cho ứng viên'
+  1: { level: 'YẾU - Không phù hợp', action: 'NO HIRE - Phản hồi lịch sự cho ứng viên' },
+  2: { level: 'DƯỚI TB - Yếu', action: 'KHÔNG NÊN HIRE - Đào tạo 3-6 tháng vẫn rủi ro cao' },
+  3: { level: 'TRUNG BÌNH - Khá', action: 'CÂN NHẮC - Đào tạo 1-3 tháng, có thể giảm bậc' },
+  4: { level: 'TỐT', action: 'HIRE - Đào tạo nhỏ (1-2 tuần) để bắt nhịp' },
+  5: { level: 'XUẤT SẮC', action: 'HIRE NGAY - Đề xuất bậc cao trong range' }
+};
+
+// Tiêu chí cụ thể cho TỪNG câu hỏi - 5 mức điểm
+const QUESTION_SCORES = {
+  q1: { // Giới thiệu bản thân 2 phút
+    1: ['✗ Ấp úng, không nhớ thông tin bản thân', '✗ Vượt 3 phút hoặc dưới 1 phút', '✗ Thái độ thiếu nghiêm túc, lúng túng'],
+    2: ['✗ Lan man, lạc đề, không có structure', '✗ Không kể được dự án/thành tích nổi bật', '✗ Tự ti, thiếu năng lượng giao tiếp'],
+    3: ['✓ Liệt kê được học vấn/kinh nghiệm cơ bản', '✓ Thiếu structure Past-Present-Future', '✓ Ví dụ chung chung, ít chi tiết'],
+    4: ['✓ Trả lời rõ ràng, có structure cơ bản', '✓ 1-2 dự án/ví dụ cụ thể có context', '✓ Đúng thời lượng 2 phút, tự tin'],
+    5: ['✓ Mạch lạc + structure Past-Present-Future', '✓ Dự án nổi bật có số liệu định lượng', '✓ Storytelling thuyết phục, kết nối với KITA'],
   },
-  2: {
-    level: 'DƯỚI TB - Yếu',
-    criteria: [
-      '✗ Trả lời lan man, không vào trọng tâm',
-      '✗ Thiếu kinh nghiệm thực tế, chỉ nói lý thuyết',
-      '✗ Câu trả lời mâu thuẫn / không nhất quán',
-      '✗ Không có ví dụ cụ thể nào để minh hoạ',
-      '✗ Thái độ: bị động hoặc thiếu tự tin',
-    ],
-    action: 'KHÔNG NÊN HIRE - Đào tạo 3-6 tháng vẫn rủi ro cao'
+  q2: { // Vì sao quan tâm KITA BOOKS?
+    1: ['✗ Không biết KITA bán gì / sản phẩm', '✗ "Cần việc làm" / "Lương cao" thuần tuý', '✗ Copy-paste lý do từ template'],
+    2: ['✗ Chưa tìm hiểu KITA, đọc qua loa fanpage', '✗ Lý do chung chung "thích Marketing"', '✗ Không nêu được điểm khác biệt KITA'],
+    3: ['✓ Có tìm hiểu cơ bản về KITA (sách giấy)', '✓ Lý do chung "yêu sách + làm Marketing"', '✓ Chưa kết nối được giá trị cá nhân'],
+    4: ['✓ Tìm hiểu sản phẩm + văn hoá công ty', '✓ Match được kỹ năng cá nhân với JD', '✓ Lý do hợp lý, có suy ngẫm'],
+    5: ['✓ Tìm hiểu sâu (founder, sản phẩm, sứ mệnh)', '✓ Match đam mê đọc sách với hướng đi KITA', '✓ Cụ thể: tại sao KITA chứ không phải nơi khác'],
   },
-  3: {
-    level: 'TRUNG BÌNH - Khá',
-    criteria: [
-      '✓ Hiểu được câu hỏi, trả lời ở mức cơ bản',
-      '✓ Câu trả lời còn chung chung, thiếu chiều sâu',
-      '✓ Đáp ứng được khoảng 60-70% yêu cầu vị trí',
-      '✓ Kinh nghiệm hạn chế, kiến thức nửa vời',
-      '✓ Thái độ: ổn nhưng chưa thể hiện đam mê rõ',
-    ],
-    action: 'CÂN NHẮC - Đào tạo 1-3 tháng, có thể giảm bậc'
+  q3: { // Cuốn sách gần nhất đọc xong
+    1: ['✗ Không nhớ tên sách / "Lâu rồi không đọc"', '✗ Né tránh hoặc đổi sang sách online cũ', '✗ Không thể hiện văn hoá đọc'],
+    2: ['✗ Nhớ mơ hồ tên sách hoặc nội dung', '✗ Không có quan điểm cá nhân riêng', '✗ Trả lời ngắn gọn, không cảm xúc'],
+    3: ['✓ Nhớ tựa + tác giả nhưng cảm nhận chung', '✓ Mô tả "hay/ý nghĩa" mà không cụ thể', '✓ Đọc trên 6 tháng trước'],
+    4: ['✓ Tựa + tác giả + cảm nhận rõ ràng', '✓ Nêu 1 điểm thích/không thích cụ thể', '✓ Đọc trong 1-3 tháng gần đây'],
+    5: ['✓ Tựa + tác giả + insight/quote cụ thể', '✓ Đã áp dụng vào cuộc sống/công việc', '✓ Có review/đánh giá riêng có chiều sâu'],
   },
-  4: {
-    level: 'TỐT',
-    criteria: [
-      '✓ Trả lời rõ ràng, có structure cơ bản',
-      '✓ Có ví dụ thực tế (chưa chắc số liệu chi tiết)',
-      '✓ Đáp ứng đầy đủ yêu cầu vị trí',
-      '✓ Có kinh nghiệm liên quan, hiểu công việc',
-      '✓ Thái độ: tích cực, sẵn sàng học hỏi',
-    ],
-    action: 'HIRE - Đào tạo nhỏ (1-2 tuần) để bắt nhịp'
+  q4: { // Thể loại sách yêu thích
+    1: ['✗ Không có thể loại yêu thích / "Đọc bừa"', '✗ Chỉ đọc fanfic / web ngôn tình thuần', '✗ Không phân loại được sách'],
+    2: ['✗ Thể loại lệch văn hoá KITA (đam mỹ thuần)', '✗ Lý do hời hợt "thấy hay thì đọc"', '✗ Không kể được sách cụ thể'],
+    3: ['✓ Thể loại OK + 1-2 cuốn cụ thể', '✓ Lý do chung "thấy bổ ích / hay"', '✓ Chưa kết nối với công việc Marketing'],
+    4: ['✓ Thể loại phù hợp KITA (KD/kỹ năng/VH)', '✓ Kể được 2-3 cuốn cụ thể', '✓ Lý do cá nhân rõ ràng'],
+    5: ['✓ Thể loại match KITA + đa dạng', '✓ Kể 3-5 cuốn + tác giả tâm đắc', '✓ Có lý giải sâu, kết nối nghề Marketing'],
   },
-  5: {
-    level: 'XUẤT SẮC',
-    criteria: [
-      '✓ Trả lời sâu sắc, structure rõ (STAR framework)',
-      '✓ Có ví dụ cụ thể với số liệu định lượng',
-      '✓ Vượt kỳ vọng, sáng tạo / tư duy chiến lược',
-      '✓ Có kinh nghiệm trực tiếp đáng tin cậy',
-      '✓ Thái độ: tự tin, chủ động, học hỏi cao',
-    ],
-    action: 'HIRE NGAY - Đề xuất bậc cao trong range'
-  }
+  q5: { // Kênh review sách
+    1: ['✗ "Không xem kênh nào" / "Không quan tâm"', '✗ Không biết TikTok có content sách', '✗ Thiếu chủ động tiếp cận thông tin'],
+    2: ['✗ "Thỉnh thoảng xem nhưng không nhớ tên"', '✗ Chỉ xem viral video, không follow ai', '✗ Không phân tích được điểm mạnh kênh'],
+    3: ['✓ Có theo dõi nhưng tên kênh chung chung', '✓ "Có 1 chị TikTok review sách"', '✓ Chưa rút insight từ kênh để áp dụng'],
+    4: ['✓ Kể tên 1-2 kênh cụ thể', '✓ Biết rõ format/phong cách kênh', '✓ Lý do follow rõ ràng'],
+    5: ['✓ 2-3 kênh cụ thể (cả VN + quốc tế)', '✓ Phân tích style/audience từng kênh', '✓ Đã ảnh hưởng đến quyết định mua sách'],
+  },
+  q6: { // Mức lương kỳ vọng
+    1: ['✗ Đòi lương cứng cao bất hợp lý (>20tr)', '✗ Không biết mức lương thị trường', '✗ Không hiểu cơ chế lương + hoa hồng'],
+    2: ['✗ Kỳ vọng vượt range 30%+ (12tr Junior)', '✗ Cứng nhắc về con số, không đàm phán', '✗ Lương cũ không khớp với CV/kinh nghiệm'],
+    3: ['✓ Kỳ vọng cao hơn range 10-20%', '✓ Có thể thương lượng nếu công ty thuyết phục', '✓ Hiểu cơ bản về cơ chế lương'],
+    4: ['✓ Mức kỳ vọng nằm trong range JD', '✓ Sẵn sàng đàm phán theo bậc', '✓ Hiểu lương = cứng + KPI + hoa hồng'],
+    5: ['✓ Kỳ vọng linh hoạt theo cơ chế hoa hồng', '✓ Tập trung vào tổng thu nhập (TN/DT)', '✓ Hiểu rõ cấu trúc và muốn challenge'],
+  },
+  q7: { // Cơ chế hoa hồng không giới hạn
+    1: ['✗ "Em thích lương cứng cao thôi"', '✗ Phản đối / dị ứng với cơ chế hoa hồng', '✗ Không phù hợp văn hoá KITA'],
+    2: ['✗ "Em làm hết sức rồi tới đâu thì tới"', '✗ Thiếu drive, không có mục tiêu cá nhân', '✗ Không quan tâm tăng thu nhập'],
+    3: ['✓ OK với cơ chế nhưng thiếu hứng khởi', '✓ Hiểu cơ bản nhưng chưa có plan cụ thể', '✓ Phụ thuộc vào sếp/công ty đẩy'],
+    4: ['✓ Quan tâm + sẵn sàng challenge bản thân', '✓ Hiểu rõ cơ chế % CP Ads / DT', '✓ Có ý tưởng để đạt mục tiêu'],
+    5: ['✓ Hứng thú cao + đặt mục tiêu cụ thể (X tr/tháng)', '✓ Có chiến lược tối ưu chỉ số', '✓ Coi đây là cơ hội bứt phá thu nhập'],
+  },
+  q8: { // Bắt đầu khi nào
+    1: ['✗ "Khi nào cũng được" (không hiểu quy trình)', '✗ Sẵn sàng nghỉ ngay (red flag bỏ việc cũ)', '✗ Đang nghỉ >6 tháng không lý do'],
+    2: ['✗ Hơn 60 ngày hoặc thời điểm mơ hồ', '✗ Còn nhiều dự án dở dang chưa rõ', '✗ Đang phỏng vấn nhiều nơi cùng lúc'],
+    3: ['✓ 30-45 ngày, có 1-2 dự án dở dang', '✓ Cần thời gian bàn giao kéo dài', '✓ Lưỡng lự về ngày start'],
+    4: ['✓ Đúng 30 ngày báo trước theo luật', '✓ Plan bàn giao rõ ràng', '✓ Cam kết ngày bắt đầu cụ thể'],
+    5: ['✓ Sẵn sàng trong 1-2 tuần (đang free)', '✓ Đã thỏa thuận bàn giao gọn', '✓ Tôn trọng quy trình + linh hoạt với KITA'],
+  },
+  q9: { // Lo ngại về vị trí
+    1: ['✗ Concern lớn không giải được (không làm T7)', '✗ Không thể chạy ads / không học được', '✗ Lệch hoàn toàn yêu cầu JD'],
+    2: ['✗ "Không có gì cả" (không thật/không đọc JD)', '✗ Concern showstopper (đi xa, gia đình)', '✗ Lo lắng về KPI quá mức'],
+    3: ['✓ Có concern nhỏ về lương / thời gian', '✓ Concern thường gặp, có thể giải', '✓ Chưa nghiên cứu kỹ JD'],
+    4: ['✓ Concern hợp lý về 1-2 vấn đề', '✓ Thái độ cởi mở, sẵn sàng đối thoại', '✓ Đã đọc kỹ JD và phản tư'],
+    5: ['✓ Nói thật về concern (ngân sách ads, target)', '✓ Đã suy nghĩ giải pháp/đề xuất', '✓ Tư duy đồng hành cùng công ty giải'],
+  },
+  q10: { // Tự học công cụ/kỹ năng
+    1: ['✗ Không có ví dụ tự học nào', '✗ Chỉ học khi được công ty training', '✗ Không hứng thú với việc tự nâng cấp'],
+    2: ['✗ "Tự mò" không có quy trình rõ', '✗ Áp dụng còn yếu / không có kết quả', '✗ Không kể được tool/skill cụ thể đã học'],
+    3: ['✓ Tự học bằng Google/YouTube cơ bản', '✓ Áp dụng được sau 2-4 tuần', '✓ Quy trình chưa hệ thống'],
+    4: ['✓ Có quy trình rõ + áp dụng được', '✓ Ví dụ kỹ năng cụ thể (Canva, ChatGPT...)', '✓ Tự đo được mức độ thành thạo'],
+    5: ['✓ Quy trình bài bản: Mục tiêu → Plan → Nguồn → Thực hành → Đo', '✓ Áp dụng được trong dưới 1 tuần', '✓ Có hệ thống nguồn học cá nhân (notes, course)'],
+  },
+  q11: { // Topic Marketing mới trong 1 tuần
+    1: ['✗ "Em không biết phải làm gì"', '✗ Đợi sếp chỉ dẫn từng bước', '✗ Không có concept Marketing học liên tục'],
+    2: ['✗ "Hỏi sếp / đồng nghiệp" - thiếu chủ động', '✗ Không có nguồn học cá nhân', '✗ Bỏ cuộc khi gặp khái niệm mới'],
+    3: ['✓ "Đọc Google, xem YouTube" - không structure', '✓ Có hành động nhưng thiếu kế hoạch', '✓ Khó áp dụng được trong 1 tuần'],
+    4: ['✓ Có thứ tự hợp lý (tổng quan → case → thử)', '✓ Phối hợp nhiều nguồn (đọc + xem + hỏi)', '✓ Đặt ra cột mốc đo trong tuần'],
+    5: ['✓ Roadmap 7 ngày rõ (D1-2 tổng quan, D3-4 case, D5-6 thử, D7 expert)', '✓ Nguồn cụ thể (Threads: @marketingexamples...)', '✓ Có output đo được cuối tuần'],
+  },
+  q12: { // Sách/blog/podcast Marketing
+    1: ['✗ Không follow nguồn nào', '✗ Không quan tâm tới Marketing chuyên sâu', '✗ "Thi thoảng đọc tin tức"'],
+    2: ['✗ "Có theo dõi nhưng không nhớ tên"', '✗ Chỉ xem viral content, không có nguồn fix', '✗ Không phân biệt nguồn chất - rác'],
+    3: ['✓ 1-2 tên nguồn nhưng nhớ chung chung', '✓ Không kể được insight cụ thể', '✓ Đọc/xem không thường xuyên'],
+    4: ['✓ 2-3 tên cụ thể + biết nội dung kênh', '✓ Có insight đã áp dụng vào công việc', '✓ Đọc/xem đều đặn hàng tuần'],
+    5: ['✓ 3-5 nguồn cụ thể VN + quốc tế (TM, Brian Dean...)', '✓ Insight cụ thể từng nguồn + áp dụng', '✓ Có hệ sinh thái thông tin Marketing riêng'],
+  },
+  q13: { // Fail deadline
+    1: ['✗ "Em chưa fail bao giờ" (không thật)', '✗ Từ chối kể / né tránh', '✗ Đổ lỗi 100% cho người khác'],
+    2: ['✗ Đổ lỗi cho khách quan / hoàn cảnh', '✗ Không có giải pháp khắc phục', '✗ Không rút bài học rõ'],
+    3: ['✓ Kể được tình huống nhưng thiếu structure', '✓ Có nhận lỗi 1 phần', '✓ Bài học chung chung "rút kinh nghiệm"'],
+    4: ['✓ Kể STAR framework cơ bản', '✓ Nhận trách nhiệm chính + có giải pháp', '✓ Đã thay đổi được hành vi sau đó'],
+    5: ['✓ STAR đầy đủ + nhận trách nhiệm 100%', '✓ Đã báo trước, giảm thiệt hại', '✓ Bài học cụ thể + đã ngăn lặp lại'],
+  },
+  q14: { // Đồng nghiệp đùn đẩy việc
+    1: ['✗ "Cãi nhau" / xung đột công khai', '✗ "Báo cáo sếp ngay" (không try giải)', '✗ Không có ranh giới công việc'],
+    2: ['✗ "Em làm luôn cho khoẻ" - thiếu chính kiến', '✗ Im lặng chịu thiệt nhiều lần', '✗ Khó chịu nội bộ nhưng không nói'],
+    3: ['✓ Tuỳ tình huống + đôi khi nhận làm', '✓ Có giải quyết nhưng thiếu nhất quán', '✓ Chưa có quy tắc rõ về scope'],
+    4: ['✓ Trao đổi với đồng nghiệp + có ranh giới', '✓ Phân biệt được task của ai', '✓ Giữ được hoà khí team'],
+    5: ['✓ Trao đổi 1-1 thẳng thắn + xác định scope', '✓ Escalate đúng lúc khi cần', '✓ Giữ quan hệ + bảo vệ năng suất cá nhân'],
+  },
+  q15: { // Sai lầm nghiêm trọng
+    1: ['✗ "Chưa từng có sai lầm" (red flag)', '✗ Từ chối kể / chuyển topic', '✗ Đổ lỗi hoàn toàn cho người khác'],
+    2: ['✗ Biện minh / đổ lỗi một phần', '✗ Sai lầm nhỏ kể như nghiêm trọng (né)', '✗ Không có bài học rõ'],
+    3: ['✓ Kể tình huống nhỏ + có nhận lỗi', '✓ Tác động hạn chế, dễ khắc phục', '✓ Bài học chung "cẩn thận hơn"'],
+    4: ['✓ Kể được tình huống + nhận lỗi', '✓ Có rút kinh nghiệm cụ thể', '✓ Đã thay đổi được hành vi'],
+    5: ['✓ Kể chi tiết + nhận trách nhiệm 100%', '✓ Mô tả impact + cách khắc phục', '✓ Bài học sâu + đã thay đổi tư duy'],
+  },
+  q16: { // Áp lực nhất
+    1: ['✗ Panic / collapse khi áp lực', '✗ Từ chối kể / không có ví dụ', '✗ Không có cơ chế xử lý cảm xúc'],
+    2: ['✗ "Không có áp lực gì đặc biệt"', '✗ Kể chuyện thường ngày, không nghiêm trọng', '✗ Cách vượt qua mơ hồ "tự nhiên hết"'],
+    3: ['✓ Ví dụ ổn nhưng cách giải chung chung', '✓ Vượt qua nhờ thời gian / may mắn', '✓ Chưa có hệ thống xử lý áp lực'],
+    4: ['✓ Có ví dụ cụ thể (deadline, conflict, KPI)', '✓ Cách giải có hành động rõ', '✓ Thái độ tích cực trong tình huống'],
+    5: ['✓ Tình huống áp lực thật, kết quả định lượng', '✓ Cách vượt qua hệ thống (chia nhỏ, ưu tiên)', '✓ Học được kỹ năng quản lý áp lực'],
+  },
+  q17: { // ROAS giảm 50%
+    1: ['✗ "Tắt chiến dịch luôn" / panic', '✗ Đổ lỗi creative team / khách hàng', '✗ Không biết troubleshoot từ đâu'],
+    2: ['✗ Tăng ngân sách thêm để "cứu"', '✗ Lo lắng quá mức, mất bình tĩnh', '✗ Giấu sếp, tự xử lý sai cách'],
+    3: ['✓ Có hướng giải quyết nhưng thiếu structure', '✓ Hành động đơn lẻ (đổi creative)', '✓ Chưa biết phân tích root cause'],
+    4: ['✓ Phân tích nguyên nhân theo bước', '✓ Có kế hoạch khắc phục + báo sếp', '✓ Bình tĩnh, focus vào data'],
+    5: ['✓ Bình tĩnh + checklist (creative→audience→landing→pricing)', '✓ Thông báo cấp trên với data + đề xuất', '✓ Có plan A/B để test giải pháp'],
+  },
+  q18: { // 5 việc cùng deadline
+    1: ['✗ Panic / OT đến đêm bừa bãi', '✗ Không hoàn thành được việc nào', '✗ Không có khái niệm priority'],
+    2: ['✗ "Làm hết sức" - không có nguyên tắc', '✗ Làm theo hứng / cảm xúc', '✗ Không trao đổi với sếp'],
+    3: ['✓ "Làm cái dễ trước" / "Sếp giục thì làm"', '✓ Phân loại sơ sài', '✓ Chưa biết delegate'],
+    4: ['✓ Phân loại quan trọng-khẩn cấp cơ bản', '✓ Làm tuần tự + báo sếp tiến độ', '✓ Hoàn thành được phần quan trọng nhất'],
+    5: ['✓ Apply Eisenhower / ICE framework', '✓ Delegate + trao đổi sếp về độ ưu tiên', '✓ Hoàn thành đúng deadline với chất lượng'],
+  },
+  q19: { // Quy trình review sách
+    1: ['✗ Không có quy trình / "Viết theo cảm hứng"', '✗ Không hiểu mục đích review', '✗ Chưa từng viết review'],
+    2: ['✗ Bỏ qua bước đọc kỹ / chỉ "đọc summary"', '✗ Không có outline trước khi viết', '✗ Quy trình ad-hoc'],
+    3: ['✓ Có ý tưởng nhưng thiếu bước hệ thống', '✓ 2-3 bước cơ bản', '✓ Chưa tối ưu cho từng platform'],
+    4: ['✓ 3-4 bước rõ + hiểu nguyên tắc', '✓ Phân biệt structure FB / TikTok / IG', '✓ Có ví dụ đã viết thực tế'],
+    5: ['✓ 4 bước rõ: Đọc/insight → Outline (Hook+Body+CTA) → Viết → Tối ưu platform', '✓ Có ví dụ + số liệu engagement', '✓ Tối ưu theo target reader'],
+  },
+  q20: { // Dùng AI trong content
+    1: ['✗ Không biết dùng AI / chống đối AI', '✗ "Em không tin tưởng AI"', '✗ Thiếu modern skills'],
+    2: ['✗ "Em ít dùng AI" / chỉ thử qua', '✗ Dùng cơ bản nhưng copy thô', '✗ Không edit lại output'],
+    3: ['✓ Dùng AI nhưng còn copy nguyên xi', '✓ Chưa optimize prompt / workflow', '✓ Sử dụng đơn lẻ chưa hệ thống'],
+    4: ['✓ Sử dụng AI 1-2 bước + biết edit lại', '✓ Có prompt template cá nhân', '✓ Phân biệt AI có/không phù hợp'],
+    5: ['✓ AI brainstorm + draft + edit + verify', '✓ Workflow cụ thể với ví dụ output', '✓ Không phụ thuộc 100% - giữ giọng riêng'],
+  },
+  q21: { // Caption FB tại chỗ
+    1: ['✗ Không viết được / từ chối làm', '✗ "Em viết ở nhà tốt hơn"', '✗ Không biết bắt đầu từ đâu'],
+    2: ['✗ Caption sơ sài / chỉ liệt kê đặc điểm', '✗ Không có hook hoặc CTA', '✗ Sai số chữ (quá ngắn/dài)'],
+    3: ['✓ Caption ổn nhưng thiếu hook', '✓ CTA yếu / không rõ mục tiêu', '✓ Cấu trúc rời rạc'],
+    4: ['✓ Có structure (hook + body + CTA)', '✓ CTA rõ + đủ chữ 100-150', '✓ Có dùng emoji hợp lý'],
+    5: ['✓ Hook 3s + Pain point + Story sách + CTA mạnh', '✓ Emoji + đủ chữ + tone phù hợp target', '✓ Có thể test ad ngay được'],
+  },
+  q22: { // TikTok Reels book content
+    1: ['✗ Không hiểu format TikTok / không xem TikTok', '✗ Coi TikTok = giải trí, không Marketing', '✗ Không có ví dụ video nào'],
+    2: ['✗ "Chưa làm video bao giờ"', '✗ Lý thuyết yếu, không hiểu pacing', '✗ Không biết hook 3 giây'],
+    3: ['✓ Có ý tưởng nhưng chưa structure rõ', '✓ Hiểu cơ bản nhưng chưa apply', '✓ Chưa nắm trend hiện tại'],
+    4: ['✓ 3 phần Hook-Body-CTA rõ', '✓ Hiểu xu hướng video ngắn 30-45s', '✓ Có nhắc đến trend/audio đang hot'],
+    5: ['✓ Hook (3s problem) → Body (insight) → CTA', '✓ Hiểu trend + có ví dụ video viral cụ thể', '✓ Phân biệt format book TikTok khác niche'],
+  },
+  q23: { // Vận hành FB/Google Ads
+    1: ['✗ Không biết FB Ads / Google Ads', '✗ Chưa lên ad manager bao giờ', '✗ Chỉ chạy boost post'],
+    2: ['✗ Chỉ học lý thuyết, chưa thực hành', '✗ Đã thử nhưng quy mô <5tr/tháng', '✗ Không có data report'],
+    3: ['✓ Quy mô <10tr/tháng + chạy theo template', '✓ Hiểu cơ bản nhưng chưa tối ưu', '✓ Phụ thuộc agency/sếp'],
+    4: ['✓ 10-30tr/tháng + biết tối ưu cơ bản', '✓ Có data report + phân tích', '✓ Tự setup được từ A-Z'],
+    5: ['✓ Junior ≥30tr/tháng có ROAS report cụ thể', '✓ Senior ≥100tr + tối ưu funnel', '✓ Tự xử lý sự cố ad không deliver'],
+  },
+  q24: { // CPM/CPC/CTR/CPL/ROAS/AOV
+    1: ['✗ Không biết / sai định nghĩa cơ bản', '✗ Lẫn CPM với CPC', '✗ CHƯA ĐỦ CHUYÊN MÔN'],
+    2: ['✗ Đúng 1-2 / 6 + không tính được', '✗ Không nhớ công thức ROAS', '✗ Không có ví dụ áp dụng'],
+    3: ['✓ Đúng 3-4 / 6 + lúng túng phần còn lại', '✓ Định nghĩa OK nhưng không tính được', '✓ Không phân biệt CPL/CPA'],
+    4: ['✓ Định nghĩa đúng 5/6 + có ví dụ', '✓ Tính được khi cho số liệu', '✓ Hiểu mối quan hệ giữa các chỉ số'],
+    5: ['✓ Định nghĩa đúng tất cả + công thức', '✓ Ví dụ DT 100tr cụ thể có số', '✓ Áp dụng được vào tối ưu chiến dịch'],
+  },
+  q25: { // ROAS 1.5 troubleshoot
+    1: ['✗ Không biết ROAS thấp do đâu', '✗ "Tăng ngân sách lên là được"', '✗ Không hiểu funnel'],
+    2: ['✗ "Thay creative thôi" / "Đổi audience"', '✗ Hành động đơn lẻ không có data', '✗ Bỏ cuộc, đề xuất tắt ad'],
+    3: ['✓ Có hướng nhưng thiếu thứ tự', '✓ Check 1-2 yếu tố', '✓ Chưa biết đo lường khi sửa'],
+    4: ['✓ 3-4 bước hợp lý + biết check data', '✓ Phân biệt nguyên nhân top-funnel/bottom', '✓ Có hypothesis trước khi test'],
+    5: ['✓ Thứ tự: Creative (CTR) → Audience → Landing (CR%) → Pricing', '✓ Check data từng bước có số cụ thể', '✓ Có plan A/B test để xác minh'],
+  },
+  q26: { // FB Ads sách 200k với 30tr
+    1: ['✗ Không có plan / "Em không biết bắt đầu"', '✗ "Đổ 30tr 1 lần" / không test', '✗ Không hiểu structure campaign'],
+    2: ['✗ Plan thô (1 ad set, 1 creative)', '✗ Không có pixel tracking', '✗ Audience chung chung "PN 18-50"'],
+    3: ['✓ Có ý tưởng nhưng thiếu split test', '✓ Budget không phân chia daily rõ', '✓ Chưa có conversion event'],
+    4: ['✓ Có structure test + budget hợp lý', '✓ 2-3 audience + 2-3 creative', '✓ Daily budget 1tr, có tracking'],
+    5: ['✓ Test 3-5 creative + 2-3 audience + Conversion campaign', '✓ Daily 1-2tr + tracking pixel + offline event', '✓ Plan optimize sau 3-7 ngày'],
+  },
+  q27: { // TOFU-MOFU-BOFU
+    1: ['✗ Không biết TOFU-MOFU-BOFU', '✗ Lần đầu nghe khái niệm', '✗ Không hiểu funnel concept'],
+    2: ['✗ Nhầm lẫn giữa các phase', '✗ Không phân biệt mục tiêu mỗi phase', '✗ Không cho được ví dụ'],
+    3: ['✓ Hiểu đại ý nhưng ví dụ chưa rõ', '✓ Định nghĩa được nhưng áp dụng yếu', '✓ Ví dụ self-help chưa cụ thể'],
+    4: ['✓ Định nghĩa đúng + ví dụ ổn', '✓ Match được content mỗi phase', '✓ Phân biệt KPI từng phase'],
+    5: ['✓ Định nghĩa đúng + ví dụ self-help cụ thể', '✓ TOFU (video review) → MOFU (case study) → BOFU (gift sách)', '✓ Hiểu chuyển đổi + remarketing giữa phase'],
+  },
+  q28: { // Sales chốt thấp
+    1: ['✗ "Việc của Sales / không phải của em"', '✗ Đổ lỗi qua lại', '✗ Không có tư duy phối hợp'],
+    2: ['✗ "Tăng số lượng lead" / "Thay creative"', '✗ Hành động đơn lẻ không phân tích', '✗ Không quan tâm chất lượng lead'],
+    3: ['✓ Báo cấp trên + đợi chỉ đạo', '✓ Có ý thức phối hợp nhưng thiếu hành động', '✓ Chưa biết đo lead quality'],
+    4: ['✓ Phân tích cùng Sales + tìm nguyên nhân', '✓ Đề xuất giải pháp chung', '✓ Hiểu funnel pre-sales'],
+    5: ['✓ Phân tích lead (chất lượng, source)', '✓ Check Sales script + phối hợp tối ưu pre-sales', '✓ Có metric đo cải thiện CR%'],
+  },
+  q29: { // Comment gay gắt fanpage
+    1: ['✗ Cãi nhau với khách / chế nhạo', '✗ Phản ứng cảm tính, sỉ nhục KH', '✗ Đổ lỗi cho khách'],
+    2: ['✗ Im lặng / xoá comment ngay', '✗ Không có quy trình xử lý', '✗ Trốn tránh, để team khác lo'],
+    3: ['✓ Reply ổn nhưng thiếu bước verify', '✓ Lịch sự nhưng generic', '✓ Không inbox riêng / không escalate'],
+    4: ['✓ Có quy trình xử lý', '✓ Giữ uy tín thương hiệu', '✓ Reply công khai + inbox riêng'],
+    5: ['✓ Không xoá + reply lịch sự công khai', '✓ Xin inbox + xác minh thông tin', '✓ Báo CS team + có hành động cụ thể'],
+  },
+  q30: { // Plan 50tr ads / 200tr DT / 30 ngày
+    1: ['✗ Không lập được plan trong 5 phút', '✗ "Em cần thêm thời gian"', '✗ Không có khung tư duy plan'],
+    2: ['✗ Plan chung chung "chạy ads, làm content"', '✗ Không có số liệu / KPI', '✗ Không có timeline cụ thể'],
+    3: ['✓ Có plan nhưng thiếu số liệu chi tiết', '✓ Có phase nhưng KPI chung', '✓ Budget chia chưa hợp lý'],
+    4: ['✓ Có phase + KPI + budget hợp lý', '✓ Cột mốc 7-15-30 rõ', '✓ Có hành động cụ thể mỗi phase'],
+    5: ['✓ Phase 7-15-30 + budget allocation', '✓ KPI từng phase + backup plan', '✓ Forecast hợp lý + risk mitigation'],
+  },
+  q31: { // Sự nghiệp 3-5 năm
+    1: ['✗ Vision lệch hoàn toàn (chuyển ngành)', '✗ "Em muốn ra startup riêng"', '✗ Không khớp KITA dài hạn'],
+    2: ['✗ "Em chưa nghĩ tới" / "Tuỳ duyên"', '✗ Không có mục tiêu rõ', '✗ Vision rất ngắn (1-2 năm)'],
+    3: ['✓ Vision chung chung "trưởng nhóm/manager"', '✓ Match được nhưng chưa cụ thể', '✓ Chưa có plan học hỏi'],
+    4: ['✓ Có vision + match career path công ty', '✓ Cột mốc rõ ràng (Junior → Senior → Lead)', '✓ Có plan upskill hằng năm'],
+    5: ['✓ Vision rõ + match KITA career path', '✓ Plan học hỏi + cột mốc cụ thể', '✓ Hiểu rõ skill cần build cho mỗi cấp'],
+  },
+  q32: { // Đóng góp 6 tháng đầu
+    1: ['✗ Không có ý tưởng đóng góp', '✗ "Em sẽ học việc trước rồi tính"', '✗ Hoàn toàn passive'],
+    2: ['✗ Chung chung "làm hết sức / học hỏi"', '✗ Không cá nhân hoá cho KITA', '✗ Không có KPI / số liệu'],
+    3: ['✓ Ý tưởng OK nhưng thiếu KPI / số liệu', '✓ Cụ thể nhưng không khả thi 6 tháng', '✓ Chưa có roadmap thực thi'],
+    4: ['✓ Có ý tưởng cụ thể + biết priority', '✓ Có KPI tương đối', '✓ Phù hợp năng lực Junior'],
+    5: ['✓ Cụ thể (build kênh TikTok review, tăng ROAS X%)', '✓ Roadmap rõ tháng 1-3-6', '✓ Có KPI đo được + giá trị riêng cho KITA'],
+  },
+  q33: { // Vấn đề ngành sách VN
+    1: ['✗ Không trả lời được', '✗ Không biết ngành sách VN', '✗ Không quan tâm tới context'],
+    2: ['✗ Không quan tâm tới ngành', '✗ Câu trả lời mơ hồ "khó khăn lắm"', '✗ Không phân tích nguyên nhân'],
+    3: ['✓ Vấn đề chung chung + giải pháp mơ hồ', '✓ Hiểu 1-2 vấn đề (sách lậu, đọc giảm)', '✓ Giải pháp chưa khả thi'],
+    4: ['✓ Hiểu vấn đề + có ý tưởng giải', '✓ Phân tích 2-3 nguyên nhân', '✓ Đề xuất KITA có thể làm'],
+    5: ['✓ Phân tích sâu (sách lậu, đọc giảm, AI, gen Z)', '✓ Giải pháp KITA cụ thể + sáng tạo', '✓ Tư duy chiến lược, hiểu ngành'],
+  },
+  q34: { // A 50% giảm chất / B 20% giữ chất
+    1: ['✗ Không quyết định được', '✗ Chọn A vì "lương cao"', '✗ Lệch hoàn toàn giá trị KITA'],
+    2: ['✗ Chọn A vì tăng nhiều hơn', '✗ Không hiểu giá trị tri thức + đạo đức', '✗ Tư duy ngắn hạn'],
+    3: ['✓ Chọn B nhưng lý do chung chung', '✓ Đồng ý nguyên tắc nhưng yếu lập luận', '✓ Chưa có plan thực thi'],
+    4: ['✓ Chọn B + lý do hợp lý + plan', '✓ Hiểu giá trị thương hiệu dài hạn', '✓ Có cách tăng 20% bền vững'],
+    5: ['✓ Chọn B + lý do (KITA tri thức/đạo đức)', '✓ Plan tăng 20% bền vững', '✓ Tư duy dài hạn + cam kết giá trị'],
+  },
 };
 
 function renderQuestion(q) {
@@ -695,13 +887,15 @@ function renderQuestion(q) {
   for (let i = 1; i <= 5; i++) {
     const active = score === i ? `active-${i}` : '';
     const popup = SCORE_POPUP_DATA[i];
+    const qSpecific = QUESTION_SCORES[q.id] && QUESTION_SCORES[q.id][i];
+    const criteria = qSpecific || ['Tiêu chí chung cho mức điểm ' + i];
     const popupHtml = `
       <div class="score-popup score-popup-${i}">
         <div class="pop-header">
           <span class="pop-num">${i}</span>
           <span class="pop-level">${popup.level}</span>
         </div>
-        <ul>${popup.criteria.map(c => `<li>${c}</li>`).join('')}</ul>
+        <ul>${criteria.map(c => `<li>${c}</li>`).join('')}</ul>
         <div class="pop-action">→ <strong>${popup.action}</strong></div>
       </div>`;
     scoreBtns += `<div class="score-btn-wrap">
