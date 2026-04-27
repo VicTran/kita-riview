@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hệ thống phỏng vấn - Marketing KITA BOOKS</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", "SF Pro", Roboto, Arial, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf3 100%);
+    color: #2d3748; line-height: 1.6; min-height: 100vh;
+  }
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+  header {
+    background: linear-gradient(135deg, #C00000 0%, #8B0000 100%);
+    color: white; padding: 24px 32px; border-radius: 12px;
+    margin-bottom: 20px; box-shadow: 0 4px 20px rgba(192,0,0,0.2);
+  }
+  header h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  header .subtitle { font-size: 14px; opacity: 0.95; }
+  header .header-flex { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+  header .actions { display: flex; gap: 8px; }
+  .btn {
+    padding: 10px 18px; border: none; border-radius: 8px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; font-family: inherit;
+  }
+  .btn-light { background: rgba(255,255,255,0.2); color: white; backdrop-filter: blur(10px); }
+  .btn-light:hover { background: rgba(255,255,255,0.3); }
+  .btn-primary { background: #1F4E79; color: white; }
+  .btn-primary:hover { background: #163a5c; }
+  .info-card {
+    background: white; padding: 24px; border-radius: 12px;
+    margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .info-card h2 {
+    color: #1F4E79; margin-bottom: 16px; font-size: 18px;
+    border-bottom: 2px solid #1F4E79; padding-bottom: 8px;
+  }
+  .form-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: 13px; font-weight: 600; color: #4a5568; }
+  .form-group input, .form-group select, .form-group textarea {
+    padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px;
+    font-size: 14px; font-family: inherit; transition: border 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: #1F4E79;
+  }
+  .tabs {
+    display: flex; gap: 4px; background: white; padding: 6px; border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 16px;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 10px 18px; border-radius: 8px; cursor: pointer;
+    font-weight: 600; color: #718096; transition: all 0.2s;
+    white-space: nowrap; border: none; background: transparent;
+    font-size: 14px; font-family: inherit;
+  }
+  .tab:hover { background: #f7fafc; color: #2d3748; }
+  .tab.active { background: #1F4E79; color: white; }
+  .tab-badge {
+    margin-left: 6px; background: rgba(255,255,255,0.25);
+    padding: 2px 8px; border-radius: 10px; font-size: 12px;
+  }
+  .tab.active .tab-badge { background: rgba(255,255,255,0.35); }
+  .rubric {
+    background: #DDEBF7; padding: 12px 16px; border-radius: 10px;
+    margin-bottom: 16px; border-left: 4px solid #1F4E79;
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+    font-size: 13px;
+  }
+  .rubric strong { color: #1F4E79; }
+  .rubric-item { display: flex; align-items: center; gap: 4px; }
+  .score-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%; font-weight: 700;
+    color: white; font-size: 12px;
+  }
+  .sb-1 { background: #C00000; }
+  .sb-2 { background: #f6ad55; }
+  .sb-3 { background: #ecc94b; }
+  .sb-4 { background: #4299e1; }
+  .sb-5 { background: #00B050; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .section-header {
+    background: white; padding: 20px 24px; border-radius: 12px;
+    margin-bottom: 12px; border-left: 4px solid #C00000;
+  }
+  .section-header h2 { color: #C00000; font-size: 20px; margin-bottom: 6px; }
+  .section-header p { color: #4a5568; font-size: 13px; }
+  .q-group { margin-bottom: 16px; }
+  .q-group h3 {
+    color: #1F4E79; font-size: 15px; padding: 8px 12px;
+    background: #f7fafc; border-radius: 6px; margin-bottom: 10px;
+  }
+  .q-card {
+    background: white; padding: 16px 20px; border-radius: 10px;
+    margin-bottom: 10px; box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+    transition: all 0.2s; border-left: 3px solid transparent;
+  }
+  .q-card.scored-1 { border-left-color: #C00000; background: #fef5f5; }
+  .q-card.scored-2 { border-left-color: #f6ad55; background: #fffaf0; }
+  .q-card.scored-3 { border-left-color: #ecc94b; background: #fffff0; }
+  .q-card.scored-4 { border-left-color: #4299e1; background: #ebf8ff; }
+  .q-card.scored-5 { border-left-color: #00B050; background: #f0fff4; }
+  .q-num { color: #C00000; font-weight: 700; }
+  .q-text { font-weight: 600; color: #2d3748; margin-bottom: 6px; }
+  .q-tip { font-style: italic; color: #4a5568; font-size: 13px; margin-bottom: 12px; }
+  .q-input-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .q-scores {
+    display: flex; gap: 6px; align-items: center;
+    background: #f7fafc; padding: 6px; border-radius: 8px;
+  }
+  .score-btn {
+    width: 36px; height: 36px; border: 2px solid #e2e8f0;
+    background: white; border-radius: 8px; cursor: pointer;
+    font-weight: 700; font-size: 14px; color: #4a5568;
+    transition: all 0.15s; font-family: inherit;
+  }
+  .score-btn:hover { background: #edf2f7; transform: translateY(-1px); }
+  .score-btn.active-1 { background: #C00000; color: white; border-color: #C00000; }
+  .score-btn.active-2 { background: #f6ad55; color: white; border-color: #f6ad55; }
+  .score-btn.active-3 { background: #ecc94b; color: white; border-color: #ecc94b; }
+  .score-btn.active-4 { background: #4299e1; color: white; border-color: #4299e1; }
+  .score-btn.active-5 { background: #00B050; color: white; border-color: #00B050; }
+
+  /* SCORE BUTTON POPUP - hiện chi tiết khi hover */
+  .score-btn-wrap { position: relative; display: inline-block; }
+  .score-popup {
+    position: absolute; bottom: calc(100% + 12px); left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    width: 320px; padding: 14px 16px;
+    background: white; border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    border: 2px solid; opacity: 0; pointer-events: none;
+    transition: all 0.2s ease;
+    z-index: 1000; font-size: 13px; line-height: 1.5;
+    text-align: left;
+  }
+  .score-popup::after {
+    content: ""; position: absolute; top: 100%; left: 50%;
+    transform: translateX(-50%); width: 0; height: 0;
+    border-left: 8px solid transparent; border-right: 8px solid transparent;
+    border-top: 8px solid white;
+  }
+  .score-btn-wrap:hover .score-popup {
+    opacity: 1; pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+  }
+  .score-popup-1 { border-color: #C00000; }
+  .score-popup-2 { border-color: #f6ad55; }
+  .score-popup-3 { border-color: #ecc94b; }
+  .score-popup-4 { border-color: #4299e1; }
+  .score-popup-5 { border-color: #00B050; }
+  .score-popup .pop-header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px; padding-bottom: 8px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .score-popup .pop-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    color: white; font-weight: 800; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .score-popup-1 .pop-num { background: #C00000; }
+  .score-popup-2 .pop-num { background: #f6ad55; }
+  .score-popup-3 .pop-num { background: #ecc94b; color: #744210; }
+  .score-popup-4 .pop-num { background: #4299e1; }
+  .score-popup-5 .pop-num { background: #00B050; }
+  .score-popup .pop-level { font-weight: 700; font-size: 15px; }
+  .score-popup-1 .pop-level { color: #C00000; }
+  .score-popup-2 .pop-level { color: #C00000; }
+  .score-popup-3 .pop-level { color: #b7791f; }
+  .score-popup-4 .pop-level { color: #1F4E79; }
+  .score-popup-5 .pop-level { color: #00B050; }
+  .score-popup ul { list-style: none; margin: 0; padding: 0; }
+  .score-popup ul li { padding: 2px 0; color: #2d3748; font-size: 12px; }
+  .score-popup .pop-action {
+    margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0;
+    font-style: italic; color: #4a5568; font-size: 12px;
+  }
+  .score-popup .pop-action strong { font-style: normal; }
+  .score-popup-1 .pop-action strong { color: #C00000; }
+  .score-popup-2 .pop-action strong { color: #C00000; }
+  .score-popup-3 .pop-action strong { color: #b7791f; }
+  .score-popup-4 .pop-action strong { color: #1F4E79; }
+  .score-popup-5 .pop-action strong { color: #00B050; }
+  .q-note {
+    flex: 1; min-width: 250px; padding: 8px 12px;
+    border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px;
+    font-family: inherit; resize: vertical; min-height: 38px;
+  }
+  .q-note:focus { outline: none; border-color: #1F4E79; }
+  .scorecard {
+    background: white; padding: 24px; border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .sc-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+  .sc-table th {
+    background: #1F4E79; color: white; padding: 12px;
+    text-align: left; font-weight: 600; font-size: 13px;
+  }
+  .sc-table td {
+    padding: 10px 12px; border-bottom: 1px solid #e2e8f0;
+    font-size: 14px;
+  }
+  .sc-table tr:hover { background: #f7fafc; }
+  .sc-table .total-row { background: #f0fff4; font-weight: 700; }
+  .sc-table .total-row td { padding: 14px 12px; font-size: 15px; color: #1F4E79; }
+  .decision-box {
+    margin-top: 20px; padding: 24px; border-radius: 12px; text-align: center;
+    background: #f7fafc; border: 2px dashed #cbd5e0;
+  }
+  .decision-box .total-score {
+    font-size: 48px; font-weight: 800; color: #1F4E79; line-height: 1;
+  }
+  .decision-box .total-label { color: #718096; font-size: 14px; margin-bottom: 12px; }
+  .decision-result {
+    display: inline-block; padding: 8px 24px; border-radius: 100px;
+    font-weight: 700; font-size: 18px; margin-top: 12px;
+  }
+  .decision-result.hire-now { background: #00B050; color: white; }
+  .decision-result.hire { background: #4299e1; color: white; }
+  .decision-result.maybe { background: #ecc94b; color: #744210; }
+  .decision-result.no-hire { background: #C00000; color: white; }
+  .decision-form { background: white; padding: 24px; border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-top: 16px; }
+  .decision-form textarea {
+    width: 100%; padding: 12px; border: 1.5px solid #e2e8f0;
+    border-radius: 8px; font-size: 14px; font-family: inherit;
+    min-height: 80px; resize: vertical;
+  }
+  .qa-table { width: 100%; border-collapse: collapse; }
+  .qa-table th { background: #DDEBF7; color: #1F4E79; padding: 10px; text-align: left; font-size: 13px; }
+  .qa-table td { padding: 8px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  .qa-table textarea { width: 100%; min-height: 50px; padding: 6px 10px; border: 1px solid #e2e8f0;
+    border-radius: 6px; font-family: inherit; font-size: 13px; resize: vertical; }
+  .qa-classification { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+  .qa-classification label { display: flex; align-items: center; gap: 4px; }
+  .rubric-detail-table {
+    width: 100%; border-collapse: collapse; margin-top: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-radius: 10px; overflow: hidden;
+  }
+  .rubric-detail-table th { padding: 12px; font-size: 13px; color: white; background: #1F4E79; }
+  .rubric-detail-table td { padding: 12px; font-size: 13px; border-bottom: 1px solid #e2e8f0; }
+  .rubric-detail-table tr.r-5 { background: #f0fff4; }
+  .rubric-detail-table tr.r-4 { background: #ebf8ff; }
+  .rubric-detail-table tr.r-3 { background: #fffff0; }
+  .rubric-detail-table tr.r-2 { background: #fffaf0; }
+  .rubric-detail-table tr.r-1 { background: #fef5f5; }
+  .rubric-detail-table .score-cell { text-align: center; width: 60px; font-size: 22px; font-weight: 800; }
+  .rubric-detail-table .level-cell { font-weight: 700; font-size: 14px; width: 130px; text-align: center; }
+  @media print {
+    header .actions, .tabs, .rubric { display: none; }
+    .section { display: block !important; page-break-after: always; }
+    .q-card { box-shadow: none; border: 1px solid #cbd5e0; page-break-inside: avoid; }
+    body { background: white; }
+  }
+  .toast {
+    position: fixed; top: 24px; left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: #1F4E79; color: white; padding: 18px 32px;
+    border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    opacity: 0; transition: all 0.3s; min-width: 280px; text-align: center;
+    z-index: 9999; font-size: 16px; font-weight: 600;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  .toast.success { background: linear-gradient(135deg, #00B050 0%, #008d3f 100%); }
+  .toast.error { background: linear-gradient(135deg, #C00000 0%, #8B0000 100%); }
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px; margin-bottom: 16px;
+  }
+  .stat-card {
+    background: white; padding: 14px; border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    border-top: 3px solid #1F4E79;
+  }
+  .stat-card .label { font-size: 12px; color: #718096; text-transform: uppercase; }
+  .stat-card .value { font-size: 22px; font-weight: 700; color: #1F4E79; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="header-flex">
+    <div>
+      <h1>📋 HỆ THỐNG PHỎNG VẤN - KITA BOOKS</h1>
+      <div class="subtitle">Nhân viên Marketing | Fresher / Junior</div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-light" onclick="saveData()">💾 Lưu</button>
+      <button class="btn btn-light" onclick="loadData()">📂 Tải</button>
+      <button class="btn btn-light" onclick="window.print()">🖨️ In/PDF</button>
+      <button class="btn btn-light" onclick="resetAll()">🔄 Reset</button>
+    </div>
+  </div>
+</header>
+
+<div class="info-card">
+  <h2>📝 Thông tin ứng viên & phỏng vấn</h2>
+  <div class="form-grid">
+    <div class="form-group"><label>Họ tên ứng viên</label><input type="text" id="candidateName" placeholder="VD: Nguyễn Văn A"></div>
+    <div class="form-group"><label>Vị trí ứng tuyển</label>
+      <select id="candidatePosition">
+        <option value="">-- Chọn --</option>
+        <option>Fresher Bậc 0 (6tr)</option>
+        <option>Fresher Bậc 0+ (7tr)</option>
+        <option>Junior Bậc 1 (8tr)</option>
+        <option>Junior Bậc 2 (9tr)</option>
+        <option>Junior Bậc 3 (10tr)</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Ngày phỏng vấn</label><input type="date" id="interviewDate"></div>
+    <div class="form-group"><label>Người phỏng vấn</label><input type="text" id="interviewer" placeholder="VD: Trưởng phòng MKT"></div>
+    <div class="form-group"><label>Vòng phỏng vấn</label>
+      <select id="interviewRound">
+        <option value="V1">Vòng 1 - HR Sàng lọc</option>
+        <option value="V2">Vòng 2 - TPMKT</option>
+        <option value="V3">Vòng 3 - Bài tập</option>
+        <option value="V4">Vòng 4 - Giám đốc</option>
+      </select>
+    </div>
+    <div class="form-group"><label>SĐT / Email</label><input type="text" id="candidateContact" placeholder="0912... / a@email.com"></div>
+  </div>
+</div>
+
+<div class="rubric">
+  <strong>📊 THANG ĐIỂM:</strong>
+  <span class="rubric-item"><span class="score-badge sb-1">1</span> Yếu</span>
+  <span class="rubric-item"><span class="score-badge sb-2">2</span> Dưới TB</span>
+  <span class="rubric-item"><span class="score-badge sb-3">3</span> Trung bình</span>
+  <span class="rubric-item"><span class="score-badge sb-4">4</span> Tốt</span>
+  <span class="rubric-item"><span class="score-badge sb-5">5</span> Xuất sắc</span>
+  <span style="margin-left:auto; font-style: italic; color: #718096;">💡 Click nút điểm để chấm</span>
+</div>
+
+<nav class="tabs">
+  <button class="tab active" data-section="rubric" onclick="showSection('rubric')">📖 Rubric</button>
+  <button class="tab" data-section="round1" onclick="showSection('round1')">Vòng 1<span class="tab-badge" id="badge-round1">0/9</span></button>
+  <button class="tab" data-section="round2" onclick="showSection('round2')">Vòng 2<span class="tab-badge" id="badge-round2">0/21</span></button>
+  <button class="tab" data-section="round3" onclick="showSection('round3')">Vòng 3<span class="tab-badge">3 BT</span></button>
+  <button class="tab" data-section="round4" onclick="showSection('round4')">Vòng 4<span class="tab-badge" id="badge-round4">0/4</span></button>
+  <button class="tab" data-section="qa" onclick="showSection('qa')">💬 Q&A</button>
+  <button class="tab" data-section="scorecard" onclick="showSection('scorecard')">📊 Scorecard</button>
+  <button class="tab" data-section="decision" onclick="showSection('decision')">✅ Quyết định</button>
+</nav>
+
+<section class="section active" id="section-rubric">
+  <div class="section-header">
+    <h2>📖 BẢNG CHI TIẾT THANG ĐIỂM</h2>
+    <p>Sử dụng để chuẩn hoá đánh giá - giảm bias chủ quan</p>
+  </div>
+  <div class="info-card">
+    <table class="rubric-detail-table">
+      <thead><tr><th>Điểm</th><th>Mức</th><th>Tiêu chí đánh giá chi tiết</th><th>Hành động</th></tr></thead>
+      <tbody>
+        <tr class="r-5">
+          <td class="score-cell" style="color:#00B050">5</td>
+          <td class="level-cell" style="color:#00B050">XUẤT SẮC</td>
+          <td>✓ Trả lời sâu sắc, có cấu trúc rõ ràng (STAR framework)<br>✓ Có ví dụ cụ thể với số liệu định lượng<br>✓ Vượt kỳ vọng, sáng tạo / tư duy chiến lược<br>✓ Có kinh nghiệm trực tiếp đáng tin cậy<br>✓ Thái độ: tự tin, chủ động, học hỏi cao</td>
+          <td><strong style="color:#00B050">HIRE NGAY</strong><br><em>Đề xuất bậc cao trong range</em></td>
+        </tr>
+        <tr class="r-4">
+          <td class="score-cell" style="color:#1F4E79">4</td>
+          <td class="level-cell" style="color:#1F4E79">TỐT</td>
+          <td>✓ Trả lời rõ ràng, có structure cơ bản<br>✓ Có ví dụ thực tế<br>✓ Đáp ứng đầy đủ yêu cầu vị trí<br>✓ Có kinh nghiệm liên quan<br>✓ Thái độ: tích cực, sẵn sàng học hỏi</td>
+          <td><strong style="color:#1F4E79">HIRE</strong><br><em>Đào tạo nhỏ 1-2 tuần</em></td>
+        </tr>
+        <tr class="r-3">
+          <td class="score-cell" style="color:#b7791f">3</td>
+          <td class="level-cell" style="color:#b7791f">TRUNG BÌNH</td>
+          <td>✓ Hiểu được câu hỏi, trả lời cơ bản<br>✓ Câu trả lời còn chung chung, thiếu chiều sâu<br>✓ Đáp ứng 60-70% yêu cầu<br>✓ Kinh nghiệm hạn chế<br>✓ Thái độ: ổn nhưng chưa thể hiện đam mê</td>
+          <td><strong style="color:#C00000">CÂN NHẮC</strong><br><em>Đào tạo 1-3 tháng</em></td>
+        </tr>
+        <tr class="r-2">
+          <td class="score-cell" style="color:#C00000">2</td>
+          <td class="level-cell" style="color:#C00000">DƯỚI TB</td>
+          <td>✗ Trả lời lan man, không vào trọng tâm<br>✗ Thiếu kinh nghiệm thực tế<br>✗ Câu trả lời mâu thuẫn<br>✗ Không có ví dụ cụ thể<br>✗ Thái độ: bị động, thiếu tự tin</td>
+          <td><strong style="color:#C00000">KHÔNG NÊN</strong><br><em>Đào tạo 3-6 tháng cũng khó đạt</em></td>
+        </tr>
+        <tr class="r-1">
+          <td class="score-cell" style="color:#C00000">1</td>
+          <td class="level-cell" style="color:#C00000">YẾU</td>
+          <td>✗ Không trả lời được hoặc trả lời sai<br>✗ Không hiểu khái niệm cơ bản<br>✗ Không có kiến thức tối thiểu<br>✗ Thái độ: thiếu nghiêm túc<br>✗ <strong>Có dấu hiệu RED FLAGS</strong></td>
+          <td><strong style="color:#C00000">NO HIRE</strong><br><em>Phản hồi lịch sự</em></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top: 16px; padding: 14px; background: #fef5f5; border-radius: 8px; border-left: 4px solid #C00000;">
+      <strong>⚠️ LƯU Ý:</strong> KHÔNG hỏi nhạy cảm (tuổi, tôn giáo, hôn nhân, mang thai, chính trị). Áp dụng STAR framework. Lắng nghe ≥70%, hỏi ≤30%.
+    </div>
+  </div>
+</section>
+
+<section class="section" id="section-round1">
+  <div class="section-header"><h2>📞 VÒNG 1 - HR / SÀNG LỌC</h2><p>⏱️ 15-20 phút | 👤 HR / Trợ lý GĐ</p></div>
+  <div id="questions-round1"></div>
+</section>
+
+<section class="section" id="section-round2">
+  <div class="section-header"><h2>🎤 VÒNG 2 - TPMKT PHỎNG VẤN SÂU</h2><p>⏱️ 45-60 phút | 👤 Trưởng phòng MKT</p></div>
+  <div id="questions-round2"></div>
+</section>
+
+<section class="section" id="section-round3">
+  <div class="section-header"><h2>📝 VÒNG 3 - BÀI TẬP THỰC HÀNH</h2><p>⏱️ 1-3 giờ về nhà | Thang điểm: 1-10</p></div>
+  <div id="exercises-round3"></div>
+</section>
+
+<section class="section" id="section-round4">
+  <div class="section-header"><h2>👔 VÒNG 4 - GIÁM ĐỐC</h2><p>⏱️ 30 phút | Áp dụng cho Senior+</p></div>
+  <div id="questions-round4"></div>
+</section>
+
+<section class="section" id="section-qa">
+  <div class="section-header"><h2>💬 CÂU HỎI CỦA ỨNG VIÊN</h2><p>Cuối Vòng 2, dành 5-10 phút cho ứng viên hỏi ngược</p></div>
+  <div class="info-card">
+    <table class="qa-table">
+      <thead><tr><th style="width: 40px;">STT</th><th>Câu hỏi của ứng viên</th><th style="width: 160px;">Phân loại</th><th style="width: 200px;">Nhận xét</th></tr></thead>
+      <tbody id="qa-tbody"></tbody>
+    </table>
+    <button class="btn btn-primary" style="margin-top: 12px;" onclick="addQA()">+ Thêm câu hỏi</button>
+
+    <div style="margin-top: 24px;">
+      <h3 style="color:#1F4E79; margin-bottom: 8px;">Đánh giá tổng thể Q&A</h3>
+      <div class="form-grid">
+        <div class="form-group"><label>Số lượng câu hỏi</label><select id="qa-count"><option>0</option><option>1-2</option><option>3-5</option><option>Trên 5</option></select></div>
+        <div class="form-group"><label>Chất lượng</label><select id="qa-quality"><option>Tệ (toàn câu đỏ)</option><option>Trung bình</option><option>Tốt (có vision)</option><option>Xuất sắc</option></select></div>
+        <div class="form-group"><label>Mức chủ động</label><select id="qa-active"><option>Bị động</option><option>Trung bình</option><option>Chủ động</option><option>Rất chủ động</option></select></div>
+        <div class="form-group"><label>Tổng đánh giá</label><select id="qa-total"><option>Trừ điểm</option><option>Trung lập</option><option>Cộng điểm</option></select></div>
+      </div>
+    </div>
+
+    <div style="margin-top: 16px; padding: 14px; background: #f0fff4; border-radius: 8px; font-size: 13px;">
+      <strong style="color:#00B050;">✅ Câu hỏi TỐT:</strong> "Cơ hội thăng tiến lên Senior trong bao lâu?" • "Em được đào tạo gì 30 ngày đầu?" • "KPI tháng đầu cụ thể?" • "Văn hoá team có gì đặc biệt?"
+    </div>
+    <div style="margin-top: 8px; padding: 14px; background: #fef5f5; border-radius: 8px; font-size: 13px;">
+      <strong style="color:#C00000;">🚩 Câu hỏi ĐỎ:</strong> "Em cần đến công ty mỗi ngày?" • "Lương cứng có tăng không?" • "Em làm gì 30 ngày là đủ pass?" • (Không hỏi gì)
+    </div>
+  </div>
+</section>
+
+<section class="section" id="section-scorecard">
+  <div class="section-header"><h2>📊 SCORECARD TỔNG HỢP</h2><p>Tự động tính theo trọng số. Hệ thống đề xuất quyết định.</p></div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="label">Vòng 1</div><div class="value" id="stat-r1">0/9</div></div>
+    <div class="stat-card"><div class="label">Vòng 2</div><div class="value" id="stat-r2">0/21</div></div>
+    <div class="stat-card"><div class="label">Vòng 4</div><div class="value" id="stat-r4">0/4</div></div>
+    <div class="stat-card"><div class="label">Tổng đã chấm</div><div class="value" id="stat-total">0/34</div></div>
+  </div>
+  <div class="scorecard">
+    <table class="sc-table">
+      <thead><tr><th>Tiêu chí</th><th>Trọng số</th><th>Điểm TB</th><th>Quy ra 100đ</th><th>Đánh giá</th></tr></thead>
+      <tbody id="scorecard-body"></tbody>
+      <tfoot><tr class="total-row"><td><strong>TỔNG</strong></td><td>100%</td><td id="total-avg">-</td><td id="total-100">0/100</td><td id="total-decision">-</td></tr></tfoot>
+    </table>
+    <div class="decision-box">
+      <div class="total-label">TỔNG ĐIỂM</div>
+      <div class="total-score" id="big-score">0</div>
+      <div class="total-label" style="margin-top:4px;">/ 100</div>
+      <div id="big-decision" class="decision-result no-hire">CHƯA ĐÁNH GIÁ</div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="section-decision">
+  <div class="section-header"><h2>✅ QUYẾT ĐỊNH CUỐI CÙNG</h2><p>Tổng hợp đánh giá và quyết định tuyển dụng.</p></div>
+  <div class="decision-form">
+    <div class="form-grid" style="margin-bottom: 16px;">
+      <div class="form-group"><label>Tổng điểm</label><input type="text" id="dec-total" readonly style="background:#f0f0f0; font-weight:700; color:#C00000; font-size:18px;"></div>
+      <div class="form-group"><label>Quyết định</label>
+        <select id="dec-result">
+          <option value="">-- Chọn --</option>
+          <option value="hire-now">🟢 HIRE NGAY (Bậc cao)</option>
+          <option value="hire">🔵 HIRE (Bậc khởi điểm)</option>
+          <option value="maybe">🟡 CÂN NHẮC (test thêm)</option>
+          <option value="no-hire">🔴 PASS (Không phù hợp)</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Bậc lương đề xuất</label>
+        <select id="dec-tier">
+          <option value="">-- Chọn --</option>
+          <option>Bậc 0 - Fresher 6tr</option>
+          <option>Bậc 0+ - Fresher 7tr</option>
+          <option>Bậc 1 - Junior 8tr</option>
+          <option>Bậc 2 - Junior 9tr</option>
+          <option>Bậc 3 - Junior 10tr</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Ngày bắt đầu dự kiến</label><input type="date" id="dec-start-date"></div>
+    </div>
+    <div class="form-group" style="margin-bottom: 12px;"><label>Lý do quyết định</label><textarea id="dec-reason" placeholder="Lý do chính dẫn đến quyết định..."></textarea></div>
+    <div class="form-group" style="margin-bottom: 12px;"><label>Điểm mạnh nổi bật</label><textarea id="dec-strength" style="background:#f0fff4;" placeholder="3 điểm mạnh nổi bật..."></textarea></div>
+    <div class="form-group" style="margin-bottom: 12px;"><label>Điểm yếu / Rủi ro</label><textarea id="dec-weakness" style="background:#fef5f5;" placeholder="Điểm yếu hoặc rủi ro..."></textarea></div>
+    <div class="form-group"><label>Plan đào tạo (nếu hire)</label><textarea id="dec-training" style="background:#ebf8ff;" placeholder="Đề xuất onboarding & đào tạo 30 ngày..."></textarea></div>
+  </div>
+</section>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const QUESTIONS = {
+  round1: { title: 'Vòng 1', groups: [
+    { name: '2.1. Câu hỏi giới thiệu', qs: [
+      { id: 'q1', text: 'Bạn hãy giới thiệu ngắn về bản thân trong 2 phút - học vấn, kinh nghiệm, dự án nổi bật.', tip: 'Đánh giá khả năng giao tiếp, mạch lạc, tự tin. Lưu ý cách kể chuyện - có structure không.' },
+      { id: 'q2', text: 'Vì sao bạn quan tâm đến vị trí Nhân viên Marketing tại KITA BOOKS?', tip: 'Kiểm tra ứng viên có TÌM HIỂU về KITA BOOKS không. Câu trả lời chung chung = red flag.' },
+    ]},
+    { name: '2.2. Đam mê đọc sách', qs: [
+      { id: 'q3', text: 'Cuốn sách gần đây nhất bạn đọc xong là gì? Cảm nhận thế nào?', tip: 'Người yêu sách kể được rõ tựa, tác giả, điểm thích/không thích. Người không đọc sẽ ậm ừ.' },
+      { id: 'q4', text: 'Bạn thường đọc thể loại sách nào nhất? Tại sao?', tip: 'Phù hợp KITA: kinh doanh, văn học, kỹ năng sống, thiếu nhi. Tiểu thuyết tình cảm thuần → có thể chưa phù hợp.' },
+      { id: 'q5', text: 'Bạn theo dõi kênh review sách nào trên TikTok/YT/FB? Kể tên 1-2 kênh và lý do.', tip: 'Marketing sách giỏi có hệ sinh thái thông tin riêng. "Không có" = thiếu chủ động.' },
+    ]},
+    { name: '2.3. Mức lương & Thời gian', qs: [
+      { id: 'q6', text: 'Mức lương hiện tại / gần nhất? Mức kỳ vọng?', tip: 'So với MTCV: Fresher 6-7tr, Junior 8-10tr. Kỳ vọng >15tr cứng → khó match.' },
+      { id: 'q7', text: 'Cơ chế lương KITA có Hoa hồng không giới hạn theo doanh số. Bạn nghĩ gì?', tip: 'TỐT: hứng thú, muốn challenge. XẤU: "thích lương cứng cao" - không phù hợp văn hoá KITA.' },
+      { id: 'q8', text: 'Nếu pass phỏng vấn, bạn có thể bắt đầu khi nào?', tip: 'Càng sớm càng tốt. Tôn trọng 30 ngày báo trước của công ty cũ.' },
+    ]},
+    { name: '2.4. Loại bỏ red flags', qs: [
+      { id: 'q9', text: 'Bạn có lo ngại nào về vị trí này? (lương, thời gian, KPI, hình thức làm việc...)', tip: 'Để ứng viên tự nói concern - tránh bỏ sót.' },
+    ]},
+  ]},
+  round2: { title: 'Vòng 2', groups: [
+    { name: 'A.1. KHẢ NĂNG HỌC HỎI NHANH', qs: [
+      { id: 'q10', text: 'Kể 1 lần bạn tự học công cụ/kỹ năng mới trong thời gian ngắn. Approach thế nào?', tip: 'Tìm: quy trình tự học (Google, YouTube, ChatGPT, mentor)? Áp dụng được sau bao lâu?' },
+      { id: 'q11', text: 'Khi gặp topic Marketing hoàn toàn mới (Threads, AI image gen), làm gì để hiểu trong 1 tuần?', tip: 'TỐT: thứ tự ưu tiên (đọc tổng quan → case study → thử nghiệm → chuyên gia). XẤU: "đọc Google".' },
+      { id: 'q12', text: 'Sách / blog / podcast nào về Marketing bạn đang theo dõi?', tip: 'Tên cụ thể (Marketing Made Simple, Tomorrow Marketers...). Chung chung = không thật.' },
+    ]},
+    { name: 'A.2. TINH THẦN TRÁCH NHIỆM', qs: [
+      { id: 'q13', text: 'Kể 1 lần bạn FAIL một deadline quan trọng. Xử lý thế nào?', tip: 'Nhận trách nhiệm? Thông báo trước hay giấu? Rút kinh nghiệm? STAR framework.' },
+      { id: 'q14', text: 'Khi đồng nghiệp đùn đẩy việc cho bạn, xử lý ra sao?', tip: 'TỐT: trao đổi thẳng thắn. XẤU: "em làm luôn cho khoẻ" (thiếu chính kiến).' },
+      { id: 'q15', text: 'Bạn từng nhận trách nhiệm về sai lầm nghiêm trọng chưa? Hãy kể.', tip: 'Người trưởng thành biết nhận lỗi không biện minh. Từ chối kể = đỏ flags.' },
+    ]},
+    { name: 'A.3. KHẢ NĂNG LÀM VIỆC DƯỚI ÁP LỰC', qs: [
+      { id: 'q16', text: 'Lần áp lực nhất của bạn là khi nào? Vượt qua thế nào?', tip: 'Áp lực thật: deadline, conflict, KPI cao. Cách vượt qua: có hệ thống không?' },
+      { id: 'q17', text: 'Nếu chiến dịch ads ROAS giảm 50% trong 2 ngày, xử lý cảm xúc và hành động ra sao?', tip: 'TỐT: bình tĩnh - phân tích - sửa. XẤU: panic/đổ lỗi.' },
+      { id: 'q18', text: 'Có 5 việc cùng deadline cuối ngày, priorize thế nào?', tip: 'Tìm: nguyên tắc ưu tiên (Eisenhower, ICE)? Outsource/hỏi sếp? Hay chỉ "làm hết"?' },
+    ]},
+    { name: 'B. CHUYÊN MÔN CONTENT', qs: [
+      { id: 'q19', text: 'Quy trình viết 1 bài review sách từ A đến Z?', tip: '4 bước: Đọc/lướt → Insight → Hook+Body+CTA → Tối ưu platform. Bỏ qua bước 1 = đỏ flags.' },
+      { id: 'q20', text: 'Dùng AI (ChatGPT/Claude) trong content production thế nào? Ví dụ cụ thể.', tip: 'Người giỏi: AI brainstorm, draft, edit. Không phụ thuộc 100%. Không biết = thiếu modern skills.' },
+      { id: 'q21', text: 'Cuốn sách KD 200k - viết caption FB 100-150 chữ ngay tại chỗ.', tip: 'Quan sát: Hook 3 giây? Pain point? CTA rõ? Emoji phù hợp?' },
+      { id: 'q22', text: 'Cấu trúc TikTok Reels với book content?', tip: 'TỐT: Hook (problem) → Body (solution/insight) → CTA. Hiểu xu hướng video ngắn.' },
+    ]},
+    { name: 'C. CHUYÊN MÔN ADS & SỐ LIỆU', qs: [
+      { id: 'q23', text: 'Đã từng vận hành FB Ads / Google Ads chưa? Quy mô ngân sách/tháng?', tip: 'Junior: ≥10-30tr. Senior: ≥50-100tr. Fresher: hỏi kiến thức lý thuyết.' },
+      { id: 'q24', text: 'Giải thích: CPM, CPC, CTR, CPL, ROAS, AOV. Ví dụ DT 100tr.', tip: 'BẮT BUỘC. Không định nghĩa được CPL/ROAS = chưa đủ chuyên môn.' },
+      { id: 'q25', text: 'ROAS 1.5 (mục tiêu 3.0), troubleshoot theo thứ tự nào?', tip: '1) Creative (CTR), 2) Audience, 3) Landing (CR%), 4) Pricing. Có structure?' },
+      { id: 'q26', text: 'Set-up FB Ads cho sách 200k với 30tr - tuần đầu làm gì?', tip: 'TỐT: Test 3-5 creative + 2-3 audience, daily 1-2tr, Conversion. XẤU: "đặt 30tr là chạy".' },
+    ]},
+    { name: 'D. FUNNEL & PHỐI HỢP', qs: [
+      { id: 'q27', text: 'TOFU - MOFU - BOFU là gì? Ví dụ với sách self-help.', tip: 'TOFU=nhận biết / MOFU=cân nhắc / BOFU=chuyển đổi.' },
+      { id: 'q28', text: 'Sales chốt đơn từ inbox thấp (10% vs 25%), bạn làm gì?', tip: 'TỐT: phân tích lead chất lượng / script Sales / phối hợp tối ưu. XẤU: "việc của Sales".' },
+    ]},
+    { name: 'E. TÌNH HUỐNG XỬ LÝ', qs: [
+      { id: 'q29', text: 'Khách comment gay gắt fanpage chê sách lừa đảo. Xử lý 30 phút đầu?', tip: 'TỐT: Không xoá - phản hồi lịch sự - xác minh - báo cấp trên - inbox riêng.' },
+      { id: 'q30', text: 'Sách mới ra mắt, 50tr ads, 30 ngày đạt 200tr DT. Lập plan 5 phút.', tip: 'TỐT: phase ngân sách, milestone 7-15-30, KPI rõ. XẤU: chung chung không số.' },
+    ]},
+  ]},
+  round3: [
+    { id: 'bt1', title: 'BÀI TẬP 1: VIẾT REVIEW SÁCH (60-90 phút)',
+      desc: '1 cuốn sách KITA BOOKS. Viết: Bài review FB 300-500 chữ + Caption IG 100-150 chữ + Script TikTok 30-45s.',
+      criteria: [
+        { name: 'Hook 3 giây đầu thu hút?', weight: 30 },
+        { name: 'Hiểu nội dung sách qua review?', weight: 30 },
+        { name: 'CTA rõ ràng dẫn conversion?', weight: 20 },
+        { name: 'Phù hợp đặc tính platform?', weight: 20 },
+      ]},
+    { id: 'bt2', title: 'BÀI TẬP 2: LẬP KẾ HOẠCH MARKETING (60-90 phút)',
+      desc: 'Tựa sách mới, DT 500tr/tháng, ngân sách 100tr ads, đối tượng PN 25-40t. Plan 30 ngày.',
+      criteria: [
+        { name: 'Phase + Mục tiêu mỗi phase rõ?', weight: 25 },
+        { name: 'Content calendar khả thi?', weight: 20 },
+        { name: 'Audience targeting cụ thể?', weight: 20 },
+        { name: 'Budget allocation hợp lý?', weight: 20 },
+        { name: 'Forecast + Backup plan?', weight: 15 },
+      ]},
+    { id: 'bt3', title: 'BÀI TẬP 3: PHÂN TÍCH SỐ LIỆU (45 phút)',
+      desc: 'Báo cáo FB Ads 30 ngày. Phân tích vấn đề, đề xuất tối ưu.',
+      criteria: [
+        { name: 'Phân tích đúng vấn đề & nguyên nhân?', weight: 35 },
+        { name: 'Đề xuất hành động khả thi?', weight: 35 },
+        { name: 'Forecast hợp lý?', weight: 30 },
+      ]},
+  ],
+  round4: { title: 'Vòng 4', groups: [
+    { name: 'Phỏng vấn cuối với Giám đốc', qs: [
+      { id: 'q31', text: 'Sự nghiệp Marketing 3-5 năm tới của bạn?', tip: 'Có vision rõ? Align với KITA career path?' },
+      { id: 'q32', text: 'Nếu được tuyển, đóng góp giá trị gì RIÊNG cho KITA trong 6 tháng đầu?', tip: 'TỐT: Cụ thể (build kênh TikTok review sách...). XẤU: chung chung.' },
+      { id: 'q33', text: 'Vấn đề lớn nhất của ngành sách Việt Nam? KITA có thể giải quyết thế nào?', tip: 'Quan tâm ngành? Tư duy chiến lược? Ý tưởng đột phá?' },
+      { id: 'q34', text: 'Chọn (A) Tăng DT 50% giảm chất lượng, hay (B) Giữ chất lượng tăng 20%? Tại sao?', tip: 'KITA đề cao tri thức + đạo đức. Cần lý do hợp lý + plan cụ thể.' },
+    ]},
+  ]}
+};
+
+const SCORECARD_CONFIG = [
+  { name: 'Tố chất / Đam mê đọc sách', weight: 20, qIds: ['q3', 'q4', 'q5'] },
+  { name: 'Khát khao thu nhập không giới hạn', weight: 10, qIds: ['q7'] },
+  { name: 'Khả năng học hỏi nhanh', weight: 10, qIds: ['q10', 'q11', 'q12'] },
+  { name: 'Tinh thần trách nhiệm', weight: 10, qIds: ['q13', 'q14', 'q15'] },
+  { name: 'Khả năng làm việc dưới áp lực', weight: 10, qIds: ['q16', 'q17', 'q18'] },
+  { name: 'Chuyên môn Content', weight: 15, qIds: ['q19', 'q20', 'q21', 'q22'] },
+  { name: 'Chuyên môn Ads & Phân tích', weight: 15, qIds: ['q23', 'q24', 'q25', 'q26', 'q27'] },
+  { name: 'Tình huống / Cultural fit', weight: 10, qIds: ['q28', 'q29', 'q30', 'q31', 'q32', 'q33', 'q34'] },
+];
+
+const state = { scores: {}, notes: {}, qa: [{ q: '', class: 'normal', note: '' }] };
+const LEVEL_TEXT = { 1: 'Yếu', 2: 'Dưới TB', 3: 'Trung bình', 4: 'Tốt', 5: 'Xuất sắc' };
+
+function renderRound(roundKey) {
+  const round = QUESTIONS[roundKey];
+  const container = document.getElementById('questions-' + roundKey);
+  let html = '';
+  round.groups.forEach(group => {
+    html += `<div class="q-group"><h3>${group.name}</h3>`;
+    group.qs.forEach(q => { html += renderQuestion(q); });
+    html += '</div>';
+  });
+  container.innerHTML = html;
+}
+
+// Chi tiết popup cho từng mức điểm
+const SCORE_POPUP_DATA = {
+  1: {
+    level: 'YẾU - Không phù hợp',
+    criteria: [
+      '✗ Không trả lời được hoặc trả lời sai hoàn toàn',
+      '✗ Không hiểu vấn đề / khái niệm cơ bản',
+      '✗ Không có kiến thức / kỹ năng tối thiểu',
+      '✗ Thái độ: thiếu nghiêm túc, không quan tâm',
+      '✗ Có dấu hiệu RED FLAGS (gian dối, đổ lỗi...)',
+    ],
+    action: 'NO HIRE - Phản hồi lịch sự cho ứng viên'
+  },
+  2: {
+    level: 'DƯỚI TB - Yếu',
+    criteria: [
+      '✗ Trả lời lan man, không vào trọng tâm',
+      '✗ Thiếu kinh nghiệm thực tế, chỉ nói lý thuyết',
+      '✗ Câu trả lời mâu thuẫn / không nhất quán',
+      '✗ Không có ví dụ cụ thể nào để minh hoạ',
+      '✗ Thái độ: bị động hoặc thiếu tự tin',
+    ],
+    action: 'KHÔNG NÊN HIRE - Đào tạo 3-6 tháng vẫn rủi ro cao'
+  },
+  3: {
+    level: 'TRUNG BÌNH - Khá',
+    criteria: [
+      '✓ Hiểu được câu hỏi, trả lời ở mức cơ bản',
+      '✓ Câu trả lời còn chung chung, thiếu chiều sâu',
+      '✓ Đáp ứng được khoảng 60-70% yêu cầu vị trí',
+      '✓ Kinh nghiệm hạn chế, kiến thức nửa vời',
+      '✓ Thái độ: ổn nhưng chưa thể hiện đam mê rõ',
+    ],
+    action: 'CÂN NHẮC - Đào tạo 1-3 tháng, có thể giảm bậc'
+  },
+  4: {
+    level: 'TỐT',
+    criteria: [
+      '✓ Trả lời rõ ràng, có structure cơ bản',
+      '✓ Có ví dụ thực tế (chưa chắc số liệu chi tiết)',
+      '✓ Đáp ứng đầy đủ yêu cầu vị trí',
+      '✓ Có kinh nghiệm liên quan, hiểu công việc',
+      '✓ Thái độ: tích cực, sẵn sàng học hỏi',
+    ],
+    action: 'HIRE - Đào tạo nhỏ (1-2 tuần) để bắt nhịp'
+  },
+  5: {
+    level: 'XUẤT SẮC',
+    criteria: [
+      '✓ Trả lời sâu sắc, structure rõ (STAR framework)',
+      '✓ Có ví dụ cụ thể với số liệu định lượng',
+      '✓ Vượt kỳ vọng, sáng tạo / tư duy chiến lược',
+      '✓ Có kinh nghiệm trực tiếp đáng tin cậy',
+      '✓ Thái độ: tự tin, chủ động, học hỏi cao',
+    ],
+    action: 'HIRE NGAY - Đề xuất bậc cao trong range'
+  }
+};
+
+function renderQuestion(q) {
+  const score = state.scores[q.id];
+  const note = state.notes[q.id] || '';
+  const cardClass = score ? `q-card scored-${score}` : 'q-card';
+  let scoreBtns = '';
+  for (let i = 1; i <= 5; i++) {
+    const active = score === i ? `active-${i}` : '';
+    const popup = SCORE_POPUP_DATA[i];
+    const popupHtml = `
+      <div class="score-popup score-popup-${i}">
+        <div class="pop-header">
+          <span class="pop-num">${i}</span>
+          <span class="pop-level">${popup.level}</span>
+        </div>
+        <ul>${popup.criteria.map(c => `<li>${c}</li>`).join('')}</ul>
+        <div class="pop-action">→ <strong>${popup.action}</strong></div>
+      </div>`;
+    scoreBtns += `<div class="score-btn-wrap">
+      <button class="score-btn ${active}" onclick="setScore('${q.id}', ${i})">${i}</button>
+      ${popupHtml}
+    </div>`;
+  }
+  return `<div class="${cardClass}" id="card-${q.id}">
+    <div class="q-text"><span class="q-num">${q.id.toUpperCase()}.</span> ${q.text}</div>
+    <div class="q-tip">💡 ${q.tip}</div>
+    <div class="q-input-row">
+      <div class="q-scores">${scoreBtns}</div>
+      <textarea class="q-note" placeholder="Ghi chú quan sát..." onchange="setNote('${q.id}', this.value)">${note}</textarea>
+    </div>
+  </div>`;
+}
+
+function renderRound3() {
+  const container = document.getElementById('exercises-round3');
+  let html = '';
+  QUESTIONS.round3.forEach(bt => {
+    html += `<div class="info-card"><h2>${bt.title}</h2>
+      <p style="font-style:italic; color:#4a5568; margin-bottom: 12px;">${bt.desc}</p>
+      <table class="sc-table"><thead><tr><th>Tiêu chí</th><th>Trọng số</th><th>Điểm 1-10</th><th>Ghi chú</th></tr></thead><tbody>`;
+    bt.criteria.forEach((c, ci) => {
+      const cId = `${bt.id}-c${ci}`;
+      const score = state.scores[cId] || '';
+      const note = state.notes[cId] || '';
+      html += `<tr><td>${c.name}</td><td>${c.weight}%</td>
+        <td><input type="number" min="1" max="10" value="${score}" onchange="state.scores['${cId}']=parseInt(this.value)||0; updateAll();" style="width:60px; padding:6px; border:1px solid #e2e8f0; border-radius:4px;"></td>
+        <td><input type="text" value="${note}" onchange="state.notes['${cId}']=this.value;" style="width:100%; padding:6px; border:1px solid #e2e8f0; border-radius:4px;"></td>
+      </tr>`;
+    });
+    html += `<tr style="background:#f0fff4; font-weight:700;"><td>TỔNG</td><td>100%</td><td id="${bt.id}-total">-</td><td>⬜ Pass ⬜ Fail</td></tr></tbody></table></div>`;
+  });
+  container.innerHTML = html;
+}
+
+function renderQA() {
+  const tbody = document.getElementById('qa-tbody');
+  let html = '';
+  state.qa.forEach((item, idx) => {
+    html += `<tr>
+      <td style="text-align:center;font-weight:700;">${idx + 1}</td>
+      <td><textarea onchange="state.qa[${idx}].q=this.value" placeholder="Câu hỏi của ứng viên...">${item.q}</textarea></td>
+      <td><div class="qa-classification">
+        <label><input type="radio" name="qa-${idx}" value="good" ${item.class === 'good' ? 'checked' : ''} onchange="state.qa[${idx}].class='good'"> ✅ TỐT (+)</label>
+        <label><input type="radio" name="qa-${idx}" value="red" ${item.class === 'red' ? 'checked' : ''} onchange="state.qa[${idx}].class='red'"> 🚩 ĐỎ (-)</label>
+        <label><input type="radio" name="qa-${idx}" value="normal" ${item.class === 'normal' ? 'checked' : ''} onchange="state.qa[${idx}].class='normal'"> ⚪ Bình thường</label>
+      </div></td>
+      <td><textarea onchange="state.qa[${idx}].note=this.value" placeholder="Nhận xét...">${item.note}</textarea></td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+function addQA() { state.qa.push({ q: '', class: 'normal', note: '' }); renderQA(); }
+
+function setScore(qId, score) {
+  state.scores[qId] = score;
+  const card = document.getElementById('card-' + qId);
+  if (card) {
+    card.className = `q-card scored-${score}`;
+    card.querySelectorAll('.score-btn').forEach((btn, idx) => {
+      btn.className = 'score-btn' + (idx + 1 === score ? ` active-${score}` : '');
+    });
+  }
+  updateAll();
+}
+
+function setNote(qId, value) { state.notes[qId] = value; }
+
+function calculateScorecard() {
+  const results = SCORECARD_CONFIG.map(cat => {
+    const scores = cat.qIds.map(id => state.scores[id]).filter(s => s);
+    const avg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+    const weighted = (avg / 5) * cat.weight;
+    return { ...cat, scores, avg, weighted };
+  });
+  const totalAvg = results.reduce((sum, r) => sum + (r.avg * r.weight / 100), 0);
+  const total100 = results.reduce((sum, r) => sum + r.weighted, 0);
+  return { results, totalAvg, total100 };
+}
+
+function getDecision(score) {
+  if (score >= 85) return { class: 'hire-now', text: '🟢 HIRE NGAY' };
+  if (score >= 70) return { class: 'hire', text: '🔵 HIRE' };
+  if (score >= 55) return { class: 'maybe', text: '🟡 CÂN NHẮC' };
+  if (score > 0) return { class: 'no-hire', text: '🔴 NO HIRE' };
+  return { class: 'no-hire', text: 'CHƯA ĐÁNH GIÁ' };
+}
+
+function updateScorecard() {
+  const { results, totalAvg, total100 } = calculateScorecard();
+  const tbody = document.getElementById('scorecard-body');
+  let html = '';
+  results.forEach(r => {
+    const avgText = r.avg ? r.avg.toFixed(1) : '-';
+    const w100 = r.weighted.toFixed(1);
+    let badge = '⬜ Chưa chấm';
+    if (r.avg >= 4.5) badge = '<span style="color:#00B050;font-weight:700;">🟢 Xuất sắc</span>';
+    else if (r.avg >= 3.5) badge = '<span style="color:#1F4E79;font-weight:700;">🔵 Tốt</span>';
+    else if (r.avg >= 2.5) badge = '<span style="color:#b7791f;font-weight:700;">🟡 Trung bình</span>';
+    else if (r.avg > 0) badge = '<span style="color:#C00000;font-weight:700;">🔴 Yếu</span>';
+    html += `<tr><td>${r.name}</td><td>${r.weight}%</td><td>${avgText}/5</td><td>${w100}/${r.weight}</td><td>${badge}</td></tr>`;
+  });
+  tbody.innerHTML = html;
+  document.getElementById('total-avg').textContent = totalAvg.toFixed(2) + '/5';
+  document.getElementById('total-100').textContent = total100.toFixed(1) + '/100';
+  const decision = getDecision(total100);
+  document.getElementById('total-decision').innerHTML = `<strong style="color:${decision.class === 'hire-now' ? '#00B050' : decision.class === 'hire' ? '#1F4E79' : decision.class === 'maybe' ? '#b7791f' : '#C00000'}">${decision.text}</strong>`;
+  document.getElementById('big-score').textContent = total100.toFixed(0);
+  const bigDec = document.getElementById('big-decision');
+  bigDec.className = 'decision-result ' + decision.class;
+  bigDec.textContent = decision.text;
+  document.getElementById('dec-total').value = total100.toFixed(1) + ' / 100';
+  const decResult = document.getElementById('dec-result');
+  if (!decResult.value || decResult.dataset.auto === 'true') {
+    decResult.value = decision.class;
+    decResult.dataset.auto = 'true';
+  }
+}
+
+function updateBadges() {
+  ['round1', 'round2', 'round4'].forEach(r => {
+    const round = QUESTIONS[r];
+    let total = 0, scored = 0;
+    round.groups.forEach(g => g.qs.forEach(q => { total++; if (state.scores[q.id]) scored++; }));
+    const badge = document.getElementById('badge-' + r);
+    if (badge) badge.textContent = `${scored}/${total}`;
+    const stat = document.getElementById('stat-' + r.replace('round', 'r'));
+    if (stat) stat.textContent = `${scored}/${total}`;
+  });
+  const allScored = ['round1', 'round2', 'round4'].reduce((sum, r) => {
+    return sum + QUESTIONS[r].groups.reduce((s2, g) => s2 + g.qs.filter(q => state.scores[q.id]).length, 0);
+  }, 0);
+  document.getElementById('stat-total').textContent = `${allScored}/34`;
+}
+
+function updateRound3Totals() {
+  QUESTIONS.round3.forEach(bt => {
+    let total = 0;
+    bt.criteria.forEach((c, ci) => {
+      const score = state.scores[`${bt.id}-c${ci}`] || 0;
+      total += (score / 10) * c.weight;
+    });
+    const el = document.getElementById(`${bt.id}-total`);
+    if (el) el.textContent = total.toFixed(1) + '/100';
+  });
+}
+
+function updateAll() { updateBadges(); updateScorecard(); updateRound3Totals(); }
+
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.tab[data-section="${name}"]`).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Test localStorage availability
+function isLocalStorageAvailable() {
+  try {
+    const test = '__test__';
+    localStorage.setItem(test, test);
+    localStorage.removeItem(test);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function getCandidateKey() {
+  const name = document.getElementById('candidateName').value || 'unknown';
+  return 'kita_interview_' + name.replace(/\s+/g, '_').toLowerCase();
+}
+
+function getDataObject() {
+  return {
+    candidate: {
+      name: document.getElementById('candidateName').value,
+      position: document.getElementById('candidatePosition').value,
+      date: document.getElementById('interviewDate').value,
+      interviewer: document.getElementById('interviewer').value,
+      round: document.getElementById('interviewRound').value,
+      contact: document.getElementById('candidateContact').value,
+    },
+    scores: state.scores, notes: state.notes, qa: state.qa,
+    qaSummary: {
+      count: document.getElementById('qa-count').value,
+      quality: document.getElementById('qa-quality').value,
+      active: document.getElementById('qa-active').value,
+      total: document.getElementById('qa-total').value,
+    },
+    decision: {
+      total: document.getElementById('dec-total').value,
+      result: document.getElementById('dec-result').value,
+      tier: document.getElementById('dec-tier').value,
+      startDate: document.getElementById('dec-start-date').value,
+      reason: document.getElementById('dec-reason').value,
+      strength: document.getElementById('dec-strength').value,
+      weakness: document.getElementById('dec-weakness').value,
+      training: document.getElementById('dec-training').value,
+    },
+    savedAt: new Date().toISOString(),
+  };
+}
+
+function saveData() {
+  const candidateName = document.getElementById('candidateName').value.trim();
+  if (!candidateName) {
+    alert('⚠️ Vui lòng nhập "Họ tên ứng viên" trước khi lưu!');
+    document.getElementById('candidateName').focus();
+    return;
+  }
+
+  const data = getDataObject();
+  const key = getCandidateKey();
+
+  // Thử lưu vào localStorage
+  let lsSuccess = false;
+  try {
+    if (isLocalStorageAvailable()) {
+      localStorage.setItem(key, JSON.stringify(data));
+      lsSuccess = true;
+    }
+  } catch (e) {
+    console.error('localStorage error:', e);
+  }
+
+  // LUÔN download file JSON để backup
+  const dataStr = JSON.stringify(data, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `phongvan_${key.replace('kita_interview_', '')}_${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  // Hiển thị kết quả qua alert (chắc chắn user thấy)
+  const msg = lsSuccess
+    ? `✅ ĐÃ LƯU THÀNH CÔNG!\n\n📦 Lưu vào browser (localStorage): ${key}\n💾 Tải file backup: phongvan_${key.replace('kita_interview_', '')}_${new Date().toISOString().slice(0,10)}.json\n\nFile JSON đã được tải về máy bạn.`
+    : `⚠️ LƯU TỪNG PHẦN!\n\nlocalStorage không khả dụng (có thể do mở file://). \n💾 Đã tải file JSON backup về máy.\n\nLần sau muốn load → click "Tải" → chọn file JSON.`;
+  alert(msg);
+  toast(lsSuccess ? '💾 Đã lưu (browser + file)' : '💾 Đã tải file backup', 'success');
+}
+
+function loadData() {
+  // Tạo input file để load JSON
+  const choice = confirm(
+    '📂 CHỌN CÁCH TẢI HỒ SƠ:\n\n' +
+    '✅ OK = Tải từ FILE JSON (đã download trước đó)\n' +
+    '❌ Cancel = Tải từ trình duyệt (localStorage)'
+  );
+
+  if (choice) {
+    // Load từ file
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const parsed = JSON.parse(ev.target.result);
+          applyLoadedData(parsed);
+          alert('✅ ĐÃ TẢI HỒ SƠ TỪ FILE!\n\nTên: ' + (parsed.candidate?.name || 'Không rõ'));
+          toast('📂 Đã tải file', 'success');
+        } catch (err) {
+          alert('❌ File không hợp lệ! Lỗi: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+    return;
+  }
+
+  // Load từ localStorage
+  if (!isLocalStorageAvailable()) {
+    alert('⚠️ localStorage không khả dụng!\n\nVui lòng dùng cách "Tải từ FILE JSON" thay thế.');
+    return;
+  }
+
+  const keys = Object.keys(localStorage).filter(k => k.startsWith('kita_interview_'));
+  if (keys.length === 0) {
+    alert('📭 CHƯA CÓ HỒ SƠ NÀO TRONG TRÌNH DUYỆT\n\nHãy lưu hồ sơ trước hoặc dùng "Tải từ FILE JSON".');
+    return;
+  }
+
+  const list = keys.map((k, i) => `${i + 1}. ${k.replace('kita_interview_', '')}`).join('\n');
+  const input = prompt(
+    `📋 DANH SÁCH HỒ SƠ ĐÃ LƯU (${keys.length}):\n\n${list}\n\n` +
+    `Nhập SỐ THỨ TỰ (1, 2, 3...) hoặc tên ứng viên cần tải:`
+  );
+  if (input === null) return;
+
+  let key;
+  const num = parseInt(input);
+  if (!isNaN(num) && num >= 1 && num <= keys.length) {
+    key = keys[num - 1];
+  } else {
+    key = 'kita_interview_' + input.trim().replace(/\s+/g, '_').toLowerCase();
+  }
+
+  const data = localStorage.getItem(key);
+  if (!data) {
+    alert('❌ Không tìm thấy hồ sơ: ' + input);
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(data);
+    applyLoadedData(parsed);
+    alert('✅ ĐÃ TẢI HỒ SƠ!\n\nTên: ' + (parsed.candidate?.name || 'Không rõ') + '\nLưu lúc: ' + (parsed.savedAt || 'Không rõ'));
+    toast('📂 Đã tải hồ sơ', 'success');
+  } catch (err) {
+    alert('❌ Lỗi đọc dữ liệu: ' + err.message);
+  }
+}
+
+function applyLoadedData(parsed) {
+  document.getElementById('candidateName').value = parsed.candidate?.name || '';
+  document.getElementById('candidatePosition').value = parsed.candidate?.position || '';
+  document.getElementById('interviewDate').value = parsed.candidate?.date || '';
+  document.getElementById('interviewer').value = parsed.candidate?.interviewer || '';
+  document.getElementById('interviewRound').value = parsed.candidate?.round || 'V1';
+  document.getElementById('candidateContact').value = parsed.candidate?.contact || '';
+  state.scores = parsed.scores || {};
+  state.notes = parsed.notes || {};
+  state.qa = parsed.qa || [{ q: '', class: 'normal', note: '' }];
+  if (parsed.qaSummary) {
+    document.getElementById('qa-count').value = parsed.qaSummary.count || '';
+    document.getElementById('qa-quality').value = parsed.qaSummary.quality || '';
+    document.getElementById('qa-active').value = parsed.qaSummary.active || '';
+    document.getElementById('qa-total').value = parsed.qaSummary.total || '';
+  }
+  if (parsed.decision) {
+    document.getElementById('dec-total').value = parsed.decision.total || '';
+    document.getElementById('dec-result').value = parsed.decision.result || '';
+    document.getElementById('dec-tier').value = parsed.decision.tier || '';
+    document.getElementById('dec-start-date').value = parsed.decision.startDate || '';
+    document.getElementById('dec-reason').value = parsed.decision.reason || '';
+    document.getElementById('dec-strength').value = parsed.decision.strength || '';
+    document.getElementById('dec-weakness').value = parsed.decision.weakness || '';
+    document.getElementById('dec-training').value = parsed.decision.training || '';
+  }
+  renderAll();
+}
+
+function resetAll() {
+  const confirmed = confirm('⚠️ XÁC NHẬN RESET\n\nBạn chắc chắn muốn XOÁ TOÀN BỘ dữ liệu hiện tại?\n\n(Dữ liệu đã lưu trong browser/file vẫn còn)');
+  if (!confirmed) return;
+  state.scores = {}; state.notes = {}; state.qa = [{ q: '', class: 'normal', note: '' }];
+  document.querySelectorAll('input, textarea, select').forEach(el => {
+    if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = '';
+  });
+  document.getElementById('interviewDate').valueAsDate = new Date();
+  renderAll();
+  alert('🔄 ĐÃ RESET TOÀN BỘ DỮ LIỆU!');
+  toast('🔄 Đã reset', 'success');
+}
+
+function renderAll() {
+  renderRound('round1');
+  renderRound('round2');
+  renderRound3();
+  renderRound('round4');
+  renderQA();
+  updateAll();
+}
+
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  setTimeout(() => el.className = 'toast ' + type, 2500);
+}
+
+document.getElementById('interviewDate').valueAsDate = new Date();
+renderAll();
+
+// Detect mode (file:// or http://) và thông báo
+window.addEventListener('load', () => {
+  const isFile = window.location.protocol === 'file:';
+  const lsOk = isLocalStorageAvailable();
+  console.log('🔍 Protocol:', window.location.protocol, '| localStorage:', lsOk ? 'OK' : 'BLOCKED');
+  if (isFile && !lsOk) {
+    setTimeout(() => {
+      alert(
+        '⚠️ THÔNG BÁO\n\n' +
+        'Bạn đang mở file trực tiếp (file://). Một số trình duyệt (đặc biệt Safari) chặn localStorage.\n\n' +
+        '✅ GIẢI PHÁP: Dùng nút "💾 Lưu" để TẢI FILE JSON về máy.\n' +
+        '✅ Lần sau muốn mở lại → click "📂 Tải" → chọn file JSON.\n\n' +
+        'Hoặc upload lên GitHub Pages / Netlify để dùng đầy đủ tính năng.'
+      );
+    }, 500);
+  }
+});
+</script>
+</body>
+</html>
