@@ -388,8 +388,10 @@
       <div class="subtitle">Nhân viên Marketing | Fresher / Junior</div>
     </div>
     <div class="actions">
-      <button class="btn btn-light" onclick="saveData()">💾 Lưu</button>
-      <button class="btn btn-light" onclick="loadData()">📂 Tải</button>
+      <button class="btn btn-light" onclick="saveData()">💾 Lưu tất cả</button>
+      <button class="btn btn-light" onclick="exportByRoundDialog()">📤 Xuất theo vòng</button>
+      <button class="btn btn-light" onclick="loadData()">📂 Tải hồ sơ</button>
+      <button class="btn btn-light" onclick="importMergeDialog()">📥 Nhập file (gộp)</button>
       <button class="btn btn-light" onclick="window.print()">🖨️ In/PDF</button>
       <button class="btn btn-light" onclick="resetAll()">🔄 Reset</button>
       <button class="btn btn-light btn-logout" onclick="doLogout()">🚪 Đăng xuất</button>
@@ -1429,6 +1431,231 @@ function loadData() {
   } catch (err) {
     alert('❌ Lỗi đọc dữ liệu: ' + err.message);
   }
+}
+
+// ============== XUẤT THEO VÒNG / NHẬP & GỘP DỮ LIỆU ==============
+function getRoundQuestionIds(roundType) {
+  const ids = [];
+  if (roundType === 'V1' || roundType === 'all') {
+    QUESTIONS.round1.groups.forEach(g => g.qs.forEach(q => ids.push(q.id)));
+  }
+  if (roundType === 'V2' || roundType === 'all') {
+    QUESTIONS.round2.groups.forEach(g => g.qs.forEach(q => ids.push(q.id)));
+  }
+  if (roundType === 'V3' || roundType === 'all') {
+    QUESTIONS.round3.forEach(bt => bt.criteria.forEach((c, i) => ids.push(`${bt.id}-c${i}`)));
+  }
+  if (roundType === 'V4' || roundType === 'all') {
+    QUESTIONS.round4.groups.forEach(g => g.qs.forEach(q => ids.push(q.id)));
+  }
+  return ids;
+}
+
+function exportByRoundDialog() {
+  const candidateName = document.getElementById('candidateName').value.trim();
+  if (!candidateName) {
+    alert('⚠️ Vui lòng nhập "Họ tên ứng viên" trước khi xuất!');
+    document.getElementById('candidateName').focus();
+    return;
+  }
+  const choice = prompt(
+    '📤 XUẤT KẾT QUẢ THEO VÒNG\n\n' +
+    'Chọn vòng cần xuất:\n' +
+    '1. Vòng 1 - HR Sàng lọc (Q1-Q9 + Q&A)\n' +
+    '2. Vòng 2 - TPMKT Chuyên môn (Q10-Q30, Q35-Q39)\n' +
+    '3. Vòng 3 - Bài tập (BT1-BT3)\n' +
+    '4. Vòng 4 - Giám đốc (Q31-Q34 + Quyết định)\n' +
+    '5. TẤT CẢ\n\n' +
+    'Nhập số (1-5):'
+  );
+  if (!choice) return;
+  const num = parseInt(choice);
+  if (isNaN(num) || num < 1 || num > 5) {
+    alert('❌ Lựa chọn không hợp lệ. Vui lòng nhập số từ 1-5.');
+    return;
+  }
+  const roundMap = ['', 'V1', 'V2', 'V3', 'V4', 'all'];
+  exportByRound(roundMap[num]);
+}
+
+function exportByRound(roundType) {
+  const candidate = {
+    name: document.getElementById('candidateName').value,
+    position: document.getElementById('candidatePosition').value,
+    date: document.getElementById('interviewDate').value,
+    interviewer: document.getElementById('interviewer').value,
+    round: document.getElementById('interviewRound').value,
+    contact: document.getElementById('candidateContact').value,
+  };
+
+  const ids = getRoundQuestionIds(roundType);
+  const filteredScores = {};
+  const filteredNotes = {};
+  ids.forEach(id => {
+    if (state.scores[id] !== undefined) filteredScores[id] = state.scores[id];
+    if (state.notes[id]) filteredNotes[id] = state.notes[id];
+  });
+
+  const data = {
+    candidate,
+    exportType: roundType,
+    scores: filteredScores,
+    notes: filteredNotes,
+    savedAt: new Date().toISOString(),
+  };
+
+  // V1 hoặc all → kèm Q&A
+  if (roundType === 'V1' || roundType === 'all') {
+    data.qa = state.qa;
+    data.qaSummary = {
+      count: document.getElementById('qa-count').value,
+      quality: document.getElementById('qa-quality').value,
+      active: document.getElementById('qa-active').value,
+      total: document.getElementById('qa-total').value,
+    };
+  }
+
+  // V4 hoặc all → kèm Quyết định
+  if (roundType === 'V4' || roundType === 'all') {
+    data.decision = {
+      total: document.getElementById('dec-total').value,
+      result: document.getElementById('dec-result').value,
+      tier: document.getElementById('dec-tier').value,
+      startDate: document.getElementById('dec-start-date').value,
+      reason: document.getElementById('dec-reason').value,
+      strength: document.getElementById('dec-strength').value,
+      weakness: document.getElementById('dec-weakness').value,
+      training: document.getElementById('dec-training').value,
+    };
+  }
+
+  // Tải file JSON
+  const dataStr = JSON.stringify(data, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const safeName = candidate.name.trim().replace(/\s+/g, '_').toLowerCase();
+  const labelMap = { V1: 'V1_HR', V2: 'V2_TPMKT', V3: 'V3_BaiTap', V4: 'V4_GD', all: 'ALL' };
+  a.download = `phongvan_${safeName}_${labelMap[roundType]}_${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  alert(
+    `✅ ĐÃ XUẤT FILE ${labelMap[roundType]}\n\n` +
+    `📁 File: ${a.download}\n` +
+    `📊 Số câu đã chấm: ${Object.keys(filteredScores).length}\n` +
+    `📝 Số ghi chú: ${Object.keys(filteredNotes).length}\n\n` +
+    `💡 Gửi file này cho người phỏng vấn vòng kế tiếp.\n` +
+    `Họ sẽ dùng nút "📥 Nhập file (gộp)" để tiếp tục.`
+  );
+  toast(`📤 Đã xuất ${labelMap[roundType]}`, 'success');
+}
+
+function importMergeDialog() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json,application/json';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const parsed = JSON.parse(ev.target.result);
+        importMerge(parsed);
+      } catch (err) {
+        alert('❌ File không hợp lệ! Lỗi: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function importMerge(parsed) {
+  const newScoreCount = Object.keys(parsed.scores || {}).length;
+  const newNoteCount = Object.keys(parsed.notes || {}).length;
+
+  let conflicts = 0;
+  Object.keys(parsed.scores || {}).forEach(id => {
+    if (state.scores[id] !== undefined && state.scores[id] !== parsed.scores[id]) conflicts++;
+  });
+
+  const typeLabel = {
+    V1: 'Vòng 1 - HR Sàng lọc',
+    V2: 'Vòng 2 - TPMKT',
+    V3: 'Vòng 3 - Bài tập',
+    V4: 'Vòng 4 - Giám đốc',
+    all: 'TẤT CẢ các vòng'
+  }[parsed.exportType] || 'Không rõ loại';
+
+  let msg = `📥 NHẬP DỮ LIỆU TỪ FILE\n\n`;
+  msg += `📋 Loại file: ${typeLabel}\n`;
+  msg += `👤 Ứng viên: ${parsed.candidate?.name || 'Không rõ'}\n`;
+  msg += `🧑‍💼 Người PV trước: ${parsed.candidate?.interviewer || 'Không rõ'}\n`;
+  msg += `📅 Ngày: ${parsed.candidate?.date || (parsed.savedAt || '').slice(0,10) || 'Không rõ'}\n\n`;
+  msg += `Sẽ NHẬP VÀO HỆ THỐNG:\n`;
+  msg += `• ${newScoreCount} điểm câu hỏi\n`;
+  msg += `• ${newNoteCount} ghi chú\n`;
+  if (parsed.qa) msg += `• ${parsed.qa.length} câu Q&A của ứng viên\n`;
+  if (parsed.decision) msg += `• Thông tin quyết định tuyển\n`;
+  if (conflicts > 0) {
+    msg += `\n⚠️ CẢNH BÁO: Có ${conflicts} câu đã có điểm khác — file sẽ GHI ĐÈ\n`;
+  }
+  msg += `\n✅ Dữ liệu hiện tại của bạn ở các vòng KHÁC sẽ ĐƯỢC GIỮ NGUYÊN.\n\nTiếp tục?`;
+
+  if (!confirm(msg)) return;
+
+  // Cập nhật thông tin ứng viên (chỉ khi field đang trống)
+  const fields = [
+    ['candidateName', 'name'], ['candidatePosition', 'position'],
+    ['interviewDate', 'date'], ['candidateContact', 'contact'],
+  ];
+  fields.forEach(([elId, key]) => {
+    const el = document.getElementById(elId);
+    if (!el.value && parsed.candidate?.[key]) el.value = parsed.candidate[key];
+  });
+
+  // Gộp scores + notes (file mới sẽ ghi đè câu trùng)
+  Object.assign(state.scores, parsed.scores || {});
+  Object.assign(state.notes, parsed.notes || {});
+
+  // Gộp Q&A nếu có
+  if (parsed.qa && parsed.qa.length > 0) {
+    state.qa = parsed.qa;
+  }
+  if (parsed.qaSummary) {
+    ['count', 'quality', 'active', 'total'].forEach(k => {
+      const el = document.getElementById('qa-' + k);
+      if (el && !el.value && parsed.qaSummary[k]) el.value = parsed.qaSummary[k];
+    });
+  }
+
+  // Gộp Quyết định nếu có
+  if (parsed.decision) {
+    const decMap = {
+      total: 'dec-total', result: 'dec-result', tier: 'dec-tier',
+      startDate: 'dec-start-date', reason: 'dec-reason',
+      strength: 'dec-strength', weakness: 'dec-weakness', training: 'dec-training'
+    };
+    Object.entries(parsed.decision).forEach(([key, val]) => {
+      const el = document.getElementById(decMap[key]);
+      if (el && !el.value && val) el.value = val;
+    });
+  }
+
+  renderAll();
+  alert(
+    `✅ ĐÃ NHẬP DỮ LIỆU THÀNH CÔNG!\n\n` +
+    `📊 Tổng số điểm hiện tại: ${Object.keys(state.scores).length}\n` +
+    `📝 Tổng số ghi chú: ${Object.keys(state.notes).length}\n\n` +
+    `💡 Bạn có thể tiếp tục phỏng vấn các vòng còn lại.\n` +
+    `Sau khi xong, dùng "📤 Xuất theo vòng" hoặc "💾 Lưu tất cả" để chuyển tiếp.`
+  );
+  toast(`📥 Đã nhập ${newScoreCount} điểm`, 'success');
 }
 
 function applyLoadedData(parsed) {
