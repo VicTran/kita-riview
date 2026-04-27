@@ -285,9 +285,100 @@
   }
   .stat-card .label { font-size: 12px; color: #718096; text-transform: uppercase; }
   .stat-card .value { font-size: 22px; font-weight: 700; color: #1F4E79; margin-top: 4px; }
+
+  /* ============== LOGIN OVERLAY ============== */
+  .login-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, #C00000 0%, #1F4E79 100%);
+    z-index: 99999; display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .login-overlay.hidden { display: none; }
+  .login-card {
+    background: white; padding: 40px 32px; border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    max-width: 400px; width: 100%; text-align: center;
+    animation: loginFadeIn 0.4s ease;
+  }
+  @keyframes loginFadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .login-card.shake { animation: shake 0.4s; }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+  }
+  .login-logo {
+    width: 64px; height: 64px; margin: 0 auto 16px;
+    background: linear-gradient(135deg, #C00000, #8B0000);
+    border-radius: 16px; display: flex; align-items: center; justify-content: center;
+    font-size: 32px; color: white;
+  }
+  .login-card h1 {
+    color: #1F4E79; font-size: 22px; margin-bottom: 6px;
+  }
+  .login-card .login-sub {
+    color: #718096; font-size: 13px; margin-bottom: 24px;
+  }
+  .login-card input {
+    width: 100%; padding: 14px 16px; border: 2px solid #e2e8f0;
+    border-radius: 10px; font-size: 15px; font-family: inherit;
+    transition: border 0.2s; margin-bottom: 12px;
+  }
+  .login-card input:focus { outline: none; border-color: #C00000; }
+  .login-card button {
+    width: 100%; padding: 14px; background: linear-gradient(135deg, #C00000, #8B0000);
+    color: white; border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    transition: transform 0.15s; font-family: inherit;
+  }
+  .login-card button:hover { transform: translateY(-2px); }
+  .login-error {
+    color: #C00000; font-size: 13px; min-height: 18px;
+    margin-bottom: 8px; font-weight: 600;
+  }
+  .login-footer {
+    margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0;
+    font-size: 11px; color: #a0aec0;
+  }
+  .login-remember {
+    display: flex; align-items: center; gap: 8px; justify-content: center;
+    margin-bottom: 12px; font-size: 13px; color: #4a5568;
+  }
+  .login-remember input { width: auto; margin: 0; }
+  .btn-logout {
+    background: rgba(255,255,255,0.15); color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  .btn-logout:hover { background: rgba(255,255,255,0.25); }
+  @media print { .login-overlay { display: none !important; } }
 </style>
 </head>
 <body>
+
+<!-- ============== LOGIN OVERLAY ============== -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card" id="loginCard">
+    <div class="login-logo">📋</div>
+    <h1>HỆ THỐNG PHỎNG VẤN</h1>
+    <div class="login-sub">KITA BOOKS - Nội bộ</div>
+    <form onsubmit="event.preventDefault(); doLogin();">
+      <input type="password" id="loginPassword" placeholder="Nhập mật khẩu..." autocomplete="current-password" autofocus>
+      <div class="login-error" id="loginError"></div>
+      <label class="login-remember">
+        <input type="checkbox" id="loginRemember"> Ghi nhớ đăng nhập (7 ngày)
+      </label>
+      <button type="submit">ĐĂNG NHẬP</button>
+    </form>
+    <div class="login-footer">
+      🔒 Bảo mật bằng SHA-256 hash<br>
+      Chỉ dành cho nhân sự được uỷ quyền
+    </div>
+  </div>
+</div>
+
 <div class="container">
 
 <header>
@@ -301,6 +392,7 @@
       <button class="btn btn-light" onclick="loadData()">📂 Tải</button>
       <button class="btn btn-light" onclick="window.print()">🖨️ In/PDF</button>
       <button class="btn btn-light" onclick="resetAll()">🔄 Reset</button>
+      <button class="btn btn-light btn-logout" onclick="doLogout()">🚪 Đăng xuất</button>
     </div>
   </div>
 </header>
@@ -509,6 +601,80 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// ============== ĐĂNG NHẬP / BẢO MẬT ==============
+// 🔑 ĐỂ ĐỔI MẬT KHẨU: Xem hướng dẫn cuối file (tìm "ĐỔI MẬT KHẨU")
+// Mật khẩu mặc định: Kita@2026
+const PASSWORD_HASH = 'a9c82a91311cb01ff918ca5e37029cfd5275608b3dc557f333cc30c4254ba8da';
+const AUTH_KEY = 'kita_interview_auth';
+const AUTH_REMEMBER_DAYS = 7;
+
+async function sha256(text) {
+  const buf = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function checkAuthValid() {
+  // Check sessionStorage trước (đăng nhập trong phiên)
+  if (sessionStorage.getItem(AUTH_KEY) === '1') return true;
+  // Check localStorage (Ghi nhớ 7 ngày)
+  try {
+    const stored = localStorage.getItem(AUTH_KEY);
+    if (!stored) return false;
+    const data = JSON.parse(stored);
+    if (data.expires && Date.now() < data.expires) {
+      sessionStorage.setItem(AUTH_KEY, '1');
+      return true;
+    }
+    localStorage.removeItem(AUTH_KEY);
+  } catch(e) { localStorage.removeItem(AUTH_KEY); }
+  return false;
+}
+
+async function doLogin() {
+  const pwd = document.getElementById('loginPassword').value;
+  const remember = document.getElementById('loginRemember').checked;
+  const errorEl = document.getElementById('loginError');
+  const card = document.getElementById('loginCard');
+
+  if (!pwd) { errorEl.textContent = '⚠️ Vui lòng nhập mật khẩu'; return; }
+
+  errorEl.textContent = '⏳ Đang xác thực...';
+  const hash = await sha256(pwd);
+
+  if (hash === PASSWORD_HASH) {
+    sessionStorage.setItem(AUTH_KEY, '1');
+    if (remember) {
+      const expires = Date.now() + AUTH_REMEMBER_DAYS * 24 * 60 * 60 * 1000;
+      localStorage.setItem(AUTH_KEY, JSON.stringify({ expires }));
+    }
+    document.getElementById('loginOverlay').classList.add('hidden');
+    errorEl.textContent = '';
+    document.getElementById('loginPassword').value = '';
+  } else {
+    errorEl.textContent = '❌ Mật khẩu không đúng. Vui lòng thử lại.';
+    card.classList.add('shake');
+    setTimeout(() => card.classList.remove('shake'), 400);
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginPassword').focus();
+  }
+}
+
+function doLogout() {
+  if (!confirm('Bạn có chắc muốn đăng xuất?\n(Dữ liệu chấm điểm vẫn được lưu trong trình duyệt)')) return;
+  sessionStorage.removeItem(AUTH_KEY);
+  localStorage.removeItem(AUTH_KEY);
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  document.getElementById('loginPassword').focus();
+}
+
+// Kiểm tra đăng nhập khi tải trang
+(function initAuth() {
+  if (checkAuthValid()) {
+    document.getElementById('loginOverlay').classList.add('hidden');
+  }
+})();
+
 const QUESTIONS = {
   round1: { title: 'Vòng 1', groups: [
     { name: '2.1. Câu hỏi giới thiệu', qs: [
