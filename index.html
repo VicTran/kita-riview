@@ -346,7 +346,7 @@
 <nav class="tabs">
   <button class="tab active" data-section="rubric" onclick="showSection('rubric')">📖 Rubric</button>
   <button class="tab" data-section="round1" onclick="showSection('round1')">Vòng 1<span class="tab-badge" id="badge-round1">0/9</span></button>
-  <button class="tab" data-section="round2" onclick="showSection('round2')">Vòng 2<span class="tab-badge" id="badge-round2">0/21</span></button>
+  <button class="tab" data-section="round2" onclick="showSection('round2')">Vòng 2<span class="tab-badge" id="badge-round2">0/26</span></button>
   <button class="tab" data-section="round3" onclick="showSection('round3')">Vòng 3<span class="tab-badge">3 BT</span></button>
   <button class="tab" data-section="round4" onclick="showSection('round4')">Vòng 4<span class="tab-badge" id="badge-round4">0/4</span></button>
   <button class="tab" data-section="qa" onclick="showSection('qa')">💬 Q&A</button>
@@ -545,6 +545,13 @@ const QUESTIONS = {
       { id: 'q17', text: 'Nếu chiến dịch ads ROAS giảm 50% trong 2 ngày, xử lý cảm xúc và hành động ra sao?', tip: 'TỐT: bình tĩnh - phân tích - sửa. XẤU: panic/đổ lỗi.' },
       { id: 'q18', text: 'Có 5 việc cùng deadline cuối ngày, priorize thế nào?', tip: 'Tìm: nguyên tắc ưu tiên (Eisenhower, ICE)? Outsource/hỏi sếp? Hay chỉ "làm hết"?' },
     ]},
+    { name: 'B.0. KIẾN THỨC NỀN TẢNG MARKETING', qs: [
+      { id: 'q35', text: 'Theo bạn, Marketing là gì?', tip: 'Định nghĩa chuẩn: thoả mãn nhu cầu KH có lợi nhuận. Phân biệt rõ Marketing ≠ Quảng cáo ≠ Sales. Nhầm = chuyên môn yếu.' },
+      { id: 'q36', text: 'Content là gì? Theo bạn có những dạng content nào?', tip: 'Nội dung có mục đích (Inform/Educate/Entertain/Inspire). Format: text, video, image, audio, livestream. "Bài viết" = chưa đủ.' },
+      { id: 'q37', text: 'Content Marketing là gì? Khác gì với quảng cáo trực tiếp?', tip: 'Content MKT = tạo giá trị → thu hút → chuyển đổi (gián tiếp). Khác Ads ở: dài hạn, không hard-sell, có funnel TOFU-MOFU-BOFU.' },
+      { id: 'q38', text: 'Trong Marketing, theo bạn yếu tố nào quan trọng nhất? Vì sao?', tip: 'Câu hỏi mở để test tư duy. TỐT: Insight KH / Product-Market Fit + lý giải. XẤU: "Ngân sách lớn" / "KOL nổi tiếng".' },
+      { id: 'q39', text: 'Làm sao để tạo ra 1 content HAY và HẤP DẪN? Bạn có công thức gì?', tip: 'TỐT: Hook + Insight + Story + Value + CTA + tối ưu platform + có ví dụ. XẤU: "Phải sáng tạo" mà không có method.' },
+    ]},
     { name: 'B. CHUYÊN MÔN CONTENT', qs: [
       { id: 'q19', text: 'Quy trình viết 1 bài review sách từ A đến Z?', tip: '4 bước: Đọc/lướt → Insight → Hook+Body+CTA → Tối ưu platform. Bỏ qua bước 1 = đỏ flags.' },
       { id: 'q20', text: 'Dùng AI (ChatGPT/Claude) trong content production thế nào? Ví dụ cụ thể.', tip: 'Người giỏi: AI brainstorm, draft, edit. Không phụ thuộc 100%. Không biết = thiếu modern skills.' },
@@ -608,7 +615,7 @@ const SCORECARD_CONFIG = [
   { name: 'Khả năng học hỏi nhanh', weight: 10, qIds: ['q10', 'q11', 'q12'] },
   { name: 'Tinh thần trách nhiệm', weight: 10, qIds: ['q13', 'q14', 'q15'] },
   { name: 'Khả năng làm việc dưới áp lực', weight: 10, qIds: ['q16', 'q17', 'q18'] },
-  { name: 'Chuyên môn Content', weight: 15, qIds: ['q19', 'q20', 'q21', 'q22'] },
+  { name: 'Chuyên môn Content', weight: 15, qIds: ['q19', 'q20', 'q21', 'q22', 'q35', 'q36', 'q37', 'q38', 'q39'] },
   { name: 'Chuyên môn Ads & Phân tích', weight: 15, qIds: ['q23', 'q24', 'q25', 'q26', 'q27'] },
   { name: 'Tình huống / Cultural fit', weight: 10, qIds: ['q28', 'q29', 'q30', 'q31', 'q32', 'q33', 'q34'] },
 ];
@@ -871,11 +878,46 @@ const QUESTION_SCORES = {
     5: ['✓ Phân tích sâu (sách lậu, đọc giảm, AI, gen Z)', '✓ Giải pháp KITA cụ thể + sáng tạo', '✓ Tư duy chiến lược, hiểu ngành'],
   },
   q34: { // A 50% giảm chất / B 20% giữ chất
-    1: ['✗ Không quyết định được', '✗ Chọn A vì "lương cao"', '✗ Lệch hoàn toàn giá trị KITA'],
-    2: ['✗ Chọn A vì tăng nhiều hơn', '✗ Không hiểu giá trị tri thức + đạo đức', '✗ Tư duy ngắn hạn'],
-    3: ['✓ Chọn B nhưng lý do chung chung', '✓ Đồng ý nguyên tắc nhưng yếu lập luận', '✓ Chưa có plan thực thi'],
-    4: ['✓ Chọn B + lý do hợp lý + plan', '✓ Hiểu giá trị thương hiệu dài hạn', '✓ Có cách tăng 20% bền vững'],
-    5: ['✓ Chọn B + lý do (KITA tri thức/đạo đức)', '✓ Plan tăng 20% bền vững', '✓ Tư duy dài hạn + cam kết giá trị'],
+    1: ['✗ Không đưa ra được lựa chọn', '✗ Chọn A với lý do duy nhất là tăng thu nhập', '✗ Quan điểm lệch giá trị thương hiệu KITA'],
+    2: ['✗ Chọn A vì doanh thu tăng nhanh hơn', '✗ Không hiểu giá trị cốt lõi tri thức + đạo đức', '✗ Tư duy ngắn hạn, không bền vững'],
+    3: ['✓ Chọn B nhưng lý do còn chung chung', '✓ Đồng ý nguyên tắc nhưng lập luận yếu', '✓ Chưa có kế hoạch thực thi cụ thể'],
+    4: ['✓ Chọn B + lý do hợp lý + plan rõ ràng', '✓ Hiểu giá trị thương hiệu dài hạn', '✓ Có cách tăng 20% bền vững'],
+    5: ['✓ Chọn B + lý do (KITA tri thức/đạo đức)', '✓ Kế hoạch tăng 20% bền vững có chiều sâu', '✓ Tư duy dài hạn + cam kết với giá trị'],
+  },
+  q35: { // Marketing là gì?
+    1: ['✗ Không đưa ra được định nghĩa', '✗ Trả lời lạc đề / không liên quan', '✗ Thiếu khái niệm nền tảng về Marketing'],
+    2: ['✗ Đồng nhất Marketing với Quảng cáo / chạy Ads', '✗ Đồng nhất Marketing với Sales / bán hàng', '✗ Định nghĩa rời rạc, thiếu hệ thống'],
+    3: ['✓ Định nghĩa cơ bản: "quảng bá sản phẩm"', '✓ Thiếu chiều sâu về giá trị và khách hàng', '✓ Chưa phân biệt rõ với Sales / Quảng cáo'],
+    4: ['✓ Định nghĩa đúng cốt lõi (giá trị + khách hàng)', '✓ Phân biệt được Marketing - Sales - Quảng cáo', '✓ Có ví dụ minh hoạ thuyết phục'],
+    5: ['✓ Định nghĩa chuẩn: nghiên cứu - thoả mãn nhu cầu KH có lợi nhuận', '✓ Hiểu mục tiêu (nhận biết → mua → trung thành)', '✓ Liên hệ thực tế với KITA BOOKS / ngành sách'],
+  },
+  q36: { // Content là gì? Có những dạng nào?
+    1: ['✗ Không định nghĩa được Content', '✗ Nhầm Content với thiết kế / sản phẩm', '✗ Thiếu khái niệm cơ bản'],
+    2: ['✗ Đồng nhất Content với riêng bài viết text', '✗ Không phân biệt được các dạng Content', '✗ Định nghĩa quá hẹp, thiếu mục đích'],
+    3: ['✓ Định nghĩa đơn giản "bài viết / video / hình ảnh"', '✓ Liệt kê được 2-3 dạng format cơ bản', '✓ Chưa nêu được mục đích của Content'],
+    4: ['✓ Định nghĩa đúng + nêu 4-5 dạng format', '✓ Phân biệt Content giải trí vs Content giá trị', '✓ Có ví dụ thực tế cụ thể'],
+    5: ['✓ Nội dung có mục đích (Inform/Educate/Entertain/Inspire)', '✓ Liệt kê đa dạng: text, video, image, audio, livestream', '✓ Hiểu nguyên tắc "Content phải tạo giá trị cho người đọc"'],
+  },
+  q37: { // Content Marketing là gì?
+    1: ['✗ Không phân biệt được Content Marketing với Marketing thông thường', '✗ Không hiểu khái niệm', '✗ Trả lời lạc đề'],
+    2: ['✗ Đồng nhất Content Marketing với Content Advertising', '✗ Không phân biệt được với quảng cáo trực tiếp', '✗ Hiểu sai về mục đích Content Marketing'],
+    3: ['✓ Định nghĩa lập lờ "Marketing bằng content"', '✓ Phân biệt mơ hồ với quảng cáo', '✓ Chưa nêu được giá trị dài hạn'],
+    4: ['✓ Định nghĩa đúng cốt lõi', '✓ Có ví dụ phân biệt rõ với quảng cáo', '✓ Hiểu KPI đo lường Content Marketing'],
+    5: ['✓ Định nghĩa chuẩn: tạo giá trị - thu hút - chuyển đổi', '✓ Hiểu funnel TOFU-MOFU-BOFU + ví dụ áp dụng', '✓ Phân biệt rõ với Ads (dài hạn vs ngắn hạn, mềm vs cứng)'],
+  },
+  q38: { // Yếu tố quan trọng nhất trong Marketing
+    1: ['✗ Không trả lời được', '✗ Không đưa ra được quan điểm cá nhân', '✗ Né tránh câu hỏi'],
+    2: ['✗ Chọn yếu tố lệch trọng tâm (ngân sách / KOL / viral)', '✗ Lập luận thiếu chiều sâu', '✗ Tư duy ngắn hạn, lệ thuộc trend'],
+    3: ['✓ Trả lời "tất cả đều quan trọng" - thiếu phản biện', '✓ Lựa chọn yếu tố ổn nhưng lý giải nông', '✓ Chưa thể hiện được tư duy hệ thống'],
+    4: ['✓ Có quan điểm rõ ràng + lý giải hợp lý', '✓ Lựa chọn yếu tố cốt lõi (KH / Sản phẩm / Giá trị)', '✓ Hiểu mối quan hệ giữa các yếu tố'],
+    5: ['✓ Chọn Insight KH / Product-Market Fit + lý giải sâu', '✓ Có structure phản biện và bảo vệ quan điểm', '✓ Liên hệ thực tế ngành sách KITA'],
+  },
+  q39: { // Làm sao để tạo content HAY và HẤP DẪN?
+    1: ['✗ Không đưa ra được công thức nào', '✗ Không biết bắt đầu từ đâu', '✗ Không hiểu các yếu tố làm content hấp dẫn'],
+    2: ['✗ Trả lời "phải sáng tạo" mà không có phương pháp', '✗ Không phân biệt content theo platform', '✗ Chưa từng phân tích content đã viral'],
+    3: ['✓ "Có hook + nội dung tốt" - còn chung chung', '✓ Hiểu cơ bản nhưng thiếu hệ thống', '✓ Chưa có công thức rõ ràng'],
+    4: ['✓ Có công thức 3-4 yếu tố rõ ràng', '✓ Ví dụ thực tế cụ thể', '✓ Xác định target reader trước khi viết'],
+    5: ['✓ Công thức đầy đủ: Hook + Insight + Story + Value + CTA', '✓ Hiểu nguyên tắc tối ưu theo từng platform', '✓ Có ví dụ áp dụng với số liệu engagement'],
   },
 };
 
