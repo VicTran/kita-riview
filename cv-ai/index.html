@@ -70,6 +70,30 @@
   .file-info .name { font-weight: 600; color: #4C1D95; }
   .file-info .meta { font-size: 11px; color: #718096; }
 
+  /* OCR warning banner */
+  .ocr-banner {
+    background: #fef3c7; border-left: 4px solid #d97706;
+    padding: 14px 16px; border-radius: 8px; margin-top: 12px;
+    display: none;
+  }
+  .ocr-banner.show { display: block; }
+  .ocr-banner h4 { color: #78350f; font-size: 14px; margin-bottom: 6px; }
+  .ocr-banner p { font-size: 12px; color: #78350f; margin-bottom: 10px; line-height: 1.5; }
+  .ocr-banner .ocr-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .ocr-progress {
+    background: #ede9fe; padding: 12px 16px; border-radius: 8px;
+    margin-top: 12px; display: none;
+  }
+  .ocr-progress.show { display: block; }
+  .ocr-progress .bar {
+    height: 6px; background: #ddd6fe; border-radius: 3px;
+    overflow: hidden; margin-top: 6px;
+  }
+  .ocr-progress .fill {
+    height: 100%; background: linear-gradient(90deg, #6B46C1, #4C1D95);
+    transition: width 0.3s; width: 0%;
+  }
+
   /* Text preview */
   .text-preview {
     background: #1a202c; color: #cbd5e0; padding: 14px;
@@ -430,7 +454,7 @@
   <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
     <div class="upload-icon">📄</div>
     <div class="upload-text"><strong>Bấm để chọn file</strong> hoặc kéo thả vào đây</div>
-    <div class="upload-hint">Hỗ trợ: PDF, DOCX, DOC, TXT (tối đa 5MB)</div>
+    <div class="upload-hint">Hỗ trợ: PDF, DOCX, DOC, TXT (tối đa 10MB) — Tự động OCR nếu là PDF scan ảnh</div>
     <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.txt" onchange="handleFile(this.files[0])">
   </div>
   <div class="file-info" id="fileInfo">
@@ -446,6 +470,26 @@
   <textarea class="cv-paste" id="cvText" placeholder="Paste nội dung CV vào đây nếu không có file..."></textarea>
 
   <div class="text-preview" id="textPreview"></div>
+
+  <div class="ocr-banner" id="ocrBanner">
+    <h4>⚠️ PDF có vẻ là file SCAN ẢNH — không trích xuất được text trực tiếp</h4>
+    <p>
+      Đây là PDF chụp ảnh / scan. Có 3 cách:<br>
+      <strong>1. OCR tự động</strong> (mất 20-60s/trang, dùng Tesseract.js — miễn phí, support tiếng Việt)<br>
+      <strong>2. Paste text thủ công</strong> ở ô "HOẶC PASTE TEXT CV" bên trên<br>
+      <strong>3. Convert qua web</strong> (vd: smallpdf.com/pdf-to-word) → copy text → paste
+    </p>
+    <div class="ocr-actions">
+      <button class="btn btn-primary" onclick="runOCR()">🔍 Chạy OCR (Vietnamese)</button>
+      <button class="btn btn-gray" onclick="document.getElementById('ocrBanner').classList.remove('show')">Đóng</button>
+    </div>
+  </div>
+
+  <div class="ocr-progress" id="ocrProgress">
+    <div style="font-size: 13px; color: #4C1D95;" id="ocrStatus">⏳ Đang khởi động OCR engine...</div>
+    <div class="bar"><div class="fill" id="ocrFill"></div></div>
+  </div>
+
   <div class="error" id="errorBox"></div>
 
   <button class="analyze-btn" id="analyzeBtn" onclick="analyzeCV()" style="margin-top: 14px;">
@@ -644,13 +688,17 @@ uploadArea.addEventListener('drop', e => {
   if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
 });
 
+let currentFile = null; // Lưu file để OCR sau
+
 async function handleFile(file) {
   if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { showError('File quá lớn (max 5MB)'); return; }
+  if (file.size > 10 * 1024 * 1024) { showError('File quá lớn (max 10MB)'); return; }
 
+  currentFile = file;
   document.getElementById('fileName').textContent = file.name;
   document.getElementById('fileMeta').textContent = `${(file.size/1024).toFixed(1)} KB · ${file.type || 'Unknown'}`;
   document.getElementById('fileInfo').classList.add('show');
+  document.getElementById('ocrBanner').classList.remove('show');
   hideError();
 
   try {
@@ -665,9 +713,104 @@ async function handleFile(file) {
       throw new Error('Định dạng không hỗ trợ. Dùng PDF/DOCX/TXT.');
     }
     showPreview(extractedText);
+
+    // Detect: nếu text quá ngắn (< 100 chars) → khả năng là PDF scan
+    if (ext === 'pdf' && extractedText.length < 100) {
+      document.getElementById('ocrBanner').classList.add('show');
+      showError('PDF không trích xuất được text (chỉ ' + extractedText.length + ' ký tự). Dùng OCR hoặc paste text thủ công.');
+    }
   } catch(e) {
     showError('Lỗi đọc file: ' + e.message);
     extractedText = '';
+    if (file.name.toLowerCase().endsWith('.pdf')) {
+      document.getElementById('ocrBanner').classList.add('show');
+    }
+  }
+}
+
+// ============== OCR (Tesseract.js - free, hỗ trợ tiếng Việt) ==============
+let tesseractLoaded = false;
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error('Không tải được: ' + src));
+    document.head.appendChild(s);
+  });
+}
+
+async function runOCR() {
+  if (!currentFile) { alert('⚠️ Chưa có file CV'); return; }
+
+  const banner = document.getElementById('ocrBanner');
+  const progress = document.getElementById('ocrProgress');
+  const status = document.getElementById('ocrStatus');
+  const fill = document.getElementById('ocrFill');
+
+  banner.classList.remove('show');
+  progress.classList.add('show');
+  hideError();
+
+  try {
+    // Lazy load Tesseract.js
+    if (!tesseractLoaded) {
+      status.textContent = '⏳ Đang tải OCR engine (~5MB, lần đầu tốn 15-30s)...';
+      fill.style.width = '10%';
+      await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+      tesseractLoaded = true;
+    }
+
+    // Render từng trang PDF thành ảnh, OCR từng ảnh
+    const buf = await currentFile.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    const numPages = pdf.numPages;
+    let allText = '';
+
+    status.textContent = `⏳ Khởi tạo Tesseract worker (Vietnamese + English)...`;
+    fill.style.width = '15%';
+    const worker = await Tesseract.createWorker(['vie', 'eng'], 1, {
+      logger: (m) => {
+        if (m.status === 'recognizing text') {
+          const pct = Math.round(m.progress * 100);
+          status.textContent = `🔍 OCR trang đang chạy: ${pct}%`;
+        }
+      }
+    });
+
+    for (let i = 1; i <= numPages; i++) {
+      status.textContent = `🔍 OCR trang ${i}/${numPages}...`;
+      fill.style.width = (15 + (i / numPages) * 80) + '%';
+
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 2 });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      const result = await worker.recognize(canvas);
+      allText += `--- Trang ${i} ---\n${result.data.text}\n\n`;
+    }
+
+    await worker.terminate();
+
+    extractedText = allText.trim();
+    fill.style.width = '100%';
+    status.textContent = `✅ Hoàn thành OCR! Trích được ${extractedText.length} ký tự.`;
+    setTimeout(() => progress.classList.remove('show'), 2000);
+
+    showPreview(extractedText);
+
+    if (extractedText.length < 100) {
+      showError('OCR cho ra text rất ngắn. Kiểm tra lại PDF có chữ rõ không, hoặc paste tay.');
+    }
+  } catch(e) {
+    progress.classList.remove('show');
+    showError('Lỗi OCR: ' + e.message + '. Thử paste text thủ công.');
   }
 }
 
