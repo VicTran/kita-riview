@@ -531,39 +531,33 @@ async function saveCloudConfig() {
 async function testLarkNotify() {
   const webhook = document.getElementById('cfg_lark_webhook').value.trim();
   if (!webhook) { alert('⚠️ Nhập Lark webhook URL trước'); return; }
+  const cfg = window.KITA_CONFIG || {};
+  if (!cfg.cloudUrl || !cfg.cloudApiKey) { alert('⚠️ Cloud chưa setup'); return; }
+
   const box = document.getElementById('cloudConfigBox');
   box.className = 'test-box show';
-  box.textContent = '⏳ Đang gửi tin test vào group Lark...';
+  box.textContent = '⏳ Đang gửi tin test (qua Apps Script proxy để tránh CORS)...';
+
   try {
-    const card = {
-      msg_type: 'interactive',
-      card: {
-        header: {
-          title: { tag: 'plain_text', content: '🧪 TEST từ KITA Interview System' },
-          template: 'turquoise'
-        },
-        elements: [
-          { tag: 'div', text: { tag: 'lark_md', content: '✅ **Bot hoạt động!**\n\nNếu bạn thấy tin nhắn này → cấu hình Lark đã ĐÚNG.\n\nTừ giờ mọi thay đổi trạng thái CV sẽ tự động gửi notify vào group này.' } },
-          { tag: 'hr' },
-          { tag: 'action', actions: [{ tag: 'button', text: { tag: 'plain_text', content: '📋 Mở hệ thống' }, url: window.location.origin, type: 'primary' }] }
-        ]
-      }
-    };
-    const res = await fetch(webhook, {
+    const res = await fetch(cfg.cloudUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(card)
+      body: JSON.stringify({
+        action: 'test_lark',
+        apiKey: cfg.cloudApiKey,
+        webhook: webhook
+      })
     });
-    if (res.ok) {
+    const result = await res.json();
+    if (result.ok) {
       box.className = 'test-box show ok';
-      box.innerHTML = '✅ <strong>Đã gửi tin test vào group Lark!</strong> Check Lark xem có nhận không.';
+      box.innerHTML = '✅ <strong>Đã gửi tin test vào group Lark thành công!</strong> Mở Lark check xem có nhận card "🧪 TEST từ KITA Interview" không.';
     } else {
       box.className = 'test-box show err';
-      box.textContent = '❌ Lark từ chối: ' + res.status;
+      box.innerHTML = '❌ <strong>Test fail:</strong> ' + (result.error || 'Không xác định') + '<br><small>Có thể: webhook sai, hoặc Apps Script chưa update v5 (action test_lark chưa có).</small>';
     }
   } catch(e) {
     box.className = 'test-box show err';
-    box.textContent = '❌ Lỗi: ' + e.message;
+    box.textContent = '❌ Lỗi kết nối: ' + e.message;
   }
 }
 

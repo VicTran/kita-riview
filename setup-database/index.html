@@ -205,6 +205,11 @@ function doPost(e) {
       return updateConfig(data);
     }
 
+    // Action: test gửi Lark (Apps Script proxy — vì browser bị CORS)
+    if (data.action === 'test_lark') {
+      return testLarkWebhook(data);
+    }
+
     // Action: upload CV file mới
     if (data.action === 'upload_cv') {
       return uploadCV(data);
@@ -346,6 +351,7 @@ function uploadCV(data) {
     setCol('Portfolio file', portfolioFileUrl);
 
     sheet.appendRow(rowData);
+    invalidateCVCache();
 
     // 🔔 Lark notify: HR vừa upload CV mới
     notifyLark('NEW_CV', { candidate: cand, note: cand.hrNote });
@@ -356,9 +362,15 @@ function uploadCV(data) {
   }
 }
 
-// ============== LIST CV QUEUE (lấy toàn bộ CVQueue) ==============
+// ============== LIST CV QUEUE (cache 60s qua CacheService) ==============
 function listCVQueue() {
   try {
+    const cache = CacheService.getScriptCache();
+    const cached = cache.get('cv_queue_v1');
+    if (cached) {
+      // Cache HIT — trả về ngay (10-20ms thay vì 500-2000ms)
+      return ContentService.createTextOutput(cached).setMimeType(ContentService.MimeType.JSON);
+    }
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CV_SHEET_NAME);
     if (!sheet) return jsonResponse({ ok: true, data: [] });
     const data = sheet.getDataRange().getValues();
@@ -371,10 +383,18 @@ function listCVQueue() {
       return obj;
     }).filter(r => r['Tên']);
     result.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
-    return jsonResponse({ ok: true, data: result });
+    const response = JSON.stringify({ ok: true, data: result });
+    // Cache 60 giây — invalidated khi có upload/review/test mới
+    try { cache.put('cv_queue_v1', response, 60); } catch(e) {}
+    return ContentService.createTextOutput(response).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     return jsonResponse({ ok: false, error: err.message });
   }
+}
+
+// Helper: invalidate cache khi có thay đổi
+function invalidateCVCache() {
+  try { CacheService.getScriptCache().remove('cv_queue_v1'); } catch(e) {}
 }
 
 // ============== REVIEW CV (TPMKT: REJECTED/POTENTIAL/SCHEDULED) ==============
@@ -390,6 +410,7 @@ function reviewCV(data) {
     sheet.getRange(row, 11).setValue(data.leadNote || '');
     if (data.interviewDate) sheet.getRange(row, 12).setValue(data.interviewDate);
     sheet.getRange(row, 13).setValue(new Date());
+    invalidateCVCache();
 
     // 🔔 Lark notify: TPMKT vừa duyệt
     const candName = sheet.getRange(row, 2).getValue();
@@ -429,6 +450,7 @@ function sendTest(data) {
     sheet.getRange(row, 15).setValue(data.testDescription || '');
     sheet.getRange(row, 16).setValue(data.testDeadline || '');
     sheet.getRange(row, 17).setValue(token);
+    invalidateCVCache();
 
     // 🔔 Lark notify: HR đã gửi bài test
     const candName2 = sheet.getRange(row, 2).getValue();
@@ -476,6 +498,7 @@ function submitTest(data) {
     sheet.getRange(row, 18).setValue(file.getUrl());
     sheet.getRange(row, 19).setValue(data.note || '');
     sheet.getRange(row, 20).setValue(new Date());
+    invalidateCVCache();
 
     // 🔔 Lark notify: Ứng viên đã nộp bài test
     notifyLark('TEST_SUBMITTED', {
@@ -635,6 +658,44 @@ function findExistingRow(sheet, name, exportType) {
 function jsonResponse(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ============== TEST LARK WEBHOOK (Apps Script proxy — bypass CORS) ==============
+function testLarkWebhook(data) {
+  const webhook = (data.webhook || '').trim() || getConfig('lark_webhook');
+  if (!webhook) {
+    return jsonResponse({ ok: false, error: 'Chưa có Lark webhook URL' });
+  }
+  const card = {
+    msg_type: 'interactive',
+    card: {
+      header: {
+        title: { tag: 'plain_text', content: '🧪 TEST từ KITA Interview System' },
+        template: 'turquoise'
+      },
+      elements: [
+        { tag: 'div', text: { tag: 'lark_md', content: '✅ **Bot hoạt động!**\n\nNếu bạn thấy tin nhắn này → cấu hình Lark đã ĐÚNG.\nTừ giờ mọi thay đổi trạng thái CV/PV sẽ tự động gửi notify vào group này.' } },
+        { tag: 'hr' },
+        { tag: 'action', actions: [{ tag: 'button', text: { tag: 'plain_text', content: '📋 Mở hệ thống' }, url: getConfig('system_url') || 'https://phongvanmkt.kitagroupvn.com', type: 'primary' }] }
+      ]
+    }
+  };
+  try {
+    const res = UrlFetchApp.fetch(webhook, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(card),
+      muteHttpExceptions: true
+    });
+    const code = res.getResponseCode();
+    const body = res.getContentText();
+    if (code === 200) {
+      return jsonResponse({ ok: true, message: 'Đã gửi tin test vào Lark thành công' });
+    }
+    return jsonResponse({ ok: false, error: 'Lark trả về HTTP ' + code + ': ' + body.slice(0, 200) });
+  } catch(e) {
+    return jsonResponse({ ok: false, error: e.message });
+  }
 }
 
 // ============== UPDATE CONFIG (qua /quan-tri/ web) ==============

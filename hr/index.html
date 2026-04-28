@@ -338,7 +338,7 @@
 
 <!-- Stats -->
 <div class="stats">
-  <div class="stat-card"><div class="label">Câu đã chấm</div><div class="value" id="stat-scored">0/9</div></div>
+  <div class="stat-card"><div class="label">Câu đã chấm</div><div class="value" id="stat-scored">0/10</div></div>
   <div class="stat-card"><div class="label">Điểm TB</div><div class="value" id="stat-avg">--</div></div>
   <div class="stat-card"><div class="label">Đề xuất</div><div class="value" id="stat-rec" style="font-size:14px;">--</div></div>
 </div>
@@ -477,8 +477,8 @@ const QUESTIONS_V1 = [
     { id: 'q2', text: 'Vì sao bạn quan tâm đến vị trí Nhân viên Marketing tại KITA BOOKS?', tip: 'Kiểm tra ứng viên có TÌM HIỂU về KITA BOOKS không. Câu trả lời chung chung = red flag.' },
   ]},
   { name: '2.2. Đam mê đọc sách', qs: [
-    { id: 'q3', text: 'Cuốn sách gần đây nhất bạn đọc xong là gì? Cảm nhận thế nào?', tip: 'Người yêu sách kể được rõ tựa, tác giả, điểm thích/không thích. Người không đọc sẽ ậm ừ.' },
-    { id: 'q4', text: 'Bạn thường đọc thể loại sách nào nhất? Tại sao?', tip: 'Phù hợp KITA: kinh doanh, văn học, kỹ năng sống, thiếu nhi. Tiểu thuyết tình cảm thuần → có thể chưa phù hợp.' },
+    { id: 'q3', text: 'Cuốn sách gần đây nhất bạn đọc là gì? Và sách đó để lại ấn tượng cho bạn là gì?', tip: 'Người yêu sách kể được rõ tựa, tác giả, điểm ấn tượng cụ thể. Người không đọc sẽ ậm ừ hoặc kể chung chung.' },
+    { id: 'q4', text: 'Bạn thường dành thời gian cho thể loại sách nào (như kinh doanh, kỹ năng hay văn học...)?', tip: 'Kiểm tra ứng viên có thói quen đọc sách + gu có lệch pha công ty không (vd: chỉ thích ngôn tình sướt mướt mà KITA làm sách thiếu nhi/giáo dục → không phù hợp).' },
     { id: 'q5', text: 'Bạn theo dõi kênh review sách nào trên TikTok/YT/FB? Kể tên 1-2 kênh và lý do.', tip: 'Marketing sách giỏi có hệ sinh thái thông tin riêng. "Không có" = thiếu chủ động.' },
   ]},
   { name: '2.3. Mức lương & Thời gian', qs: [
@@ -488,6 +488,7 @@ const QUESTIONS_V1 = [
   ]},
   { name: '2.4. Loại bỏ red flags', qs: [
     { id: 'q9', text: 'Bạn có lo ngại nào về vị trí này? (lương, thời gian, KPI, hình thức làm việc...)', tip: 'Để ứng viên tự nói concern - tránh bỏ sót.' },
+    { id: 'q45', text: 'Lý do bạn nghỉ việc ở công ty cũ là gì?', tip: 'Detect red flags: nói xấu sếp/công ty cũ, nhảy việc liên tục, lý do mơ hồ. TỐT: lý do tích cực (học hỏi/phát triển), tôn trọng nơi cũ.' },
   ]},
 ];
 
@@ -562,6 +563,13 @@ const QUESTION_SCORES = {
     3: ['✓ Có concern nhỏ về lương / thời gian', '✓ Concern thường gặp, có thể giải', '✓ Chưa nghiên cứu kỹ JD'],
     4: ['✓ Concern hợp lý về 1-2 vấn đề', '✓ Thái độ cởi mở, sẵn sàng đối thoại', '✓ Đã đọc kỹ JD và phản tư'],
     5: ['✓ Nói thật về concern (ngân sách, target)', '✓ Đã suy nghĩ giải pháp/đề xuất', '✓ Tư duy đồng hành cùng công ty'],
+  },
+  q45: {
+    1: ['✗ Nói xấu sếp / đồng nghiệp / công ty cũ gay gắt', '✗ Nhảy việc 3+ chỗ trong 1-2 năm không lý do', '✗ Lý do thiếu chuyên nghiệp (cãi nhau, bị đuổi)'],
+    2: ['✗ Lý do mơ hồ "không hợp" / "muốn thay đổi" không cụ thể', '✗ Có nhắc tiêu cực về công ty cũ', '✗ Tránh trả lời / chuyển topic'],
+    3: ['✓ Lý do trung tính: lương / địa điểm / thời gian', '✓ Có suy ngẫm nhưng chưa thuyết phục', '✓ Tôn trọng công ty cũ ở mức cơ bản'],
+    4: ['✓ Lý do hợp lý: muốn phát triển kỹ năng mới / thay đổi môi trường', '✓ Tôn trọng công ty cũ', '✓ Có kế hoạch nghề nghiệp rõ'],
+    5: ['✓ Lý do tích cực + match KITA (muốn làm sách / phát triển dài hạn)', '✓ Cảm ơn công ty cũ vì đã học được gì', '✓ Suy ngẫm trưởng thành về sự nghiệp'],
   },
 };
 
@@ -642,13 +650,13 @@ function updateQA(idx, field, val) { state.qa[idx][field] = val; }
 
 function updateStats() {
   const scored = Object.keys(state.scores).length;
-  document.getElementById('stat-scored').textContent = `${scored}/9`;
+  document.getElementById('stat-scored').textContent = `${scored}/10`;
   if (scored > 0) {
     const total = Object.values(state.scores).reduce((a, b) => a + b, 0);
     const avg = (total / scored).toFixed(2);
     document.getElementById('stat-avg').textContent = avg;
     let rec = '⏳ Tiếp tục';
-    if (scored === 9) {
+    if (scored === 10) {
       const a = parseFloat(avg);
       if (a >= 4) rec = '✅ PASS V2';
       else if (a >= 3) rec = '🟡 Cân nhắc';
@@ -863,7 +871,7 @@ function exportV1() {
   alert(
     `✅ ĐÃ XUẤT FILE V1\n\n` +
     `📁 File: ${a.download}\n` +
-    `📊 Câu đã chấm: ${Object.keys(state.scores).length}/9\n` +
+    `📊 Câu đã chấm: ${Object.keys(state.scores).length}/10\n` +
     `📝 Ghi chú: ${Object.keys(state.notes).length}\n` +
     `💬 Q&A: ${state.qa.length}\n\n` +
     `💡 Gửi file này cho TPMKT (Vòng 2).\n` +

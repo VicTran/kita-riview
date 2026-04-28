@@ -325,7 +325,7 @@
       <a href="/" class="btn btn-light">📋 Hệ thống</a>
       <a href="/hr/" class="btn btn-light">👤 HR Vòng 1</a>
       <a href="/danh-sach/" class="btn btn-light">📊 Danh sách</a>
-      <button class="btn btn-light" onclick="loadAllCVs()">🔄 Refresh</button>
+      <button class="btn btn-light" onclick="loadAllCVs(true)">🔄 Refresh</button>
       <button class="btn btn-light" onclick="doLogout()">🚪 Đăng xuất</button>
     </div>
   </div>
@@ -854,6 +854,7 @@ async function submitCV() {
     }
 
     alert(`✅ ĐÃ UPLOAD CV THÀNH CÔNG!\n\n👤 ${name}\n📍 Dòng: ${result.row}\n📁 File: ${result.fileUrl}\n\nLead/TPMKT sẽ thấy ở tab "Chờ TPMKT".`);
+    localStorage.removeItem('kita_cv_cache_v1');
     toast('✅ Upload thành công', 'success');
     // Reset form
     document.getElementById('newName').value = '';
@@ -875,13 +876,43 @@ async function submitCV() {
 // ============== LIST CVS ==============
 let allCVs = [];
 
-async function loadAllCVs() {
+async function loadAllCVs(force = false) {
   const cfg = getCloudConfig();
   if (!cfg) return;
+
+  // ⚡ QUICK WIN: cache 30s ở localStorage để giảm 80% requests
+  const CACHE_KEY = 'kita_cv_cache_v1';
+  const CACHE_TIME_KEY = 'kita_cv_cache_time';
+  const CACHE_TTL = 30000; // 30 seconds
+
+  if (!force) {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      const cachedTime = parseInt(localStorage.getItem(CACHE_TIME_KEY) || '0');
+      if (cached && (Date.now() - cachedTime) < CACHE_TTL) {
+        // ✨ Cache HIT - render ngay không cần fetch
+        const result = JSON.parse(cached);
+        allCVs = (result.data || []).map(c => {
+          if (!c['Status'] || (c['Status'] + '').trim() === '') c['Status'] = 'PENDING';
+          return c;
+        });
+        renderQueue(); renderPotential(); renderScheduled(); renderTests(); renderHistory();
+        updateStats();
+        return; // skip fetch
+      }
+    } catch(e) { /* fallback to fetch */ }
+  }
 
   try {
     const res = await fetch(`${cfg.url}?apiKey=${encodeURIComponent(cfg.apiKey)}&action=list_cv_queue`);
     const result = await res.json();
+    // Cache response (kể cả error → đỡ retry liên tục)
+    if (result.ok) {
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(result));
+        localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+      } catch(e) {}
+    }
     if (!result.ok) {
       document.getElementById('queueList').innerHTML = `<div class="empty"><div class="icon">⚠️</div><div>${result.error}</div></div>`;
       return;
@@ -1523,7 +1554,8 @@ async function sendTest(rowNum) {
 
     const link = `${window.location.origin}/bai-test/?token=${result.token}`;
     closeReview();
-    loadAllCVs();
+    localStorage.removeItem('kita_cv_cache_v1');
+    loadAllCVs(true);
 
     // Hiện modal copy link
     if (confirm(

@@ -325,7 +325,7 @@
       <a href="/" class="btn btn-light">📋 Hệ thống chính</a>
       <a href="/hr/" class="btn btn-light">👤 HR Vòng 1</a>
       <a href="/cv/" class="btn btn-light">📥 Quản lý CV</a>
-      <button class="btn btn-light" onclick="loadList()">🔄 Refresh</button>
+      <button class="btn btn-light" onclick="loadList(true)">🔄 Refresh</button>
       <button class="btn btn-light" onclick="exportCSV()">📥 Xuất CSV</button>
     </div>
   </div>
@@ -550,7 +550,7 @@ function getCloudConfig() {
   } catch(e) { return null; }
 }
 
-async function loadList() {
+async function loadList(force = false) {
   const cfg = getCloudConfig();
   if (!cfg) {
     document.getElementById('tbody').innerHTML = `
@@ -560,6 +560,23 @@ async function loadList() {
         <a href="/setup-database/" target="_blank" style="color:#1F4E79;">→ Mở hướng dẫn setup</a></div>
       </td></tr>`;
     return;
+  }
+
+  // ⚡ QUICK WIN: cache 30s ở localStorage
+  const CACHE_KEY = 'kita_list_cache_v1';
+  const CACHE_TIME_KEY = 'kita_list_cache_time';
+  const CACHE_TTL = 30000;
+
+  if (!force) {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      const cachedTime = parseInt(localStorage.getItem(CACHE_TIME_KEY) || '0');
+      if (cached && (Date.now() - cachedTime) < CACHE_TTL) {
+        allRows = JSON.parse(cached);
+        applyFilters();
+        return;
+      }
+    } catch(e) {}
   }
 
   document.getElementById('tbody').innerHTML = '<tr><td colspan="8" class="loading">⏳ Đang tải...</td></tr>';
@@ -590,6 +607,11 @@ async function loadList() {
     }));
 
     allRows = [...cvRows, ...pvRows];  // CV trước, PV sau
+    // Cache lại
+    try {
+      localStorage.setItem('kita_list_cache_v1', JSON.stringify(allRows));
+      localStorage.setItem('kita_list_cache_time', Date.now().toString());
+    } catch(e) {}
     applyFilters();
   } catch (e) {
     document.getElementById('tbody').innerHTML = `<tr><td colspan="8" class="empty"><div class="icon">⚠️</div><div class="text">Lỗi kết nối: ${e.message}</div></td></tr>`;
