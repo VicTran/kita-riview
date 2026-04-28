@@ -159,27 +159,38 @@
 
 const SHEET_NAME = 'PhongVan';
 const CV_SHEET_NAME = 'CVQueue';
+const CONFIG_SHEET = 'Config'; // Sheet lưu cấu hình động (anh edit qua /quan-tri/)
 const API_KEY = 'KITA-MyTeam-2026'; // ⚠️ Phải khớp với cloudApiKey trong /config.js
 
-// ⚠️ Drive folder ID để lưu CV (xem bước 5 dưới)
-// Tạo 1 folder mới trên Drive → mở folder → copy ID từ URL
-// VD: drive.google.com/drive/folders/ABCxyz123 → ID là "ABCxyz123"
-const CV_DRIVE_FOLDER_ID = '1lKAXidD-Vd46IO2J400ihDr40-Q5_3yr'; // KITA CV Storage folder
+// 🎯 CÁC CẤU HÌNH KHÁC (Drive folder, Lark webhook, Lark emails, etc.)
+// → Đều LẤY TỪ SHEET "Config" qua hàm getConfig('key')
+// → Anh chỉ cần edit ở /quan-tri/ → KHÔNG cần deploy lại Apps Script
 
-// ⚠️ LARK BOT WEBHOOK (tuỳ chọn)
-// Tạo Bot trong group Lark → copy webhook URL (xem hướng dẫn /setup-lark/)
-// Để trống = không gửi notify
-const LARK_WEBHOOK_URL = ''; // VD: 'https://open.larksuite.com/open-apis/bot/v2/hook/xxx-xxx-xxx'
-
-// Email Lark của các thành viên — để @mention khi gửi notify
-const LARK_USERS = {
-  hr: '',         // VD: 'hr@kitabooks.com'
-  tpmkt: '',      // VD: 'tpmkt@kitabooks.com'
-  director: ''    // VD: 'gd@kitabooks.com'
-};
-
-// Public URL hệ thống
-const SYSTEM_URL = 'https://phongvanmkt.kitagroupvn.com';
+// ============== READ CONFIG FROM SHEET (cached 60s) ==============
+let _configCache = null;
+let _configCacheTime = 0;
+function getConfig(key) {
+  if (!_configCache || Date.now() - _configCacheTime > 60000) {
+    refreshConfigCache();
+  }
+  return _configCache[key] || '';
+}
+function refreshConfigCache() {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG_SHEET);
+    _configCache = {};
+    if (sheet) {
+      const data = sheet.getDataRange().getValues();
+      for (let i = 1; i < data.length; i++) {
+        if (data[i][0]) _configCache[String(data[i][0]).trim()] = String(data[i][1] || '').trim();
+      }
+    }
+    _configCacheTime = Date.now();
+  } catch(e) {
+    _configCache = {};
+    _configCacheTime = Date.now();
+  }
+}
 
 // ============== POST: Lưu hồ sơ HOẶC phân tích CV bằng Claude ==============
 function doPost(e) {
@@ -187,6 +198,11 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents);
     if (data.apiKey !== API_KEY) {
       return jsonResponse({ ok: false, error: 'Sai API key' });
+    }
+
+    // Action: cập nhật config động (Lark, Drive folder, etc.)
+    if (data.action === 'update_config') {
+      return updateConfig(data);
     }
 
     // Action: upload CV file mới
@@ -260,11 +276,12 @@ function doPost(e) {
 
 // ============== UPLOAD CV (HR upload file → Drive + CVQueue sheet) ==============
 function uploadCV(data) {
-  if (!CV_DRIVE_FOLDER_ID) {
-    return jsonResponse({ ok: false, error: 'CV_DRIVE_FOLDER_ID chưa cấu hình trong Apps Script.' });
+  const folderId = getConfig('cv_drive_folder_id');
+  if (!folderId) {
+    return jsonResponse({ ok: false, error: 'CV Drive folder ID chưa cấu hình. Vào /quan-tri/ để set.' });
   }
   try {
-    const folder = DriveApp.getFolderById(CV_DRIVE_FOLDER_ID);
+    const folder = DriveApp.getFolderById(folderId);
     const cand = data.candidate || {};
 
     // Decode base64 file → save lên Drive
@@ -430,7 +447,8 @@ function sendTest(data) {
 // ============== SUBMIT TEST (Ứng viên nộp bài qua /bai-test/?token=XYZ) ==============
 function submitTest(data) {
   try {
-    if (!CV_DRIVE_FOLDER_ID) {
+    const folderId = getConfig('cv_drive_folder_id');
+    if (!folderId) {
       return jsonResponse({ ok: false, error: 'Drive folder chưa cấu hình' });
     }
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CV_SHEET_NAME);
@@ -441,7 +459,7 @@ function submitTest(data) {
     if (!row) return jsonResponse({ ok: false, error: 'Token không hợp lệ' });
 
     // Lưu file lên Drive
-    const folder = DriveApp.getFolderById(CV_DRIVE_FOLDER_ID);
+    const folder = DriveApp.getFolderById(folderId);
     const bytes = Utilities.base64Decode(data.fileBase64);
     const blob = Utilities.newBlob(bytes, data.fileMimeType, data.fileName);
     const candName = sheet.getRange(row, 2).getValue() || 'unknown';
@@ -567,6 +585,12 @@ function doGet(e) {
       return getTestInfo(e.parameter.token);
     }
 
+    // Action: get_config (cho /quan-tri/ load config hiện tại)
+    if (e.parameter.action === 'get_config') {
+      refreshConfigCache();
+      return jsonResponse({ ok: true, config: _configCache || {} });
+    }
+
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
     const data = sheet.getDataRange().getValues();
     if (data.length < 2) return jsonResponse({ ok: true, data: [] });
@@ -613,52 +637,82 @@ function jsonResponse(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// ============== UPDATE CONFIG (qua /quan-tri/ web) ==============
+function updateConfig(data) {
+  try {
+    let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG_SHEET);
+    if (!sheet) {
+      sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet(CONFIG_SHEET);
+      sheet.appendRow(['Key', 'Value', 'Description']);
+      // Pre-fill các key thông dụng
+      sheet.appendRow(['cv_drive_folder_id', '', 'ID folder Drive lưu CV']);
+      sheet.appendRow(['lark_webhook', '', 'Lark Bot webhook URL']);
+      sheet.appendRow(['lark_email_hr', '', 'Email Lark của HR']);
+      sheet.appendRow(['lark_email_tpmkt', '', 'Email Lark của TPMKT']);
+      sheet.appendRow(['lark_email_director', '', 'Email Lark của GĐ']);
+      sheet.appendRow(['system_url', '', 'URL hệ thống (vd: https://phongvanmkt.kitagroupvn.com)']);
+    }
+    const allData = sheet.getDataRange().getValues();
+    const existing = {};
+    for (let i = 1; i < allData.length; i++) {
+      if (allData[i][0]) existing[String(allData[i][0]).trim()] = i + 1;
+    }
+    Object.entries(data.config || {}).forEach(([key, val]) => {
+      if (existing[key]) {
+        sheet.getRange(existing[key], 2).setValue(val);
+      } else {
+        sheet.appendRow([key, val, '']);
+      }
+    });
+    // Xoá cache để lần đọc tiếp theo lấy giá trị mới
+    _configCache = null;
+    return jsonResponse({ ok: true, message: 'Đã lưu. Có hiệu lực ngay (cache làm mới mỗi 60s).' });
+  } catch (err) {
+    return jsonResponse({ ok: false, error: err.message });
+  }
+}
+
 // ============== LARK BOT NOTIFICATION ==============
 function notifyLark(eventType, data) {
-  if (!LARK_WEBHOOK_URL) return; // Không cấu hình → bỏ qua
+  const webhook = getConfig('lark_webhook');
+  if (!webhook) return; // Chưa cấu hình → bỏ qua
+
+  const sysUrl = getConfig('system_url') || 'https://phongvanmkt.kitagroupvn.com';
+  const emailHr = getConfig('lark_email_hr');
+  const emailTpmkt = getConfig('lark_email_tpmkt');
+  const emailDirector = getConfig('lark_email_director');
 
   const events = {
     'NEW_CV': {
       title: '📥 CV mới chờ TPMKT duyệt',
-      template: 'blue',
-      mention: LARK_USERS.tpmkt,
-      url: SYSTEM_URL + '/cv/',
-      btn: '✍️ Vào duyệt CV'
+      template: 'blue', mention: emailTpmkt,
+      url: sysUrl + '/cv/', btn: '✍️ Vào duyệt CV'
     },
     'TPMKT_REJECTED': {
       title: '❌ TPMKT đã loại CV',
-      template: 'red',
-      mention: LARK_USERS.hr,
-      url: SYSTEM_URL + '/cv/',
-      btn: '📋 Xem chi tiết'
+      template: 'red', mention: emailHr,
+      url: sysUrl + '/cv/', btn: '📋 Xem chi tiết'
     },
     'TPMKT_POTENTIAL': {
       title: '🟡 CV được đánh dấu Tiềm năng',
-      template: 'yellow',
-      mention: LARK_USERS.hr,
-      url: SYSTEM_URL + '/cv/',
-      btn: '📋 Xem chi tiết'
+      template: 'yellow', mention: emailHr,
+      url: sysUrl + '/cv/', btn: '📋 Xem chi tiết'
     },
     'TPMKT_SCHEDULED': {
       title: '🟢 TPMKT hẹn PV V1 - HR triển khai',
-      template: 'green',
-      mention: LARK_USERS.hr,
-      url: SYSTEM_URL + '/hr/',
-      btn: '👤 Vào phỏng vấn V1'
+      template: 'green', mention: emailHr,
+      url: sysUrl + '/hr/', btn: '👤 Vào phỏng vấn V1'
     },
     'TEST_SENT': {
       title: '📝 Đã gửi bài test cho ứng viên',
-      template: 'purple',
-      mention: '',
-      url: SYSTEM_URL + '/cv/',
-      btn: '📋 Xem chi tiết'
+      template: 'purple', mention: '',
+      url: sysUrl + '/cv/', btn: '📋 Xem chi tiết'
     },
     'TEST_SUBMITTED': {
       title: '✅ Ứng viên ĐÃ NỘP BÀI TEST',
       template: 'green',
-      mention: (LARK_USERS.tpmkt + ',' + LARK_USERS.hr).replace(/^,|,$/g, ''),
-      url: SYSTEM_URL + '/',
-      btn: '📊 Vào chấm bài'
+      mention: [emailTpmkt, emailHr].filter(Boolean).join(','),
+      url: sysUrl + '/', btn: '📊 Vào chấm bài'
     }
   };
 
@@ -707,7 +761,7 @@ function notifyLark(eventType, data) {
   };
 
   try {
-    UrlFetchApp.fetch(LARK_WEBHOOK_URL, {
+    UrlFetchApp.fetch(webhook, {
       method: 'post',
       contentType: 'application/json',
       payload: JSON.stringify(card),

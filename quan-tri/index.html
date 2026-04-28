@@ -259,6 +259,55 @@
   </div>
 </div>
 
+<!-- ============== CLOUD CONFIG (lưu Sheet, không cần redeploy) ============== -->
+<div class="card">
+  <h2>☁️ Cấu hình động (lưu trong Google Sheet) <small>không cần redeploy Apps Script</small></h2>
+  <div class="alert alert-info">
+    💡 Các config này lưu trong tab <code>Config</code> của Google Sheet. Edit ở đây → <strong>Save</strong> → có hiệu lực ngay (cache 60s).
+  </div>
+
+  <h3 style="color:#0F766E;font-size:14px;margin:14px 0 8px;padding:6px 10px;background:#f0fdfa;border-radius:6px;">📥 Drive folder lưu CV</h3>
+  <div class="form-group">
+    <label>CV Drive Folder ID</label>
+    <input type="text" id="cfg_cv_drive_folder_id" placeholder="VD: 1lKAXidD-Vd46IO2J400ihDr40-Q5_3yr">
+    <div class="hint">Vào drive.google.com → mở folder lưu CV → URL có <code>/folders/&lt;ID&gt;</code></div>
+  </div>
+
+  <h3 style="color:#00839A;font-size:14px;margin:14px 0 8px;padding:6px 10px;background:#e6fffa;border-radius:6px;">🤖 Lark Bot Notification (xem <a href="/setup-lark/" target="_blank" style="color:#00839A;">/setup-lark/</a>)</h3>
+  <div class="form-group">
+    <label>Lark Webhook URL</label>
+    <input type="text" id="cfg_lark_webhook" placeholder="https://open.larksuite.com/open-apis/bot/v2/hook/xxx-xxx-xxx">
+    <div class="hint">Tạo Custom Bot trong group Lark → copy webhook URL</div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>📧 Email Lark của HR</label>
+      <input type="text" id="cfg_lark_email_hr" placeholder="hr@kitabooks.com">
+    </div>
+    <div class="form-group">
+      <label>📧 Email Lark của TPMKT</label>
+      <input type="text" id="cfg_lark_email_tpmkt" placeholder="tpmkt@kitabooks.com">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>📧 Email Lark của Giám đốc</label>
+      <input type="text" id="cfg_lark_email_director" placeholder="gd@kitabooks.com">
+    </div>
+    <div class="form-group">
+      <label>🌐 System URL (cho nút trong Lark card)</label>
+      <input type="text" id="cfg_system_url" placeholder="https://phongvanmkt.kitagroupvn.com">
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+    <button class="btn btn-blue" onclick="loadCloudConfig()">🔄 Load config hiện tại</button>
+    <button class="btn btn-success" onclick="saveCloudConfig()">💾 Lưu (áp dụng ngay, không deploy lại)</button>
+    <button class="btn btn-warn" onclick="testLarkNotify()">🧪 Test gửi tin Lark thử</button>
+  </div>
+  <div class="test-box" id="cloudConfigBox"></div>
+</div>
+
 <!-- Test connection -->
 <div class="card">
   <h2>🔌 Test kết nối Google Sheet</h2>
@@ -414,6 +463,116 @@ async function testConnection() {
     box.innerHTML = `❌ Lỗi kết nối: ${e.message}`;
   }
 }
+
+// ============== CLOUD CONFIG (Drive + Lark, lưu Sheet) ==============
+const CFG_FIELDS = [
+  'cv_drive_folder_id', 'lark_webhook',
+  'lark_email_hr', 'lark_email_tpmkt', 'lark_email_director',
+  'system_url'
+];
+
+async function loadCloudConfig() {
+  const cfg = window.KITA_CONFIG || {};
+  const url = (cfg.cloudUrl || '') + '?action=get_config&apiKey=' + encodeURIComponent(cfg.cloudApiKey || '');
+  const box = document.getElementById('cloudConfigBox');
+  box.className = 'test-box show';
+  box.textContent = '⏳ Đang load config từ Sheet...';
+  try {
+    const res = await fetch(url);
+    const result = await res.json();
+    if (!result.ok) {
+      box.className = 'test-box show err';
+      box.textContent = '❌ ' + (result.error || 'Lỗi không xác định');
+      return;
+    }
+    const config = result.config || {};
+    CFG_FIELDS.forEach(f => {
+      const el = document.getElementById('cfg_' + f);
+      if (el) el.value = config[f] || '';
+    });
+    box.className = 'test-box show ok';
+    box.innerHTML = `✅ <strong>Đã load config từ Sheet "Config"</strong> (${Object.keys(config).length} mục)`;
+  } catch(e) {
+    box.className = 'test-box show err';
+    box.textContent = '❌ Lỗi kết nối: ' + e.message;
+  }
+}
+
+async function saveCloudConfig() {
+  const cfg = window.KITA_CONFIG || {};
+  if (!cfg.cloudUrl || !cfg.cloudApiKey) { alert('⚠️ Chưa setup Cloud URL ở phần dưới'); return; }
+  const config = {};
+  CFG_FIELDS.forEach(f => {
+    const el = document.getElementById('cfg_' + f);
+    if (el) config[f] = el.value.trim();
+  });
+  const box = document.getElementById('cloudConfigBox');
+  box.className = 'test-box show';
+  box.textContent = '⏳ Đang lưu...';
+  try {
+    const res = await fetch(cfg.cloudUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'update_config', apiKey: cfg.cloudApiKey, config })
+    });
+    const result = await res.json();
+    if (result.ok) {
+      box.className = 'test-box show ok';
+      box.innerHTML = `✅ <strong>Đã lưu config!</strong> ${result.message || ''}<br>Có hiệu lực ngay (cache làm mới mỗi 60s).`;
+    } else {
+      box.className = 'test-box show err';
+      box.textContent = '❌ ' + result.error;
+    }
+  } catch(e) {
+    box.className = 'test-box show err';
+    box.textContent = '❌ Lỗi: ' + e.message;
+  }
+}
+
+async function testLarkNotify() {
+  const webhook = document.getElementById('cfg_lark_webhook').value.trim();
+  if (!webhook) { alert('⚠️ Nhập Lark webhook URL trước'); return; }
+  const box = document.getElementById('cloudConfigBox');
+  box.className = 'test-box show';
+  box.textContent = '⏳ Đang gửi tin test vào group Lark...';
+  try {
+    const card = {
+      msg_type: 'interactive',
+      card: {
+        header: {
+          title: { tag: 'plain_text', content: '🧪 TEST từ KITA Interview System' },
+          template: 'turquoise'
+        },
+        elements: [
+          { tag: 'div', text: { tag: 'lark_md', content: '✅ **Bot hoạt động!**\n\nNếu bạn thấy tin nhắn này → cấu hình Lark đã ĐÚNG.\n\nTừ giờ mọi thay đổi trạng thái CV sẽ tự động gửi notify vào group này.' } },
+          { tag: 'hr' },
+          { tag: 'action', actions: [{ tag: 'button', text: { tag: 'plain_text', content: '📋 Mở hệ thống' }, url: window.location.origin, type: 'primary' }] }
+        ]
+      }
+    };
+    const res = await fetch(webhook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(card)
+    });
+    if (res.ok) {
+      box.className = 'test-box show ok';
+      box.innerHTML = '✅ <strong>Đã gửi tin test vào group Lark!</strong> Check Lark xem có nhận không.';
+    } else {
+      box.className = 'test-box show err';
+      box.textContent = '❌ Lark từ chối: ' + res.status;
+    }
+  } catch(e) {
+    box.className = 'test-box show err';
+    box.textContent = '❌ Lỗi: ' + e.message;
+  }
+}
+
+// Auto-load config khi vào trang
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    if (sessionStorage.getItem('kita_admin_auth') === '1') loadCloudConfig();
+  }, 500);
+});
 
 // ============== TEST GEMINI ==============
 async function testGemini() {
