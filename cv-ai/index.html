@@ -948,9 +948,46 @@ async function analyzeCV() {
 
 async function analyzeWithGemini(cvText, cfg) {
   const key = cfg.geminiKey;
-  const model = cfg.geminiModel || 'gemini-2.5-flash';
+  const primary = cfg.geminiModel || 'gemini-2.5-flash';
   if (!key) throw new Error('Chưa có Gemini API Key. Bấm 🔑 API Key để setup (free tại aistudio.google.com)');
 
+  // Danh sách model thử lần lượt: primary → fallbacks ổn định hơn
+  const tries = [primary];
+  ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'].forEach(m => {
+    if (!tries.includes(m)) tries.push(m);
+  });
+
+  const loadingMsg = document.querySelector('#loadingBox div:nth-child(2)');
+  let lastErr = null;
+
+  for (let i = 0; i < tries.length; i++) {
+    const model = tries[i];
+    try {
+      if (loadingMsg) {
+        loadingMsg.textContent = i === 0
+          ? `⏳ AI đang phân tích bằng ${model}...`
+          : `⏳ Model trước bận, đang thử ${model}...`;
+      }
+      return await callGeminiOnce(cvText, key, model);
+    } catch(e) {
+      lastErr = e;
+      const msg = (e.message || '').toLowerCase();
+      // Lỗi "high demand" / 503 / overloaded → fallback model
+      // Lỗi 401/403/key → dừng ngay, không thử model khác
+      const isOverload = msg.includes('high demand') || msg.includes('overload') ||
+                         msg.includes('503') || msg.includes('unavailable') ||
+                         msg.includes('rate limit') || msg.includes('quota');
+      const isPermanent = msg.includes('api key') || msg.includes('401') || msg.includes('403') || msg.includes('not valid');
+      if (isPermanent) throw e;
+      if (!isOverload) throw e;
+      // Đợi 1.5s trước khi thử model khác
+      if (i < tries.length - 1) await new Promise(r => setTimeout(r, 1500));
+    }
+  }
+  throw new Error('Tất cả Gemini models đều bận. Thử lại sau 1-2 phút hoặc chuyển sang Manual mode (Phân tích → 🔑 API Key → Manual).\n\nLỗi cuối: ' + (lastErr?.message || ''));
+}
+
+async function callGeminiOnce(cvText, key, model) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
   const res = await fetch(url, {
     method: 'POST',
