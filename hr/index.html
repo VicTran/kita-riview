@@ -229,8 +229,9 @@
       <div class="subtitle">Phỏng vấn sàng lọc ban đầu | Q1-Q9 + Q&A của ứng viên</div>
     </div>
     <div class="actions">
+      <a href="/danh-sach/" class="btn btn-light" style="text-decoration:none; display:inline-flex; align-items:center;">📊 Danh sách</a>
       <button class="btn btn-primary" onclick="cloudSave()">☁️ Lưu Cloud</button>
-      <button class="btn btn-light" onclick="cloudLoad()">🔍 Tải từ Cloud</button>
+      <button class="btn btn-light" onclick="cloudLoad()">🔍 Tải Cloud</button>
       <button class="btn btn-light" onclick="exportV1()">📤 Xuất file V1</button>
       <button class="btn btn-light" onclick="saveLocal()">💾 Lưu local</button>
       <button class="btn btn-light" onclick="loadLocal()">📂 Tải file</button>
@@ -844,6 +845,21 @@ function toast(msg, type) {
 // Init
 renderQuestions(); renderQA(); updateStats();
 document.getElementById('interviewDate').valueAsDate = new Date();
+
+// Auto-load nếu được chuyển từ trang danh sách
+(function checkPendingLoad() {
+  const pending = sessionStorage.getItem('kita_pending_load');
+  if (pending) {
+    sessionStorage.removeItem('kita_pending_load');
+    try {
+      const data = JSON.parse(pending);
+      setTimeout(() => {
+        applyData(data);
+        toast('📊 Đã tải hồ sơ từ danh sách', 'success');
+      }, 300);
+    } catch(e) { console.error(e); }
+  }
+})();
 </script>
 </body>
 </html>

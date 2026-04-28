@@ -388,8 +388,9 @@
       <div class="subtitle">Nhân viên Marketing | Fresher / Junior</div>
     </div>
     <div class="actions">
+      <a href="/danh-sach/" class="btn btn-light" style="text-decoration:none; display:inline-flex; align-items:center;">📊 Danh sách</a>
       <button class="btn btn-light" onclick="cloudSave()">☁️ Lưu Cloud</button>
-      <button class="btn btn-light" onclick="cloudLoad()">🔍 Tải từ Cloud</button>
+      <button class="btn btn-light" onclick="cloudLoad()">🔍 Tải Cloud</button>
       <button class="btn btn-light" onclick="saveData()">💾 Lưu file</button>
       <button class="btn btn-light" onclick="exportByRoundDialog()">📤 Xuất theo vòng</button>
       <button class="btn btn-light" onclick="loadData()">📂 Tải file</button>
@@ -1846,6 +1847,21 @@ function toast(msg, type = '') {
 
 document.getElementById('interviewDate').valueAsDate = new Date();
 renderAll();
+
+// Auto-load nếu được chuyển từ trang danh sách
+(function checkPendingLoad() {
+  const pending = sessionStorage.getItem('kita_pending_load');
+  if (pending) {
+    sessionStorage.removeItem('kita_pending_load');
+    try {
+      const data = JSON.parse(pending);
+      setTimeout(() => {
+        applyLoadedData(data);
+        toast('📊 Đã tải hồ sơ từ danh sách', 'success');
+      }, 300);
+    } catch(e) { console.error('Lỗi load pending:', e); }
+  }
+})();
 
 // Detect mode (file:// or http://) và thông báo
 window.addEventListener('load', () => {
