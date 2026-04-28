@@ -207,6 +207,11 @@
         </select>
       </div>
     </div>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+      <button class="btn btn-blue" onclick="testGemini()">🔍 Test Gemini key</button>
+      <button class="btn btn-success" onclick="saveLocalQuick()">⚡ Lưu nhanh vào máy này (test ngay không cần push)</button>
+    </div>
+    <div class="test-box" id="geminiTestBox"></div>
   </div>
 
   <div id="manualFields" style="display:none;">
@@ -234,6 +239,9 @@
           <option value="gpt-4o">GPT-4o</option>
         </select>
       </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+      <button class="btn btn-success" onclick="saveLocalQuick()">⚡ Lưu nhanh vào máy này</button>
     </div>
   </div>
 
@@ -405,6 +413,80 @@ async function testConnection() {
     box.className = 'test-box show err';
     box.innerHTML = `❌ Lỗi kết nối: ${e.message}`;
   }
+}
+
+// ============== TEST GEMINI ==============
+async function testGemini() {
+  const key = document.getElementById('cfgGeminiKey').value.trim();
+  const model = document.getElementById('cfgGeminiModel').value;
+  const box = document.getElementById('geminiTestBox');
+
+  if (!key) {
+    box.className = 'test-box show err';
+    box.textContent = '⚠️ Nhập Gemini API Key trước';
+    return;
+  }
+  if (!key.startsWith('AIza')) {
+    box.className = 'test-box show err';
+    box.textContent = '⚠️ Key Gemini phải bắt đầu bằng "AIza..."';
+    return;
+  }
+
+  box.className = 'test-box show';
+  box.textContent = '⏳ Đang gọi Gemini API...';
+
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: 'Trả lời ngắn: "Kết nối thành công" (chỉ 4 từ này, không thêm gì khác).' }] }],
+        generationConfig: { temperature: 0, maxOutputTokens: 50 }
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '(rỗng)';
+    box.className = 'test-box show ok';
+    box.innerHTML = `✅ <strong>GEMINI HOẠT ĐỘNG!</strong><br>Model: <code>${model}</code><br>Phản hồi: "${escHtml(text.trim())}"`;
+  } catch(e) {
+    box.className = 'test-box show err';
+    box.innerHTML = `❌ <strong>Lỗi:</strong> ${escHtml(e.message)}<br><small>Kiểm tra: 1) Key đúng không, 2) Model còn được hỗ trợ không, 3) Quota chưa hết</small>`;
+  }
+}
+
+// ============== LƯU NHANH vào localStorage (chưa push) ==============
+function saveLocalQuick() {
+  const provider = document.getElementById('cfgAiProvider').value;
+  if (!provider) { alert('⚠️ Chọn Provider trước'); return; }
+
+  let cfg = { provider };
+  if (provider === 'gemini') {
+    const key = document.getElementById('cfgGeminiKey').value.trim();
+    if (!key) { alert('⚠️ Nhập Gemini API Key'); return; }
+    cfg.geminiKey = key;
+    cfg.geminiModel = document.getElementById('cfgGeminiModel').value;
+  } else if (provider === 'openai') {
+    const key = document.getElementById('cfgOpenaiKey').value.trim();
+    if (!key) { alert('⚠️ Nhập OpenAI key'); return; }
+    cfg.key = key;
+    cfg.model = document.getElementById('cfgOpenaiModel').value;
+  } else if (provider === 'claude') {
+    cfg.claudeModel = document.getElementById('cfgClaudeModel').value;
+  }
+
+  localStorage.setItem('kita_ai_config', JSON.stringify(cfg));
+  alert(
+    '⚡ ĐÃ LƯU NHANH VÀO MÁY NÀY!\n\n' +
+    '✅ Anh test ngay được ở /cv-ai/ trên máy này.\n' +
+    '⚠️ Lưu ý: Lưu nhanh chỉ áp dụng cho máy này.\n\n' +
+    'Để áp dụng cho TẤT CẢ máy/trình duyệt → Generate + Download config.js + Push GitHub.'
+  );
 }
 
 // ============== GENERATE CONFIG ==============
