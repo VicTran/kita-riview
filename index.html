@@ -388,10 +388,12 @@
       <div class="subtitle">Nhân viên Marketing | Fresher / Junior</div>
     </div>
     <div class="actions">
-      <button class="btn btn-light" onclick="saveData()">💾 Lưu tất cả</button>
+      <button class="btn btn-light" onclick="cloudSave()">☁️ Lưu Cloud</button>
+      <button class="btn btn-light" onclick="cloudLoad()">🔍 Tải từ Cloud</button>
+      <button class="btn btn-light" onclick="saveData()">💾 Lưu file</button>
       <button class="btn btn-light" onclick="exportByRoundDialog()">📤 Xuất theo vòng</button>
-      <button class="btn btn-light" onclick="loadData()">📂 Tải hồ sơ</button>
-      <button class="btn btn-light" onclick="importMergeDialog()">📥 Nhập file (gộp)</button>
+      <button class="btn btn-light" onclick="loadData()">📂 Tải file</button>
+      <button class="btn btn-light" onclick="importMergeDialog()">📥 Nhập (gộp)</button>
       <button class="btn btn-light" onclick="window.print()">🖨️ In/PDF</button>
       <button class="btn btn-light" onclick="resetAll()">🔄 Reset</button>
       <button class="btn btn-light btn-logout" onclick="doLogout()">🚪 Đăng xuất</button>
@@ -1430,6 +1432,132 @@ function loadData() {
     toast('📂 Đã tải hồ sơ', 'success');
   } catch (err) {
     alert('❌ Lỗi đọc dữ liệu: ' + err.message);
+  }
+}
+
+// ============== GOOGLE SHEET CLOUD DATABASE ==============
+function getCloudConfig() {
+  try {
+    const cfg = localStorage.getItem('kita_cloud_config');
+    if (!cfg) return null;
+    return JSON.parse(cfg);
+  } catch(e) { return null; }
+}
+
+function promptCloudSetup() {
+  const ok = confirm(
+    '☁️ CHƯA CẤU HÌNH GOOGLE SHEET\n\n' +
+    'Để dùng tính năng Cloud, anh cần setup Google Sheet (1 lần duy nhất, ~10 phút).\n\n' +
+    'OK = Mở trang hướng dẫn\nCancel = Để sau'
+  );
+  if (ok) window.open('/setup-database/', '_blank');
+}
+
+async function cloudSave() {
+  const cfg = getCloudConfig();
+  if (!cfg) { promptCloudSetup(); return; }
+
+  const candidateName = document.getElementById('candidateName').value.trim();
+  if (!candidateName) {
+    alert('⚠️ Vui lòng nhập "Họ tên ứng viên" trước khi lưu Cloud!');
+    document.getElementById('candidateName').focus();
+    return;
+  }
+
+  const data = getDataObject();
+  data.apiKey = cfg.apiKey;
+  data.exportType = 'all';
+
+  toast('⏳ Đang lưu lên Google Sheet...', 'info');
+
+  try {
+    const res = await fetch(cfg.url, {
+      method: 'POST',
+      body: JSON.stringify(data)
+      // Không set Content-Type để tránh CORS preflight
+    });
+    const result = await res.json();
+    if (result.ok) {
+      const action = result.action === 'update' ? 'CẬP NHẬT' : 'TẠO MỚI';
+      alert(
+        `☁️ ĐÃ LƯU LÊN GOOGLE SHEET!\n\n` +
+        `📌 Hành động: ${action}\n` +
+        `📍 Dòng: ${result.row}\n` +
+        `👤 Ứng viên: ${candidateName}\n\n` +
+        `💡 Mở Google Sheet để xem.`
+      );
+      toast('☁️ Đã lưu Cloud', 'success');
+    } else {
+      alert('❌ Lỗi từ server: ' + (result.error || 'Không xác định'));
+    }
+  } catch (e) {
+    alert('❌ Lỗi kết nối: ' + e.message + '\n\nKiểm tra URL Apps Script + API Key trong /setup-database/');
+  }
+}
+
+async function cloudLoad() {
+  const cfg = getCloudConfig();
+  if (!cfg) { promptCloudSetup(); return; }
+
+  const search = prompt(
+    '🔍 TÌM HỒ SƠ TRÊN CLOUD\n\n' +
+    'Nhập tên ứng viên / SĐT / Email cần tìm:\n' +
+    '(Để trống = xem 50 hồ sơ mới nhất)'
+  );
+  if (search === null) return;
+
+  toast('⏳ Đang tải từ Google Sheet...', 'info');
+
+  try {
+    const url = `${cfg.url}?apiKey=${encodeURIComponent(cfg.apiKey)}&search=${encodeURIComponent(search || '')}`;
+    const res = await fetch(url);
+    const result = await res.json();
+
+    if (!result.ok) {
+      alert('❌ Lỗi: ' + (result.error || 'Không xác định'));
+      return;
+    }
+    if (!result.data || result.data.length === 0) {
+      alert('📭 Không tìm thấy hồ sơ nào' + (search ? ` cho "${search}"` : ''));
+      return;
+    }
+
+    // Hiển thị danh sách
+    const list = result.data.map((r, i) =>
+      `${i + 1}. ${r['Tên ứng viên']} | ${r['Vòng']} | TB ${r['Điểm TB'] || '?'} | ${r['Đề xuất'] || ''} | ${(r['Timestamp'] + '').slice(0, 10)}`
+    ).join('\n');
+
+    const choice = prompt(
+      `📋 TÌM THẤY ${result.data.length} HỒ SƠ:\n\n${list}\n\n` +
+      `Nhập SỐ THỨ TỰ (1-${result.data.length}) để tải hồ sơ đó:`
+    );
+    if (!choice) return;
+
+    const num = parseInt(choice);
+    if (isNaN(num) || num < 1 || num > result.data.length) {
+      alert('❌ Lựa chọn không hợp lệ');
+      return;
+    }
+
+    const selected = result.data[num - 1];
+    const fullJson = selected['Full JSON'];
+    if (!fullJson) {
+      alert('❌ Hồ sơ không có dữ liệu chi tiết');
+      return;
+    }
+
+    const parsed = JSON.parse(fullJson);
+    applyLoadedData(parsed);
+    alert(
+      `✅ ĐÃ TẢI HỒ SƠ TỪ CLOUD!\n\n` +
+      `👤 Tên: ${parsed.candidate?.name || '?'}\n` +
+      `📅 Ngày PV: ${parsed.candidate?.date || '?'}\n` +
+      `🧑‍💼 PV viên: ${parsed.candidate?.interviewer || '?'}\n` +
+      `📊 Điểm TB: ${selected['Điểm TB']}`
+    );
+    toast('☁️ Đã tải từ Cloud', 'success');
+  } catch (e) {
+    alert('❌ Lỗi: ' + e.message);
   }
 }
 

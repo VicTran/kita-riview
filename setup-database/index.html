@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Setup Google Sheet Database - KITA Interview</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: #f5f7fa; color: #2d3748; line-height: 1.6; padding: 20px;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+  header {
+    background: linear-gradient(135deg, #1F4E79 0%, #C00000 100%);
+    color: white; padding: 28px 32px; border-radius: 12px;
+    margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  }
+  header h1 { font-size: 26px; margin-bottom: 6px; }
+  header .sub { opacity: 0.95; font-size: 14px; }
+  .card {
+    background: white; padding: 24px 28px; border-radius: 12px;
+    margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .card h2 {
+    color: #1F4E79; font-size: 19px; margin-bottom: 14px;
+    border-bottom: 2px solid #1F4E79; padding-bottom: 8px;
+  }
+  .step-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; background: #C00000; color: white;
+    border-radius: 50%; font-weight: 700; margin-right: 8px;
+  }
+  .step { margin-bottom: 18px; padding-left: 36px; position: relative; }
+  .step .step-num { position: absolute; left: 0; top: 0; }
+  .step h3 { font-size: 15px; color: #1F4E79; margin-bottom: 6px; }
+  .step p, .step li { font-size: 14px; color: #4a5568; margin-bottom: 4px; }
+  .step ul { padding-left: 20px; }
+  code {
+    background: #edf2f7; padding: 2px 6px; border-radius: 4px;
+    font-family: 'SF Mono', Consolas, monospace; font-size: 13px;
+    color: #C00000;
+  }
+  .code-block {
+    background: #1a202c; color: #68d391; padding: 16px;
+    border-radius: 8px; font-family: 'SF Mono', Consolas, monospace;
+    font-size: 12px; overflow-x: auto; white-space: pre;
+    line-height: 1.5; max-height: 500px; overflow-y: auto;
+  }
+  .code-block .kw { color: #f687b3; }
+  .code-block .str { color: #fbd38d; }
+  .code-block .com { color: #718096; font-style: italic; }
+  .copy-btn {
+    background: #4299e1; color: white; border: none;
+    padding: 8px 16px; border-radius: 6px; cursor: pointer;
+    font-weight: 600; font-size: 13px; margin-top: 10px;
+  }
+  .copy-btn:hover { background: #2b6cb0; }
+  .alert {
+    padding: 12px 16px; border-radius: 8px; margin: 12px 0;
+    font-size: 13px; border-left: 4px solid;
+  }
+  .alert-info { background: #DDEBF7; border-color: #1F4E79; color: #1a365d; }
+  .alert-warn { background: #fefcbf; border-color: #d69e2e; color: #744210; }
+  .alert-success { background: #c6f6d5; border-color: #00B050; color: #22543d; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .form-group label { font-size: 13px; font-weight: 600; color: #4a5568; }
+  .form-group input {
+    padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px;
+    font-size: 14px; font-family: inherit;
+  }
+  .form-group input:focus { outline: none; border-color: #1F4E79; }
+  .btn {
+    padding: 12px 20px; background: linear-gradient(135deg, #1F4E79, #163a5c);
+    color: white; border: none; border-radius: 8px;
+    font-weight: 700; font-size: 14px; cursor: pointer; font-family: inherit;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn-success { background: linear-gradient(135deg, #00B050, #008a3f); }
+  .btn-test { background: #4299e1; }
+  .test-result {
+    margin-top: 10px; padding: 10px; border-radius: 8px;
+    font-size: 13px; display: none;
+  }
+  .test-result.show { display: block; }
+  .test-result.ok { background: #c6f6d5; color: #22543d; }
+  .test-result.err { background: #fed7d7; color: #742a2a; }
+  table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+    margin: 12px 0;
+  }
+  table th, table td {
+    border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left;
+  }
+  table th { background: #DDEBF7; font-weight: 700; color: #1F4E79; }
+  .nav-back { display: inline-block; padding: 8px 16px; background: white; color: #1F4E79; border-radius: 8px; text-decoration: none; font-weight: 600; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<a href="/" class="nav-back">← Về trang chủ</a>
+
+<header>
+  <h1>☁️ Setup Google Sheet Database</h1>
+  <div class="sub">Hướng dẫn kết nối hệ thống phỏng vấn với Google Sheet — không cần code</div>
+</header>
+
+<div class="card">
+  <h2>📋 Tại sao cần Google Sheet?</h2>
+  <p style="font-size: 14px; color: #4a5568;">
+    Hiện tại mỗi lần lưu, hệ thống tạo 1 file JSON tải về máy. <strong>Khó xem lại</strong>, dễ thất lạc, không sort/filter được.
+    Sau khi setup Google Sheet:
+  </p>
+  <ul style="margin: 10px 0 0 20px; font-size: 14px; color: #4a5568;">
+    <li>✅ Mọi hồ sơ tự động lưu lên 1 Google Sheet duy nhất</li>
+    <li>✅ Xem tất cả ứng viên trong 1 bảng — sort theo điểm, lọc theo ngày</li>
+    <li>✅ Export Excel, share cho team, làm báo cáo dễ dàng</li>
+    <li>✅ Backup tự động bởi Google Drive</li>
+    <li>✅ Tải lại bất kỳ hồ sơ nào để xem chi tiết / chỉnh sửa</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2>🚀 BƯỚC 1: Tạo Google Sheet mới</h2>
+  <div class="step">
+    <span class="step-num">1</span>
+    <h3>Truy cập <a href="https://sheets.new" target="_blank">sheets.new</a></h3>
+    <p>Hoặc vào Google Drive → New → Google Sheets</p>
+  </div>
+  <div class="step">
+    <span class="step-num">2</span>
+    <h3>Đặt tên Sheet: <code>KITA Interview Database</code></h3>
+    <p>Đặt tên ô tab (sheet con) ở dưới là <code>PhongVan</code> (quan trọng - không được sai)</p>
+  </div>
+  <div class="step">
+    <span class="step-num">3</span>
+    <h3>Copy header row vào dòng 1</h3>
+    <p>Copy đoạn dưới và paste vào ô A1 của sheet (Google Sheet sẽ tự tách cột):</p>
+    <div class="code-block">Timestamp	Tên ứng viên	Vị trí	Ngày PV	HR/PV viên	Vòng	SĐT/Email	Nguồn	Scores (JSON)	Notes (JSON)	QA (JSON)	Decision (JSON)	HR Decision (JSON)	Điểm TB	Đề xuất	Full JSON</div>
+    <button class="copy-btn" onclick="copyText('header')">📋 Copy Header</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>⚙️ BƯỚC 2: Tạo Apps Script (Backend)</h2>
+  <div class="step">
+    <span class="step-num">1</span>
+    <h3>Trong Google Sheet vừa tạo: Extensions → Apps Script</h3>
+    <p>Một tab mới mở ra với editor code</p>
+  </div>
+  <div class="step">
+    <span class="step-num">2</span>
+    <h3>Xoá toàn bộ code mặc định, paste code dưới đây:</h3>
+    <button class="copy-btn" onclick="copyText('script')">📋 Copy Code Apps Script</button>
+    <div class="code-block" id="scriptCode">// ============== KITA INTERVIEW DATABASE ==============
+// Apps Script Web App - Kết nối hệ thống phỏng vấn với Google Sheet
+// Phiên bản: 1.0 | Tác giả: KITA Interview System
+
+const SHEET_NAME = 'PhongVan';
+const API_KEY = 'KITA-2026-SECRET'; // ⚠️ Đổi key này thành chuỗi bí mật của bạn
+
+// ============== POST: Lưu hồ sơ mới ==============
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    if (data.apiKey !== API_KEY) {
+      return jsonResponse({ ok: false, error: 'Sai API key' });
+    }
+
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    if (!sheet) {
+      return jsonResponse({ ok: false, error: 'Không tìm thấy sheet "' + SHEET_NAME + '"' });
+    }
+
+    // Tính điểm TB
+    const scores = Object.values(data.scores || {}).filter(s => typeof s === 'number');
+    const avg = scores.length ? (scores.reduce((a,b) => a+b, 0) / scores.length).toFixed(2) : '';
+
+    // Đề xuất
+    let rec = '';
+    if (avg >= 4) rec = '✅ PASS';
+    else if (avg >= 3) rec = '🟡 CÂN NHẮC';
+    else if (scores.length > 0) rec = '❌ LOẠI';
+
+    // Ghi đè nếu cùng tên + cùng vòng
+    const candName = (data.candidate || {}).name || '';
+    const exportType = data.exportType || 'all';
+    const existingRow = findExistingRow(sheet, candName, exportType);
+
+    const rowData = [
+      new Date(),
+      candName,
+      (data.candidate || {}).position || '',
+      (data.candidate || {}).date || '',
+      (data.candidate || {}).interviewer || '',
+      exportType,
+      (data.candidate || {}).contact || '',
+      (data.candidate || {}).source || '',
+      JSON.stringify(data.scores || {}),
+      JSON.stringify(data.notes || {}),
+      JSON.stringify(data.qa || []),
+      JSON.stringify(data.decision || {}),
+      JSON.stringify(data.hrDecision || {}),
+      avg,
+      rec,
+      JSON.stringify(data)
+    ];
+
+    if (existingRow > 0) {
+      sheet.getRange(existingRow, 1, 1, rowData.length).setValues([rowData]);
+      return jsonResponse({ ok: true, action: 'update', row: existingRow });
+    } else {
+      sheet.appendRow(rowData);
+      return jsonResponse({ ok: true, action: 'insert', row: sheet.getLastRow() });
+    }
+  } catch (err) {
+    return jsonResponse({ ok: false, error: err.message });
+  }
+}
+
+// ============== GET: Tải danh sách hồ sơ ==============
+function doGet(e) {
+  try {
+    if (e.parameter.apiKey !== API_KEY) {
+      return jsonResponse({ ok: false, error: 'Sai API key' });
+    }
+
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 2) return jsonResponse({ ok: true, data: [] });
+
+    const headers = data[0];
+    const rows = data.slice(1);
+
+    let result = rows.map((row, idx) => {
+      const obj = { _row: idx + 2 };
+      headers.forEach((h, i) => obj[h] = row[i]);
+      return obj;
+    }).filter(r => r['Tên ứng viên']);
+
+    // Lọc theo tên nếu có
+    if (e.parameter.search) {
+      const q = e.parameter.search.toLowerCase();
+      result = result.filter(r =>
+        ((r['Tên ứng viên'] || '') + '').toLowerCase().includes(q) ||
+        ((r['SĐT/Email'] || '') + '').toLowerCase().includes(q)
+      );
+    }
+
+    // Trả về 50 dòng mới nhất
+    result.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+    if (result.length > 50) result = result.slice(0, 50);
+
+    return jsonResponse({ ok: true, data: result, total: result.length });
+  } catch (err) {
+    return jsonResponse({ ok: false, error: err.message });
+  }
+}
+
+function findExistingRow(sheet, name, exportType) {
+  if (!name) return 0;
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][1] === name && data[i][5] === exportType) return i + 1;
+  }
+  return 0;
+}
+
+function jsonResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}</div>
+  </div>
+  <div class="step">
+    <span class="step-num">3</span>
+    <h3>Đổi <code>API_KEY</code> ở dòng 5 thành chuỗi bí mật của bạn</h3>
+    <p>VD: <code>KITA-MyTeam-2026</code> — chỉ chia sẻ với người được phép truy cập database</p>
+  </div>
+  <div class="step">
+    <span class="step-num">4</span>
+    <h3>Lưu file (Ctrl+S) → đặt tên project: <code>KITA Interview API</code></h3>
+  </div>
+</div>
+
+<div class="card">
+  <h2>🌐 BƯỚC 3: Deploy Web App</h2>
+  <div class="step">
+    <span class="step-num">1</span>
+    <h3>Bấm nút <strong>Deploy</strong> (góc phải trên) → <strong>New deployment</strong></h3>
+  </div>
+  <div class="step">
+    <span class="step-num">2</span>
+    <h3>Chọn loại: bấm icon ⚙️ bên trái → <strong>Web app</strong></h3>
+  </div>
+  <div class="step">
+    <span class="step-num">3</span>
+    <h3>Cấu hình:</h3>
+    <ul>
+      <li><strong>Description:</strong> KITA Interview v1</li>
+      <li><strong>Execute as:</strong> Me (your-email@gmail.com)</li>
+      <li><strong>Who has access:</strong> <code>Anyone</code> ⚠️ QUAN TRỌNG</li>
+    </ul>
+    <div class="alert alert-warn">
+      ⚠️ "Anyone" có nghĩa bất kỳ ai có URL đều POST/GET được. Bảo mật bằng <code>API_KEY</code> đã set ở bước 2.
+    </div>
+  </div>
+  <div class="step">
+    <span class="step-num">4</span>
+    <h3>Bấm <strong>Deploy</strong> → cấp quyền truy cập Sheet (Allow)</h3>
+    <p>Lần đầu Google sẽ cảnh báo "Unverified app" → bấm <strong>Advanced → Go to KITA Interview API (unsafe)</strong> → <strong>Allow</strong></p>
+  </div>
+  <div class="step">
+    <span class="step-num">5</span>
+    <h3>Copy Web App URL</h3>
+    <p>URL có dạng: <code>https://script.google.com/macros/s/AKfy.../exec</code> — copy lại để dùng ở bước sau</p>
+  </div>
+</div>
+
+<div class="card">
+  <h2>🔌 BƯỚC 4: Test kết nối</h2>
+  <p style="font-size: 14px; color: #4a5568; margin-bottom: 12px;">
+    Paste URL + API key vào ô dưới để test thử + lưu config vào trình duyệt:
+  </p>
+  <div class="form-group">
+    <label>Web App URL (từ bước 3)</label>
+    <input type="text" id="cfgUrl" placeholder="https://script.google.com/macros/s/AKfy.../exec">
+  </div>
+  <div class="form-group">
+    <label>API Key (đã set trong code)</label>
+    <input type="text" id="cfgKey" placeholder="KITA-2026-SECRET">
+  </div>
+  <button class="btn btn-test" onclick="testConnection()">🔌 Test kết nối</button>
+  <button class="btn btn-success" onclick="saveConfig()" style="margin-left: 8px;">💾 Lưu cấu hình</button>
+  <div class="test-result" id="testResult"></div>
+</div>
+
+<div class="card">
+  <h2>✅ BƯỚC 5: Hoàn tất - Sử dụng</h2>
+  <div class="alert alert-success">
+    <strong>🎉 Sau khi lưu cấu hình:</strong><br>
+    • Mở hệ thống chính (<a href="/">phongvanmkt.kitagroupvn.com</a>) hoặc trang HR (<a href="/hr/">/hr/</a>)<br>
+    • Bấm nút <strong>☁️ Lưu Cloud</strong> → data tự lưu lên Google Sheet<br>
+    • Bấm <strong>🔍 Tải từ Cloud</strong> → tìm kiếm hồ sơ cũ theo tên/SĐT
+  </div>
+  <h3 style="color: #1F4E79; margin: 14px 0 8px; font-size: 15px;">📊 Cách xem dữ liệu trong Google Sheet:</h3>
+  <ul style="font-size: 14px; color: #4a5568; margin-left: 20px;">
+    <li>Mở Sheet → xem tất cả hồ sơ trong 1 bảng</li>
+    <li>Lọc cột "Vòng" để xem riêng V1/V2/V3/V4</li>
+    <li>Sort theo "Điểm TB" để xem top ứng viên</li>
+    <li>Cột "Full JSON" có đầy đủ data — copy cell đó để load lại vào hệ thống</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2>🛠️ Khắc phục sự cố thường gặp</h2>
+  <table>
+    <thead><tr><th>Lỗi</th><th>Nguyên nhân</th><th>Cách sửa</th></tr></thead>
+    <tbody>
+      <tr><td>"Sai API key"</td><td>Key trong HTML khác Apps Script</td><td>Kiểm tra lại 2 chỗ phải khớp</td></tr>
+      <tr><td>"Không tìm thấy sheet PhongVan"</td><td>Tab sheet không đặt tên đúng</td><td>Đổi tên tab thành đúng <code>PhongVan</code></td></tr>
+      <tr><td>CORS error</td><td>Deploy chưa chọn "Anyone"</td><td>Re-deploy với access = Anyone</td></tr>
+      <tr><td>403 Forbidden</td><td>Chưa Authorize quyền</td><td>Mở Apps Script → chạy thử doGet → Allow</td></tr>
+    </tbody>
+  </table>
+</div>
+
+</div>
+
+<script>
+function copyText(type) {
+  let text = '';
+  if (type === 'header') {
+    text = 'Timestamp\tTên ứng viên\tVị trí\tNgày PV\tHR/PV viên\tVòng\tSĐT/Email\tNguồn\tScores (JSON)\tNotes (JSON)\tQA (JSON)\tDecision (JSON)\tHR Decision (JSON)\tĐiểm TB\tĐề xuất\tFull JSON';
+  } else if (type === 'script') {
+    text = document.getElementById('scriptCode').textContent;
+  }
+  navigator.clipboard.writeText(text).then(() => alert('✅ Đã copy!\nGiờ paste vào nơi cần.'));
+}
+
+async function testConnection() {
+  const url = document.getElementById('cfgUrl').value.trim();
+  const key = document.getElementById('cfgKey').value.trim();
+  const result = document.getElementById('testResult');
+
+  if (!url || !key) {
+    result.className = 'test-result show err';
+    result.textContent = '⚠️ Nhập cả URL và API Key trước khi test';
+    return;
+  }
+
+  result.className = 'test-result show';
+  result.textContent = '⏳ Đang kết nối...';
+
+  try {
+    const res = await fetch(`${url}?apiKey=${encodeURIComponent(key)}&search=`, { method: 'GET' });
+    const data = await res.json();
+    if (data.ok) {
+      result.className = 'test-result show ok';
+      result.innerHTML = `✅ <strong>KẾT NỐI THÀNH CÔNG!</strong><br>Số hồ sơ hiện có: ${data.total || 0}`;
+    } else {
+      result.className = 'test-result show err';
+      result.innerHTML = `❌ <strong>Lỗi:</strong> ${data.error || 'Không xác định'}`;
+    }
+  } catch (e) {
+    result.className = 'test-result show err';
+    result.innerHTML = `❌ <strong>Lỗi kết nối:</strong> ${e.message}<br><small>Có thể URL sai hoặc Apps Script chưa deploy đúng</small>`;
+  }
+}
+
+function saveConfig() {
+  const url = document.getElementById('cfgUrl').value.trim();
+  const key = document.getElementById('cfgKey').value.trim();
+  if (!url || !key) { alert('⚠️ Nhập cả URL và API Key'); return; }
+
+  const config = { url, apiKey: key, savedAt: new Date().toISOString() };
+  localStorage.setItem('kita_cloud_config', JSON.stringify(config));
+  alert('✅ ĐÃ LƯU CẤU HÌNH!\n\nGiờ về hệ thống chính hoặc trang HR → bấm "☁️ Lưu Cloud" để bắt đầu dùng database.');
+}
+
+// Load config nếu đã lưu
+(function() {
+  const cfg = localStorage.getItem('kita_cloud_config');
+  if (cfg) {
+    try {
+      const data = JSON.parse(cfg);
+      document.getElementById('cfgUrl').value = data.url || '';
+      document.getElementById('cfgKey').value = data.apiKey || '';
+    } catch(e) {}
+  }
+})();
+</script>
+</body>
+</html>

@@ -229,9 +229,11 @@
       <div class="subtitle">Phỏng vấn sàng lọc ban đầu | Q1-Q9 + Q&A của ứng viên</div>
     </div>
     <div class="actions">
-      <button class="btn btn-primary" onclick="exportV1()">📤 Xuất kết quả V1</button>
-      <button class="btn btn-light" onclick="saveLocal()">💾 Lưu</button>
-      <button class="btn btn-light" onclick="loadLocal()">📂 Tải</button>
+      <button class="btn btn-primary" onclick="cloudSave()">☁️ Lưu Cloud</button>
+      <button class="btn btn-light" onclick="cloudLoad()">🔍 Tải từ Cloud</button>
+      <button class="btn btn-light" onclick="exportV1()">📤 Xuất file V1</button>
+      <button class="btn btn-light" onclick="saveLocal()">💾 Lưu local</button>
+      <button class="btn btn-light" onclick="loadLocal()">📂 Tải file</button>
       <button class="btn btn-light" onclick="window.print()">🖨️ In</button>
       <button class="btn btn-light" onclick="resetAll()">🔄 Reset</button>
       <button class="btn btn-light" onclick="doLogout()">🚪 Đăng xuất</button>
@@ -654,6 +656,76 @@ function getDataObject() {
     },
     savedAt: new Date().toISOString(),
   };
+}
+
+// ============== GOOGLE SHEET CLOUD ==============
+function getCloudConfig() {
+  try {
+    const cfg = localStorage.getItem('kita_cloud_config');
+    return cfg ? JSON.parse(cfg) : null;
+  } catch(e) { return null; }
+}
+
+function promptCloudSetup() {
+  if (confirm('☁️ CHƯA CẤU HÌNH CLOUD\n\nCần setup Google Sheet 1 lần (~10 phút).\n\nOK = Mở hướng dẫn\nCancel = Để sau')) {
+    window.open('/setup-database/', '_blank');
+  }
+}
+
+async function cloudSave() {
+  const cfg = getCloudConfig();
+  if (!cfg) { promptCloudSetup(); return; }
+  const name = document.getElementById('candidateName').value.trim();
+  if (!name) { alert('⚠️ Vui lòng nhập tên ứng viên trước!'); return; }
+
+  const data = getDataObject();
+  data.apiKey = cfg.apiKey;
+  toast('⏳ Đang lưu Cloud...', 'success');
+
+  try {
+    const res = await fetch(cfg.url, { method: 'POST', body: JSON.stringify(data) });
+    const result = await res.json();
+    if (result.ok) {
+      const action = result.action === 'update' ? 'CẬP NHẬT' : 'TẠO MỚI';
+      alert(`☁️ ĐÃ LƯU LÊN GOOGLE SHEET!\n\n📌 ${action}\n📍 Dòng: ${result.row}\n👤 ${name}`);
+      toast('☁️ Đã lưu Cloud', 'success');
+    } else {
+      alert('❌ Lỗi: ' + (result.error || '?'));
+    }
+  } catch(e) { alert('❌ Lỗi kết nối: ' + e.message); }
+}
+
+async function cloudLoad() {
+  const cfg = getCloudConfig();
+  if (!cfg) { promptCloudSetup(); return; }
+  const search = prompt('🔍 TÌM HỒ SƠ V1 TRÊN CLOUD\n\nNhập tên / SĐT / email:\n(Trống = 50 hồ sơ mới nhất)');
+  if (search === null) return;
+
+  toast('⏳ Đang tải...', 'success');
+  try {
+    const res = await fetch(`${cfg.url}?apiKey=${encodeURIComponent(cfg.apiKey)}&search=${encodeURIComponent(search || '')}`);
+    const result = await res.json();
+    if (!result.ok) { alert('❌ ' + (result.error || '?')); return; }
+
+    // Filter chỉ V1
+    const v1Only = (result.data || []).filter(r => r['Vòng'] === 'V1' || r['Vòng'] === 'all');
+    if (v1Only.length === 0) { alert('📭 Không có hồ sơ V1 nào'); return; }
+
+    const list = v1Only.map((r, i) =>
+      `${i + 1}. ${r['Tên ứng viên']} | TB ${r['Điểm TB'] || '?'} | ${r['Đề xuất'] || ''} | ${(r['Timestamp']+'').slice(0,10)}`
+    ).join('\n');
+
+    const choice = prompt(`📋 ${v1Only.length} HỒ SƠ V1:\n\n${list}\n\nNhập số:`);
+    if (!choice) return;
+    const num = parseInt(choice);
+    if (isNaN(num) || num < 1 || num > v1Only.length) { alert('❌ Sai số'); return; }
+
+    const fullJson = v1Only[num - 1]['Full JSON'];
+    if (!fullJson) { alert('❌ Không có data'); return; }
+    applyData(JSON.parse(fullJson));
+    alert(`✅ ĐÃ TẢI HỒ SƠ V1!\n\n👤 ${v1Only[num-1]['Tên ứng viên']}\n📊 TB: ${v1Only[num-1]['Điểm TB']}`);
+    toast('☁️ Đã tải Cloud', 'success');
+  } catch(e) { alert('❌ Lỗi: ' + e.message); }
 }
 
 function exportV1() {
