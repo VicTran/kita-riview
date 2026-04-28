@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quản lý CV - KITA Interview</title>
 <script src="/config.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/themes/material_blue.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -146,6 +150,47 @@
   .grade-good { background: #bee3f8; color: #2c5282; }
   .grade-average { background: #fefcbf; color: #744210; }
   .grade-weak { background: #fed7d7; color: #742a2a; }
+
+  /* Flatpickr custom theme */
+  .flatpickr-input.form-control,
+  input.flatpickr-input {
+    cursor: pointer; background: white !important;
+  }
+  .flatpickr-input[readonly] {
+    background: white !important;
+    color: #2d3748;
+  }
+  .flatpickr-calendar {
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15) !important;
+    border-radius: 12px !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+  .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange {
+    background: #0F766E !important;
+    border-color: #0F766E !important;
+  }
+  .flatpickr-day.today {
+    border-color: #0F766E !important;
+    color: #0F766E;
+  }
+  .flatpickr-time input:hover,
+  .flatpickr-time input:focus {
+    background: #f0fdfa !important;
+  }
+  .flatpickr-monthDropdown-months {
+    font-weight: 600;
+    color: #0F766E;
+  }
+  .numInputWrapper:hover { background: rgba(15,118,110,0.08) !important; }
+  .flatpickr-current-month .numInputWrapper {
+    color: #0F766E;
+  }
+  /* Date display field */
+  .date-display {
+    display: inline-block; padding: 6px 12px; background: #f0fdfa;
+    border: 1.5px solid #0F766E; border-radius: 6px;
+    color: #0F766E; font-weight: 600; font-size: 13px;
+  }
 
   /* Queue cards */
   .queue-grid {
@@ -1061,14 +1106,15 @@ function openReview(rowNum) {
     ${renderHrScoreReview(c)}
 
     <div class="modal-section">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        ${c['CV file'] ? `<a href="${c['CV file']}" target="_blank" class="btn btn-blue">📄 Mở CV (Drive)</a>` : '<div style="color:#C00000;font-size:13px;">Chưa có file CV</div>'}
+      <h4 style="color:#0F766E;margin-bottom:10px;">📂 Tài liệu ứng viên</h4>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+        ${c['CV file'] ? `<a href="${c['CV file']}" target="_blank" class="btn btn-blue">📄 Mở CV (Drive)</a>` : '<div style="padding:8px 12px;background:#fed7d7;color:#742a2a;border-radius:6px;font-size:12px;">⚠️ Chưa có file CV</div>'}
         ${c['Portfolio file'] ? `<a href="${c['Portfolio file']}" target="_blank" class="btn btn-success">📂 Mở Portfolio file (Drive)</a>` : ''}
       </div>
-      ${c['Portfolio link'] ? `<div style="margin-top:10px;padding:10px 12px;background:#fffbf0;border-left:4px solid #d97706;border-radius:6px;font-size:12px;">
+      <div style="padding:12px;background:#fffbf0;border-left:4px solid #d97706;border-radius:6px;font-size:12px;">
         <strong>🔗 Link Portfolio / Kênh cá nhân:</strong><br>
-        ${formatPortfolioLinks(c['Portfolio link'])}
-      </div>` : ''}
+        ${c['Portfolio link'] ? formatPortfolioLinks(c['Portfolio link']) : '<span style="color:#a0aec0;font-style:italic;">Chưa có (HR không nhập khi upload CV)</span>'}
+      </div>
     </div>
   `;
 
@@ -1499,8 +1545,45 @@ function toast(msg, type) {
   setTimeout(() => el.classList.remove('show'), 3000);
 }
 
+// ============== FLATPICKR — DATE PICKER ĐẸP ==============
+function initFlatpickrAll() {
+  if (typeof flatpickr === 'undefined') return;
+  document.querySelectorAll('input[type="datetime-local"]:not(.flatpickr-input)').forEach(input => {
+    flatpickr(input, {
+      enableTime: true,
+      dateFormat: 'Y-m-d\\TH:i',
+      altInput: true,
+      altFormat: 'H:i — d/m/Y',
+      locale: 'vn',
+      time_24hr: true,
+      minuteIncrement: 15,
+      defaultHour: 9,
+      placeholder: 'Chọn ngày giờ...'
+    });
+  });
+  document.querySelectorAll('input[type="date"]:not(.flatpickr-input)').forEach(input => {
+    flatpickr(input, {
+      dateFormat: 'Y-m-d',
+      altInput: true,
+      altFormat: 'd/m/Y',
+      locale: 'vn',
+      placeholder: 'Chọn ngày...'
+    });
+  });
+}
+
+// Re-init khi modal mở (vì input được render dynamic)
+const _origOpenReview = typeof openReview === 'function' ? openReview : null;
+document.addEventListener('DOMContentLoaded', () => setTimeout(initFlatpickrAll, 200));
+
+// Hook MutationObserver để init Flatpickr cho input mới được tạo
+const _flatpickrObserver = new MutationObserver(() => initFlatpickrAll());
+document.addEventListener('DOMContentLoaded', () => {
+  _flatpickrObserver.observe(document.body, { childList: true, subtree: true });
+});
+
 // ============== INIT ==============
-function initApp() { loadAllCVs(); }
+function initApp() { loadAllCVs(); setTimeout(initFlatpickrAll, 100); }
 
 if (checkAuth()) {
   document.getElementById('loginOverlay').classList.add('hidden');

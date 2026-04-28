@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hệ thống phỏng vấn - Marketing KITA BOOKS</title>
 <script src="/config.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/themes/material_red.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -516,7 +520,7 @@
 <nav class="tabs">
   <button class="tab active" data-section="rubric" onclick="showSection('rubric')">📖 Rubric</button>
   <button class="tab" data-section="round1" onclick="showSection('round1')">Vòng 1 - HR<span class="tab-badge" id="badge-round1">0/10</span></button>
-  <button class="tab" data-section="round3" onclick="showSection('round3')">Vòng 2 - Bài tập<span class="tab-badge">3 BT</span></button>
+  <button class="tab" data-section="round3" onclick="showSection('round3')">Vòng 2 - Bài tập<span class="tab-badge">5 BT</span></button>
   <button class="tab" data-section="round2" onclick="showSection('round2')">Vòng 3 - TPMKT<span class="tab-badge" id="badge-round2">0/31</span></button>
   <button class="tab" data-section="round4" onclick="showSection('round4')">Vòng 4 - GĐ<span class="tab-badge" id="badge-round4">0/4</span></button>
   <button class="tab" data-section="qa" onclick="showSection('qa')">💬 Q&A</button>
@@ -842,29 +846,44 @@ const QUESTIONS = {
     ]},
   ]},
   round3: [
-    { id: 'bt1', title: 'BÀI TẬP 1: VIẾT REVIEW SÁCH (60-90 phút)',
-      desc: '1 cuốn sách KITA BOOKS. Viết: Bài review FB 300-500 chữ + Caption IG 100-150 chữ + Script TikTok 30-45s.',
+    { id: 'bt1', title: 'BÀI TẬP 1: Viết bài quảng bá sách thiếu nhi (60-90 phút)',
+      desc: 'Ứng viên chọn 1 sách trên kitabook.vn, viết: Bài đăng FB 300-500 chữ + Kịch bản TikTok 30-45s. Đối tượng: phụ huynh con 3-12 tuổi.',
       criteria: [
-        { name: 'Hook 3 giây đầu thu hút?', weight: 30 },
-        { name: 'Hiểu nội dung sách qua review?', weight: 30 },
-        { name: 'CTA rõ ràng dẫn conversion?', weight: 20 },
-        { name: 'Phù hợp đặc tính platform?', weight: 20 },
+        { name: 'Câu mở đầu thu hút trong 3 giây?', weight: 30 },
+        { name: 'Hiểu sâu nội dung sách + phù hợp phụ huynh?', weight: 30 },
+        { name: 'Lời kêu gọi mua hàng rõ ràng?', weight: 20 },
+        { name: 'Phù hợp đặc tính FB / TikTok?', weight: 20 },
       ]},
-    { id: 'bt2', title: 'BÀI TẬP 2: LẬP KẾ HOẠCH MARKETING (60-90 phút)',
-      desc: 'Tựa sách mới, DT 500tr/tháng, ngân sách 100tr ads, đối tượng PN 25-40t. Plan 30 ngày.',
+    { id: 'bt2', title: 'BÀI TẬP 2: Mô tả quy trình làm content (30-45 phút)',
+      desc: 'Ứng viên tự nghĩ ra quy trình làm 1 bài quảng bá sách thiếu nhi từ A-Z. Không gợi ý sẵn các bước.',
       criteria: [
-        { name: 'Phase + Mục tiêu mỗi phase rõ?', weight: 25 },
-        { name: 'Content calendar khả thi?', weight: 20 },
-        { name: 'Audience targeting cụ thể?', weight: 20 },
-        { name: 'Budget allocation hợp lý?', weight: 20 },
-        { name: 'Forecast + Backup plan?', weight: 15 },
+        { name: 'Quy trình có hệ thống, logic?', weight: 35 },
+        { name: 'Các bước thực tế, không nói chung chung?', weight: 30 },
+        { name: 'Có dùng công cụ phù hợp (Canva, ChatGPT...)?', weight: 20 },
+        { name: 'Hiểu các bước quan trọng (research, kiểm tra, theo dõi)?', weight: 15 },
       ]},
-    { id: 'bt3', title: 'BÀI TẬP 3: PHÂN TÍCH SỐ LIỆU (45 phút)',
-      desc: 'Báo cáo FB Ads 30 ngày. Phân tích vấn đề, đề xuất tối ưu.',
+    { id: 'bt3', title: 'BÀI TẬP 3: Phân tích số liệu quảng cáo (45 phút)',
+      desc: 'Báo cáo FB Ads giả lập tại /anh-ads-fb/. Phân tích vấn đề, đánh giá ad set + creative, đề xuất tối ưu.',
       criteria: [
-        { name: 'Phân tích đúng vấn đề & nguyên nhân?', weight: 35 },
-        { name: 'Đề xuất hành động khả thi?', weight: 35 },
-        { name: 'Forecast hợp lý?', weight: 30 },
+        { name: 'Phân tích đúng vấn đề + nguyên nhân gốc?', weight: 30 },
+        { name: 'Phân tích từng nhóm quảng cáo + hình ảnh/video?', weight: 25 },
+        { name: 'Đề xuất hành động khả thi (kèm chỉ số mong muốn)?', weight: 25 },
+        { name: 'Dự báo hợp lý có cơ sở?', weight: 20 },
+      ]},
+    { id: 'bt4', title: 'BÀI TẬP 4: Sử dụng AI tạo nội dung (30-45 phút)',
+      desc: 'Viết câu lệnh cho AI + mô tả quy trình 5 bước dùng AI tạo TikTok + phân tích lỗi AI.',
+      criteria: [
+        { name: 'Câu lệnh chất lượng + nội dung AI trả về tốt?', weight: 40 },
+        { name: 'Quy trình rõ + công cụ cụ thể?', weight: 30 },
+        { name: 'Phát hiện + cách sửa lỗi AI?', weight: 30 },
+      ]},
+    { id: 'bt5', title: 'BÀI TẬP 5: Viết 3 bài đăng FB tại chỗ (15-20 phút)',
+      desc: 'Speed test: viết 3 bài đăng FB (HOOK, KỂ CHUYỆN, KÊU GỌI MUA) cho 1 cuốn sách thiếu nhi tự chọn.',
+      criteria: [
+        { name: 'Câu mở đầu thu hút trong 3 giây?', weight: 25 },
+        { name: 'Đúng nỗi đau / quan tâm phụ huynh?', weight: 25 },
+        { name: 'Lời kêu gọi mua rõ ràng?', weight: 25 },
+        { name: 'Biểu tượng + định dạng phù hợp?', weight: 25 },
       ]},
   ],
   round4: { title: 'Vòng 4', groups: [
@@ -890,10 +909,12 @@ const SCORECARD_CONFIG = [
   { name: '🚩 A3. Loại bỏ Red flags [V1: Q9, Q45]', weight: 5, qIds: ['q9', 'q45'] },
 
   // 🟧 VÒNG 2 - BÀI TẬP THỰC TẾ (20%) - PRACTICAL SKILLS
-  { name: '📝 E1. Bài tập thực tế [V2: BT1+BT2+BT3]', weight: 20, qIds: [
+  { name: '📝 E1. Bài tập thực tế [V2: BT1+BT2+BT3+BT4+BT5]', weight: 20, qIds: [
     'bt1-c0', 'bt1-c1', 'bt1-c2', 'bt1-c3',
-    'bt2-c0', 'bt2-c1', 'bt2-c2', 'bt2-c3', 'bt2-c4',
-    'bt3-c0', 'bt3-c1', 'bt3-c2'
+    'bt2-c0', 'bt2-c1', 'bt2-c2', 'bt2-c3',
+    'bt3-c0', 'bt3-c1', 'bt3-c2', 'bt3-c3',
+    'bt4-c0', 'bt4-c1', 'bt4-c2',
+    'bt5-c0', 'bt5-c1', 'bt5-c2', 'bt5-c3'
   ]},
 
   // 🟪 VÒNG 3 - TPMKT Soft Skills (25%)
@@ -2137,6 +2158,27 @@ function toast(msg, type = '') {
 
 document.getElementById('interviewDate').valueAsDate = new Date();
 renderAll();
+
+// ============== FLATPICKR — DATE PICKER ĐẸP ==============
+function initFlatpickrAll() {
+  if (typeof flatpickr === 'undefined') return;
+  document.querySelectorAll('input[type="datetime-local"]:not(.flatpickr-input)').forEach(input => {
+    flatpickr(input, {
+      enableTime: true, dateFormat: 'Y-m-d\\TH:i',
+      altInput: true, altFormat: 'H:i — d/m/Y',
+      locale: 'vn', time_24hr: true, minuteIncrement: 15, defaultHour: 9,
+      placeholder: 'Chọn ngày giờ...'
+    });
+  });
+  document.querySelectorAll('input[type="date"]:not(.flatpickr-input)').forEach(input => {
+    flatpickr(input, {
+      dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y',
+      locale: 'vn', placeholder: 'Chọn ngày...'
+    });
+  });
+}
+setTimeout(initFlatpickrAll, 200);
+new MutationObserver(() => initFlatpickrAll()).observe(document.body, { childList: true, subtree: true });
 
 // Auto-load nếu được chuyển từ trang danh sách
 (function checkPendingLoad() {

@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vòng 1 - HR Sàng lọc | KITA BOOKS</title>
 <script src="/config.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/themes/material_blue.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -959,6 +963,19 @@ function toast(msg, type) {
 // Init
 renderQuestions(); renderQA(); updateStats();
 document.getElementById('interviewDate').valueAsDate = new Date();
+
+// Flatpickr datetime đẹp
+function initFlatpickrAll() {
+  if (typeof flatpickr === 'undefined') return;
+  document.querySelectorAll('input[type="datetime-local"]:not(.flatpickr-input)').forEach(input => {
+    flatpickr(input, { enableTime: true, dateFormat: 'Y-m-d\\TH:i', altInput: true, altFormat: 'H:i — d/m/Y', locale: 'vn', time_24hr: true, minuteIncrement: 15, defaultHour: 9 });
+  });
+  document.querySelectorAll('input[type="date"]:not(.flatpickr-input)').forEach(input => {
+    flatpickr(input, { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', locale: 'vn' });
+  });
+}
+setTimeout(initFlatpickrAll, 200);
+new MutationObserver(() => initFlatpickrAll()).observe(document.body, { childList: true, subtree: true });
 
 // Auto-load nếu được chuyển từ trang danh sách
 (function checkPendingLoad() {
