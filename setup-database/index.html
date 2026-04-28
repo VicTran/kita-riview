@@ -153,17 +153,18 @@
     <span class="step-num">2</span>
     <h3>Xoá toàn bộ code mặc định, paste code dưới đây:</h3>
     <button class="copy-btn" onclick="copyText('script')">📋 Copy Code Apps Script</button>
-    <div class="code-block" id="scriptCode">// ============== KITA INTERVIEW DATABASE + AI ==============
-// Apps Script Web App - Kết nối hệ thống phỏng vấn với Google Sheet + Claude AI
-// Phiên bản: 2.0 | Tác giả: KITA Interview System
+    <div class="code-block" id="scriptCode">// ============== KITA INTERVIEW DATABASE + CV WORKFLOW ==============
+// Apps Script Web App v3.0 - Lưu hồ sơ PV + Upload CV + Lead review
+// Tác giả: KITA Interview System
 
 const SHEET_NAME = 'PhongVan';
+const CV_SHEET_NAME = 'CVQueue';
 const API_KEY = 'KITA-2026-SECRET'; // ⚠️ Đổi key này thành chuỗi bí mật của bạn
 
-// ⚠️ Nếu muốn dùng Claude (Anthropic) cho AI đánh giá CV, paste key vào đây
-// Lấy key tại: https://console.anthropic.com/settings/keys
-// Để trống nếu chỉ dùng OpenAI từ trang cv-ai
-const ANTHROPIC_API_KEY = ''; // Ví dụ: 'sk-ant-api03-...'
+// ⚠️ Drive folder ID để lưu CV (xem bước 5 dưới)
+// Tạo 1 folder mới trên Drive → mở folder → copy ID từ URL
+// VD: drive.google.com/drive/folders/ABCxyz123 → ID là "ABCxyz123"
+const CV_DRIVE_FOLDER_ID = ''; // Ví dụ: '1ABCxyz123_FolderID'
 
 // ============== POST: Lưu hồ sơ HOẶC phân tích CV bằng Claude ==============
 function doPost(e) {
@@ -173,9 +174,14 @@ function doPost(e) {
       return jsonResponse({ ok: false, error: 'Sai API key' });
     }
 
-    // Action: phân tích CV bằng Claude
-    if (data.action === 'analyze_cv') {
-      return analyzeCVWithClaude(data);
+    // Action: upload CV file mới
+    if (data.action === 'upload_cv') {
+      return uploadCV(data);
+    }
+
+    // Action: Lead review CV (approve/reject)
+    if (data.action === 'review_cv') {
+      return reviewCV(data);
     }
 
     // Action mặc định: lưu hồ sơ vào sheet
@@ -227,59 +233,102 @@ function doPost(e) {
   }
 }
 
-// ============== Phân tích CV bằng Claude (Anthropic) ==============
-function analyzeCVWithClaude(data) {
-  if (!ANTHROPIC_API_KEY || !ANTHROPIC_API_KEY.startsWith('sk-ant')) {
-    return jsonResponse({ ok: false, error: 'ANTHROPIC_API_KEY chưa được cấu hình trong Apps Script. Xem hướng dẫn ở /setup-database/' });
+// ============== UPLOAD CV (HR upload file → Drive + CVQueue sheet) ==============
+function uploadCV(data) {
+  if (!CV_DRIVE_FOLDER_ID) {
+    return jsonResponse({ ok: false, error: 'CV_DRIVE_FOLDER_ID chưa cấu hình trong Apps Script.' });
   }
-
   try {
-    const res = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
-      method: 'post',
-      contentType: 'application/json',
-      headers: {
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      payload: JSON.stringify({
-        model: data.model || 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
-        system: data.systemPrompt,
-        messages: [{ role: 'user', content: 'CV ỨNG VIÊN:\n\n' + (data.cvText || '').slice(0, 12000) }]
-      }),
-      muteHttpExceptions: true
-    });
+    const folder = DriveApp.getFolderById(CV_DRIVE_FOLDER_ID);
+    const cand = data.candidate || {};
 
-    const code = res.getResponseCode();
-    const text = res.getContentText();
-    if (code !== 200) {
-      return jsonResponse({ ok: false, error: 'Claude API ' + code + ': ' + text.slice(0, 300) });
-    }
-    const result = JSON.parse(text);
-    const content = result.content[0].text;
+    // Decode base64 file → save lên Drive
+    const bytes = Utilities.base64Decode(data.fileBase64);
+    const blob = Utilities.newBlob(bytes, data.fileMimeType, data.fileName);
+    const safeName = (cand.name || 'unknown').replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
+    const finalName = safeName + '_' + new Date().toISOString().slice(0,10) + '_' + data.fileName;
+    const file = folder.createFile(blob).setName(finalName);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    const fileUrl = file.getUrl();
 
-    // Try parse JSON từ response của Claude
-    let analysis;
-    try {
-      // Claude đôi khi wrap JSON trong ```json ... ```
-      const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || content.match(/\{[\s\S]*\}/);
-      const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content;
-      analysis = JSON.parse(jsonStr);
-    } catch (e) {
-      return jsonResponse({ ok: false, error: 'Claude trả về không phải JSON: ' + content.slice(0, 200) });
+    // Append vào CVQueue sheet
+    let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CV_SHEET_NAME);
+    if (!sheet) {
+      sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet(CV_SHEET_NAME);
+      sheet.appendRow(['Timestamp','Tên','SĐT/Email','Vị trí','Nguồn','CV file','HR upload','Note HR','Status','Lead reviewer','Note Lead','Lịch PV','Reviewed at']);
     }
 
-    return jsonResponse({ ok: true, analysis: analysis, model: data.model });
+    sheet.appendRow([
+      new Date(),
+      cand.name || '',
+      cand.contact || '',
+      cand.position || '',
+      cand.source || '',
+      fileUrl,
+      cand.hrUploader || 'HR',
+      cand.hrNote || '',
+      'PENDING',
+      '', '', '', ''
+    ]);
+
+    return jsonResponse({ ok: true, row: sheet.getLastRow(), fileUrl: fileUrl });
   } catch (err) {
-    return jsonResponse({ ok: false, error: 'Lỗi: ' + err.message });
+    return jsonResponse({ ok: false, error: err.message });
   }
 }
 
-// ============== GET: Tải danh sách hồ sơ ==============
+// ============== LIST CV QUEUE (lấy toàn bộ CVQueue) ==============
+function listCVQueue() {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CV_SHEET_NAME);
+    if (!sheet) return jsonResponse({ ok: true, data: [] });
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 2) return jsonResponse({ ok: true, data: [] });
+    const headers = data[0];
+    const rows = data.slice(1);
+    const result = rows.map((row, idx) => {
+      const obj = { _row: idx + 2 };
+      headers.forEach((h, i) => obj[h] = row[i] instanceof Date ? row[i].toISOString() : row[i]);
+      return obj;
+    }).filter(r => r['Tên']);
+    result.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+    return jsonResponse({ ok: true, data: result });
+  } catch (err) {
+    return jsonResponse({ ok: false, error: err.message });
+  }
+}
+
+// ============== REVIEW CV (Lead approve/reject) ==============
+function reviewCV(data) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CV_SHEET_NAME);
+    if (!sheet) return jsonResponse({ ok: false, error: 'Không tìm thấy sheet CVQueue' });
+    const row = parseInt(data.row);
+    if (!row || row < 2) return jsonResponse({ ok: false, error: 'Row không hợp lệ' });
+
+    // Cấu trúc: Status (col 9), Lead reviewer (10), Note Lead (11), Lịch PV (12), Reviewed at (13)
+    sheet.getRange(row, 9).setValue(data.decision);
+    sheet.getRange(row, 10).setValue(data.leadName || '');
+    sheet.getRange(row, 11).setValue(data.leadNote || '');
+    sheet.getRange(row, 12).setValue(data.interviewDate || '');
+    sheet.getRange(row, 13).setValue(new Date());
+
+    return jsonResponse({ ok: true, row: row });
+  } catch (err) {
+    return jsonResponse({ ok: false, error: err.message });
+  }
+}
+
+// ============== GET: Tải danh sách hồ sơ HOẶC CV queue ==============
 function doGet(e) {
   try {
     if (e.parameter.apiKey !== API_KEY) {
       return jsonResponse({ ok: false, error: 'Sai API key' });
+    }
+
+    // Action: list_cv_queue
+    if (e.parameter.action === 'list_cv_queue') {
+      return listCVQueue();
     }
 
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
@@ -409,35 +458,39 @@ function jsonResponse(obj) {
 </div>
 
 <div class="card">
-  <h2>🤖 (Tuỳ chọn) Bật Claude AI cho /cv-ai/</h2>
+  <h2>📥 (BẮT BUỘC nếu dùng /cv/) Setup Drive folder cho CV</h2>
   <p style="font-size: 14px; color: #4a5568; margin-bottom: 12px;">
-    Mặc định trang <a href="/cv-ai/" style="color:#1F4E79;">/cv-ai/</a> dùng OpenAI gọi trực tiếp từ browser. Nếu muốn dùng <strong>Claude (Anthropic)</strong> chất lượng cao hơn, cần bật route qua Apps Script:
+    Trang <a href="/cv/" style="color:#1F4E79;">/cv/</a> upload CV ứng viên lên Google Drive + lưu thông tin vào sheet "CVQueue". Cần:
   </p>
   <div class="step">
     <span class="step-num">1</span>
-    <h3>Lấy Anthropic API Key</h3>
-    <p>Vào <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:#1F4E79;font-weight:600;">console.anthropic.com/settings/keys</a> → Create Key → Copy</p>
-    <p>Key có dạng: <code>sk-ant-api03-...</code> (~$5 free credit cho người mới)</p>
+    <h3>Tạo folder mới trên Google Drive</h3>
+    <p>Vào <a href="https://drive.google.com" target="_blank" style="color:#1F4E79;font-weight:600;">drive.google.com</a> → New → Folder → đặt tên <code>KITA CV Storage</code></p>
   </div>
   <div class="step">
     <span class="step-num">2</span>
-    <h3>Mở Apps Script đã setup ở Bước 2 ở trên</h3>
-    <p>Tìm dòng: <code>const ANTHROPIC_API_KEY = '';</code></p>
-    <p>Thay bằng: <code>const ANTHROPIC_API_KEY = 'sk-ant-api03-...';</code> (paste key vừa copy)</p>
+    <h3>Lấy Folder ID</h3>
+    <p>Mở folder vừa tạo → URL có dạng: <code>drive.google.com/drive/folders/<strong>1ABCxyz123...</strong></code></p>
+    <p>Copy phần ID (sau <code>/folders/</code>)</p>
   </div>
   <div class="step">
     <span class="step-num">3</span>
-    <h3>Lưu file (Ctrl+S) → Deploy → Manage deployments → Edit (icon bút chì)</h3>
-    <p>Chọn <strong>"New version"</strong> → bấm <strong>Deploy</strong> → cấp quyền nếu Google hỏi</p>
-    <p>URL Web App KHÔNG đổi — chỉ đợi 30s là code mới có hiệu lực</p>
+    <h3>Mở Apps Script → tìm dòng <code>const CV_DRIVE_FOLDER_ID = '';</code></h3>
+    <p>Paste ID vào trong nháy: <code>const CV_DRIVE_FOLDER_ID = '1ABCxyz123...';</code></p>
   </div>
   <div class="step">
     <span class="step-num">4</span>
-    <h3>Sang trang /cv-ai/ → bấm 🔑 API Key → chọn provider "Claude"</h3>
-    <p>Không cần điền thêm key (key đã trong Apps Script). Bấm Lưu là xong.</p>
+    <h3>Tạo tab sheet mới tên <code>CVQueue</code> (hoặc để Apps Script tự tạo)</h3>
+    <p>Apps Script sẽ tự tạo tab + header khi upload CV đầu tiên. Hoặc tạo tay với header:</p>
+    <div class="code-block" style="font-size: 11px;">Timestamp	Tên	SĐT/Email	Vị trí	Nguồn	CV file	HR upload	Note HR	Status	Lead reviewer	Note Lead	Lịch PV	Reviewed at</div>
+  </div>
+  <div class="step">
+    <span class="step-num">5</span>
+    <h3>Save Apps Script → Deploy → Manage Deployments → Edit → New version → Deploy</h3>
+    <p>Cấp quyền Drive nếu Google hỏi (do thêm <code>DriveApp</code> API)</p>
   </div>
   <div class="alert alert-success">
-    ✅ Sau bước này, mọi phân tích CV sẽ chạy qua Claude Haiku 4.5 — nhanh, chất lượng cao, ~$0.001 / CV (gần miễn phí).
+    ✅ Workflow: HR vào /cv/ upload CV → file lưu Drive + thông tin lưu CVQueue sheet → Lead vào /cv/ tab "Chờ duyệt" → review từng CV → quyết định Hẹn PV hoặc Loại
   </div>
 </div>
 

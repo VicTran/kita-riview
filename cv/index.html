@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản lý CV - KITA Interview</title>
+<script src="/config.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf3 100%);
+    color: #2d3748; line-height: 1.5; min-height: 100vh; padding: 16px;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  header {
+    background: linear-gradient(135deg, #0F766E 0%, #134E4A 100%);
+    color: white; padding: 22px 28px; border-radius: 12px;
+    margin-bottom: 16px; box-shadow: 0 4px 20px rgba(15,118,110,0.25);
+  }
+  header h1 { font-size: 24px; margin-bottom: 4px; }
+  header .sub { opacity: 0.9; font-size: 13px; }
+  header .header-flex { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+  header .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    padding: 9px 14px; border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: inherit; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .btn-light { background: rgba(255,255,255,0.2); color: white; }
+  .btn-light:hover { background: rgba(255,255,255,0.3); }
+  .btn-primary { background: #0F766E; color: white; }
+  .btn-success { background: #00B050; color: white; }
+  .btn-blue { background: #4299e1; color: white; }
+  .btn-danger { background: #C00000; color: white; }
+  .btn-gray { background: #718096; color: white; }
+  .btn-warn { background: #d97706; color: white; }
+  .btn-sm { padding: 6px 10px; font-size: 12px; }
+
+  .tabs {
+    display: flex; gap: 4px; background: white; padding: 6px; border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 16px;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 10px 20px; border-radius: 8px; cursor: pointer;
+    font-weight: 600; color: #718096; transition: all 0.2s;
+    white-space: nowrap; border: none; background: transparent;
+    font-size: 14px; font-family: inherit;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tab:hover { background: #f7fafc; color: #2d3748; }
+  .tab.active { background: #0F766E; color: white; }
+  .tab-badge {
+    margin-left: 4px; background: rgba(255,255,255,0.25);
+    padding: 2px 8px; border-radius: 10px; font-size: 11px;
+  }
+  .tab.active .tab-badge { background: rgba(255,255,255,0.4); }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .card {
+    background: white; padding: 20px 24px; border-radius: 12px;
+    margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .card h2 {
+    color: #0F766E; font-size: 17px; margin-bottom: 14px;
+    border-bottom: 2px solid #0F766E; padding-bottom: 8px;
+  }
+
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .form-group label { font-size: 13px; font-weight: 600; color: #4a5568; }
+  .form-group label .req { color: #C00000; }
+  .form-group input, .form-group select, .form-group textarea {
+    padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px;
+    font-size: 13px; font-family: inherit;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: #0F766E;
+  }
+  .form-group textarea { min-height: 70px; resize: vertical; }
+
+  /* Upload */
+  .upload-area {
+    border: 3px dashed #cbd5e0; border-radius: 12px;
+    padding: 36px 20px; text-align: center;
+    cursor: pointer; background: #f7fafc; transition: all 0.2s;
+  }
+  .upload-area:hover, .upload-area.dragover { border-color: #0F766E; background: #ccfbf1; }
+  .upload-icon { font-size: 42px; margin-bottom: 6px; }
+  .upload-text { font-size: 14px; color: #4a5568; }
+  .upload-hint { font-size: 11px; color: #718096; margin-top: 2px; }
+  #fileInput { display: none; }
+  .file-info {
+    background: #ccfbf1; padding: 10px 14px; border-radius: 8px;
+    margin-top: 12px; display: none; align-items: center; gap: 10px;
+  }
+  .file-info.show { display: flex; }
+  .file-info .icon { font-size: 24px; }
+  .file-info .name { font-weight: 600; color: #134E4A; font-size: 13px; }
+  .file-info .meta { font-size: 11px; color: #718096; }
+
+  /* Queue cards */
+  .queue-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .queue-card {
+    background: white; border-radius: 12px; padding: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #0F766E;
+    transition: transform 0.15s;
+  }
+  .queue-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+  .queue-card.pending { border-color: #d97706; }
+  .queue-card.approved { border-color: #00B050; }
+  .queue-card.rejected { border-color: #C00000; }
+  .queue-card .name { font-weight: 700; color: #134E4A; font-size: 15px; margin-bottom: 4px; }
+  .queue-card .position { font-size: 12px; color: #0F766E; font-weight: 600; margin-bottom: 8px; }
+  .queue-card .info-row {
+    font-size: 12px; color: #4a5568; margin-bottom: 4px;
+    display: flex; gap: 6px; align-items: center;
+  }
+  .queue-card .info-row .lbl { color: #718096; min-width: 60px; }
+  .queue-card .actions { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .status-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 700;
+  }
+  .status-pending { background: #fef3c7; color: #78350f; }
+  .status-approved { background: #c6f6d5; color: #22543d; }
+  .status-rejected { background: #fed7d7; color: #742a2a; }
+
+  /* Modal */
+  .modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    z-index: 9999; display: none; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal.show { display: flex; }
+  .modal-content {
+    background: white; border-radius: 14px; max-width: 700px; width: 100%;
+    max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .modal-header {
+    background: linear-gradient(135deg, #0F766E, #134E4A); color: white;
+    padding: 16px 20px; border-radius: 14px 14px 0 0;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .modal-close { background: rgba(255,255,255,0.2); border: none; width: 28px; height: 28px; border-radius: 50%; color: white; cursor: pointer; }
+  .modal-body { padding: 20px; }
+  .modal-section { margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0; }
+  .modal-section:last-child { border-bottom: none; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; }
+  .info-item { padding: 8px 10px; background: #f7fafc; border-radius: 6px; }
+  .info-item .lbl { font-size: 10px; color: #718096; text-transform: uppercase; }
+  .info-item .val { font-weight: 600; color: #2d3748; margin-top: 2px; word-break: break-word; }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .stat-card {
+    background: white; padding: 14px; border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06); border-left: 4px solid;
+  }
+  .stat-card.pending { border-color: #d97706; }
+  .stat-card.approved { border-color: #00B050; }
+  .stat-card.rejected { border-color: #C00000; }
+  .stat-card.total { border-color: #0F766E; }
+  .stat-card .label { font-size: 11px; color: #718096; text-transform: uppercase; }
+  .stat-card .value { font-size: 24px; font-weight: 700; margin-top: 4px; }
+
+  .empty { text-align: center; padding: 48px 20px; color: #718096; }
+  .empty .icon { font-size: 48px; margin-bottom: 8px; }
+  .loading { text-align: center; padding: 32px; color: #4a5568; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 18px; border-radius: 8px; color: white; font-weight: 600; font-size: 13px; z-index: 99999; opacity: 0; transition: opacity 0.3s; }
+  .toast.show { opacity: 1; }
+  .toast.success { background: #00B050; }
+  .toast.error { background: #C00000; }
+  .toast.info { background: #4299e1; }
+
+  .alert { padding: 10px 14px; border-radius: 8px; font-size: 12px; border-left: 4px solid; margin-bottom: 12px; }
+  .alert-info { background: #DDEBF7; border-color: #1F4E79; color: #1a365d; }
+  .alert-warn { background: #fef3c7; border-color: #d97706; color: #78350f; }
+  .alert-success { background: #c6f6d5; border-color: #00B050; color: #22543d; }
+
+  /* Login */
+  .login-overlay { position: fixed; inset: 0; background: linear-gradient(135deg, #0F766E 0%, #134E4A 100%); z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .login-overlay.hidden { display: none; }
+  .login-card { background: white; padding: 36px 28px; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 380px; width: 100%; text-align: center; }
+  .login-card.shake { animation: shake 0.4s; }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+  .login-logo { width: 56px; height: 56px; margin: 0 auto 14px; background: linear-gradient(135deg, #0F766E, #134E4A); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; }
+  .login-card h1 { color: #0F766E; font-size: 20px; margin-bottom: 6px; }
+  .login-sub { color: #718096; font-size: 12px; margin-bottom: 20px; }
+  .login-card input { width: 100%; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-family: inherit; margin-bottom: 10px; }
+  .login-card button { width: 100%; padding: 12px; background: linear-gradient(135deg, #0F766E, #134E4A); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .login-error { color: #C00000; font-size: 12px; min-height: 16px; margin-bottom: 8px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card" id="loginCard">
+    <div class="login-logo">📥</div>
+    <h1>QUẢN LÝ CV</h1>
+    <div class="login-sub">KITA Interview - Nội bộ</div>
+    <form onsubmit="event.preventDefault(); doLogin();">
+      <input type="password" id="loginPassword" placeholder="Mật khẩu..." autofocus>
+      <div class="login-error" id="loginError"></div>
+      <button type="submit">ĐĂNG NHẬP</button>
+    </form>
+  </div>
+</div>
+
+<div class="container">
+
+<header>
+  <div class="header-flex">
+    <div>
+      <h1>📥 Quản lý CV ứng viên</h1>
+      <div class="sub">HR upload CV → Lead/TPMKT review → Hẹn phỏng vấn</div>
+    </div>
+    <div class="actions">
+      <a href="/" class="btn btn-light">📋 Hệ thống</a>
+      <a href="/hr/" class="btn btn-light">👤 HR Vòng 1</a>
+      <a href="/danh-sach/" class="btn btn-light">📊 Danh sách</a>
+      <button class="btn btn-light" onclick="loadAllCVs()">🔄 Refresh</button>
+      <button class="btn btn-light" onclick="doLogout()">🚪 Đăng xuất</button>
+    </div>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat-card total"><div class="label">Tổng CV</div><div class="value" id="stat-total" style="color:#0F766E;">--</div></div>
+  <div class="stat-card pending"><div class="label">⏳ Chờ duyệt</div><div class="value" id="stat-pending" style="color:#d97706;">--</div></div>
+  <div class="stat-card approved"><div class="label">✅ Hẹn PV</div><div class="value" id="stat-approved" style="color:#00B050;">--</div></div>
+  <div class="stat-card rejected"><div class="label">❌ Loại</div><div class="value" id="stat-rejected" style="color:#C00000;">--</div></div>
+</div>
+
+<nav class="tabs">
+  <button class="tab active" data-section="upload" onclick="showSection('upload')">📤 Upload CV mới</button>
+  <button class="tab" data-section="queue" onclick="showSection('queue')">⏳ Chờ duyệt<span class="tab-badge" id="badge-queue">0</span></button>
+  <button class="tab" data-section="history" onclick="showSection('history')">📚 Lịch sử<span class="tab-badge" id="badge-history">0</span></button>
+</nav>
+
+<!-- TAB: UPLOAD CV -->
+<section class="section active" id="section-upload">
+  <div class="card">
+    <h2>📤 HR Upload CV ứng viên mới</h2>
+    <div class="alert alert-info">
+      📌 Sau khi HR upload, Lead/TPMKT sẽ xem ở tab "Chờ duyệt" và quyết định: Hẹn phỏng vấn hoặc Loại.
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Họ tên ứng viên <span class="req">*</span></label>
+        <input type="text" id="newName" placeholder="Nguyễn Văn A">
+      </div>
+      <div class="form-group">
+        <label>SĐT / Email <span class="req">*</span></label>
+        <input type="text" id="newContact" placeholder="0912... / a@email.com">
+      </div>
+      <div class="form-group">
+        <label>Vị trí ứng tuyển <span class="req">*</span></label>
+        <select id="newPosition">
+          <option value="">-- Chọn --</option>
+          <option value="Fresher">Fresher Marketing</option>
+          <option value="Junior">Junior Marketing</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Nguồn ứng viên</label>
+        <select id="newSource">
+          <option value="">-- Chọn --</option>
+          <option value="TopCV">TopCV</option>
+          <option value="VietnamWorks">VietnamWorks</option>
+          <option value="Facebook">Facebook</option>
+          <option value="LinkedIn">LinkedIn</option>
+          <option value="Giới thiệu">Giới thiệu</option>
+          <option value="Khác">Khác</option>
+        </select>
+      </div>
+      <div class="form-group" style="grid-column: span 2;">
+        <label>Note của HR (tóm tắt nhanh / điểm chú ý)</label>
+        <textarea id="newHrNote" placeholder="Vd: Có 1 năm kinh nghiệm content sách. CV sạch sẽ, có ảnh."></textarea>
+      </div>
+    </div>
+
+    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()" style="margin-top: 12px;">
+      <div class="upload-icon">📄</div>
+      <div class="upload-text"><strong>Bấm chọn file CV</strong> hoặc kéo thả vào đây</div>
+      <div class="upload-hint">PDF / DOCX / DOC / Image (tối đa 10MB)</div>
+      <input type="file" id="fileInput" accept=".pdf,.docx,.doc,image/*" onchange="handleFile(this.files[0])">
+    </div>
+    <div class="file-info" id="fileInfo">
+      <div class="icon">📄</div>
+      <div style="flex:1;">
+        <div class="name" id="fileName">-</div>
+        <div class="meta" id="fileMeta">-</div>
+      </div>
+      <button class="btn btn-gray btn-sm" onclick="clearFile()">Xoá</button>
+    </div>
+
+    <button class="btn btn-success" onclick="submitCV()" style="width:100%;padding:14px;font-size:15px;margin-top:14px;font-weight:700;">
+      📤 Submit CV cho Lead duyệt
+    </button>
+  </div>
+</section>
+
+<!-- TAB: QUEUE -->
+<section class="section" id="section-queue">
+  <div class="card">
+    <h2>⏳ Chờ Lead / TPMKT duyệt</h2>
+    <div class="alert alert-warn">
+      💡 Lead/TPMKT review từng CV → quyết định <strong>Hẹn PV</strong> (chuyển HR phỏng vấn V1) hoặc <strong>Loại</strong>.
+    </div>
+    <div class="queue-grid" id="queueList">
+      <div class="loading">⏳ Đang tải...</div>
+    </div>
+  </div>
+</section>
+
+<!-- TAB: HISTORY -->
+<section class="section" id="section-history">
+  <div class="card">
+    <h2>📚 Lịch sử CV đã review</h2>
+    <div class="queue-grid" id="historyList">
+      <div class="loading">⏳ Đang tải...</div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<!-- REVIEW MODAL -->
+<div class="modal" id="reviewModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="reviewTitle">Review CV</h3>
+      <button class="modal-close" onclick="closeReview()">✕</button>
+    </div>
+    <div class="modal-body" id="reviewBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============== LOGIN ==============
+const PASSWORD_HASH = 'a9c82a91311cb01ff918ca5e37029cfd5275608b3dc557f333cc30c4254ba8da';
+const AUTH_KEY = 'kita_cv_auth';
+
+async function sha256(text) {
+  const buf = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function doLogin() {
+  const pwd = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  if (!pwd) { errEl.textContent = 'Nhập mật khẩu'; return; }
+  const hash = await sha256(pwd);
+  if (hash === PASSWORD_HASH) {
+    sessionStorage.setItem(AUTH_KEY, '1');
+    document.getElementById('loginOverlay').classList.add('hidden');
+    initApp();
+  } else {
+    errEl.textContent = '❌ Sai mật khẩu';
+    document.getElementById('loginCard').classList.add('shake');
+    setTimeout(() => document.getElementById('loginCard').classList.remove('shake'), 400);
+    document.getElementById('loginPassword').value = '';
+  }
+}
+
+function doLogout() {
+  if (!confirm('Đăng xuất?')) return;
+  sessionStorage.removeItem(AUTH_KEY);
+  document.getElementById('loginOverlay').classList.remove('hidden');
+}
+
+function checkAuth() {
+  if (sessionStorage.getItem(AUTH_KEY) === '1') return true;
+  if (sessionStorage.getItem('kita_interview_auth') === '1' || sessionStorage.getItem('kita_v1hr_auth') === '1') {
+    sessionStorage.setItem(AUTH_KEY, '1');
+    return true;
+  }
+  return false;
+}
+
+// ============== CONFIG ==============
+function getCloudConfig() {
+  const g = window.KITA_CONFIG;
+  if (g && g.cloudUrl && g.cloudApiKey) return { url: g.cloudUrl, apiKey: g.cloudApiKey };
+  try { return JSON.parse(localStorage.getItem('kita_cloud_config') || 'null'); }
+  catch(e) { return null; }
+}
+
+// ============== TABS ==============
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+  document.querySelector(`.tab[data-section="${id}"]`).classList.add('active');
+  if (id === 'queue' || id === 'history') loadAllCVs();
+}
+
+// ============== FILE UPLOAD ==============
+let currentFile = null;
+const uploadArea = document.getElementById('uploadArea');
+['dragover', 'dragenter'].forEach(ev => {
+  uploadArea.addEventListener(ev, e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+});
+['dragleave', 'drop'].forEach(ev => {
+  uploadArea.addEventListener(ev, e => { e.preventDefault(); uploadArea.classList.remove('dragover'); });
+});
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+
+function handleFile(file) {
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { toast('File quá lớn (max 10MB)', 'error'); return; }
+  currentFile = file;
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileMeta').textContent = `${(file.size/1024).toFixed(1)} KB · ${file.type || 'Unknown'}`;
+  document.getElementById('fileInfo').classList.add('show');
+}
+
+function clearFile() {
+  currentFile = null;
+  document.getElementById('fileInput').value = '';
+  document.getElementById('fileInfo').classList.remove('show');
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]); // bỏ data:...; prefix
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ============== SUBMIT CV ==============
+async function submitCV() {
+  const cfg = getCloudConfig();
+  if (!cfg) { alert('⚠️ Chưa setup Cloud. Mở /setup-database/'); return; }
+
+  const name = document.getElementById('newName').value.trim();
+  const contact = document.getElementById('newContact').value.trim();
+  const position = document.getElementById('newPosition').value;
+  const source = document.getElementById('newSource').value;
+  const hrNote = document.getElementById('newHrNote').value.trim();
+
+  if (!name) { alert('⚠️ Nhập họ tên ứng viên'); return; }
+  if (!contact) { alert('⚠️ Nhập SĐT/Email'); return; }
+  if (!position) { alert('⚠️ Chọn vị trí'); return; }
+  if (!currentFile) { alert('⚠️ Chọn file CV'); return; }
+
+  toast('⏳ Đang upload CV (có thể mất 5-15s)...', 'info');
+
+  try {
+    const fileBase64 = await fileToBase64(currentFile);
+    const res = await fetch(cfg.url, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'upload_cv',
+        apiKey: cfg.apiKey,
+        candidate: { name, contact, position, source, hrNote, hrUploader: 'HR' },
+        fileName: currentFile.name,
+        fileMimeType: currentFile.type || 'application/pdf',
+        fileBase64: fileBase64
+      })
+    });
+    const result = await res.json();
+    if (!result.ok) {
+      alert('❌ Lỗi: ' + (result.error || '?'));
+      return;
+    }
+    alert(`✅ ĐÃ UPLOAD CV!\n\n👤 ${name}\n📍 Dòng: ${result.row}\n📁 File: ${result.fileUrl ? 'OK' : 'không có link'}\n\nLead/TPMKT sẽ thấy ở tab "Chờ duyệt".`);
+    toast('✅ Upload thành công', 'success');
+    // Reset form
+    document.getElementById('newName').value = '';
+    document.getElementById('newContact').value = '';
+    document.getElementById('newPosition').value = '';
+    document.getElementById('newSource').value = '';
+    document.getElementById('newHrNote').value = '';
+    clearFile();
+  } catch(e) {
+    alert('❌ Lỗi: ' + e.message);
+  }
+}
+
+// ============== LIST CVS ==============
+let allCVs = [];
+
+async function loadAllCVs() {
+  const cfg = getCloudConfig();
+  if (!cfg) return;
+
+  try {
+    const res = await fetch(`${cfg.url}?apiKey=${encodeURIComponent(cfg.apiKey)}&action=list_cv_queue`);
+    const result = await res.json();
+    if (!result.ok) {
+      document.getElementById('queueList').innerHTML = `<div class="empty"><div class="icon">⚠️</div><div>${result.error}</div></div>`;
+      return;
+    }
+    allCVs = result.data || [];
+    renderQueue();
+    renderHistory();
+    updateStats();
+  } catch(e) {
+    document.getElementById('queueList').innerHTML = `<div class="empty"><div class="icon">⚠️</div><div>Lỗi: ${e.message}</div></div>`;
+  }
+}
+
+function updateStats() {
+  const total = allCVs.length;
+  const pending = allCVs.filter(c => c['Status'] === 'PENDING').length;
+  const approved = allCVs.filter(c => c['Status'] === 'APPROVED').length;
+  const rejected = allCVs.filter(c => c['Status'] === 'REJECTED').length;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-pending').textContent = pending;
+  document.getElementById('stat-approved').textContent = approved;
+  document.getElementById('stat-rejected').textContent = rejected;
+  document.getElementById('badge-queue').textContent = pending;
+  document.getElementById('badge-history').textContent = approved + rejected;
+}
+
+function renderQueue() {
+  const pending = allCVs.filter(c => c['Status'] === 'PENDING');
+  const container = document.getElementById('queueList');
+  if (pending.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="icon">✅</div><div>Không có CV chờ duyệt</div></div>';
+    return;
+  }
+  container.innerHTML = pending.map(c => renderCVCard(c, 'pending')).join('');
+}
+
+function renderHistory() {
+  const reviewed = allCVs.filter(c => c['Status'] === 'APPROVED' || c['Status'] === 'REJECTED');
+  const container = document.getElementById('historyList');
+  if (reviewed.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="icon">📭</div><div>Chưa có CV đã review</div></div>';
+    return;
+  }
+  // Sort: mới nhất trước
+  reviewed.sort((a, b) => new Date(b['Reviewed at'] || 0) - new Date(a['Reviewed at'] || 0));
+  container.innerHTML = reviewed.map(c => {
+    const cls = c['Status'] === 'APPROVED' ? 'approved' : 'rejected';
+    return renderCVCard(c, cls);
+  }).join('');
+}
+
+function renderCVCard(c, statusClass) {
+  const status = c['Status'];
+  const statusLabel = status === 'PENDING' ? '⏳ Chờ duyệt' : status === 'APPROVED' ? '✅ Hẹn PV' : '❌ Loại';
+  const statusBadge = status === 'PENDING' ? 'pending' : status === 'APPROVED' ? 'approved' : 'rejected';
+  return `<div class="queue-card ${statusClass}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+      <div style="flex:1;">
+        <div class="name">${escHtml(c['Tên'])}</div>
+        <div class="position">${escHtml(c['Vị trí'] || '-')}</div>
+      </div>
+      <span class="status-badge status-${statusBadge}">${statusLabel}</span>
+    </div>
+    <div class="info-row"><span class="lbl">📞</span> ${escHtml(c['SĐT/Email'] || '-')}</div>
+    <div class="info-row"><span class="lbl">📍</span> ${escHtml(c['Nguồn'] || '-')}</div>
+    <div class="info-row"><span class="lbl">📅</span> ${formatDate(c['Timestamp'])}</div>
+    ${status === 'APPROVED' && c['Lịch PV'] ? `<div class="info-row"><span class="lbl">🗓️</span> <strong>PV: ${escHtml(c['Lịch PV'])}</strong></div>` : ''}
+    <div class="actions">
+      ${c['CV file'] ? `<a href="${c['CV file']}" target="_blank" class="btn btn-blue btn-sm">📄 Xem CV</a>` : ''}
+      <button class="btn btn-primary btn-sm" onclick="openReview(${c._row})">${status === 'PENDING' ? '✍️ Duyệt' : '👁️ Xem'}</button>
+    </div>
+  </div>`;
+}
+
+function escHtml(s) {
+  return (s + '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function formatDate(d) {
+  if (!d) return '-';
+  const date = new Date(d);
+  if (isNaN(date)) return d;
+  return date.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+// ============== REVIEW MODAL ==============
+function openReview(rowNum) {
+  const c = allCVs.find(x => x._row === rowNum);
+  if (!c) return;
+  const isPending = c['Status'] === 'PENDING';
+
+  document.getElementById('reviewTitle').textContent = `${c['Tên']} - ${c['Vị trí'] || '?'}`;
+  let html = `
+    <div class="modal-section">
+      <div class="info-grid">
+        <div class="info-item"><div class="lbl">Tên</div><div class="val">${escHtml(c['Tên'])}</div></div>
+        <div class="info-item"><div class="lbl">Vị trí</div><div class="val">${escHtml(c['Vị trí'] || '-')}</div></div>
+        <div class="info-item"><div class="lbl">SĐT/Email</div><div class="val">${escHtml(c['SĐT/Email'] || '-')}</div></div>
+        <div class="info-item"><div class="lbl">Nguồn</div><div class="val">${escHtml(c['Nguồn'] || '-')}</div></div>
+        <div class="info-item"><div class="lbl">HR upload</div><div class="val">${escHtml(c['HR upload'] || '-')}</div></div>
+        <div class="info-item"><div class="lbl">Ngày upload</div><div class="val">${formatDate(c['Timestamp'])}</div></div>
+      </div>
+      ${c['Note HR'] ? `<div class="info-item" style="margin-top:8px;"><div class="lbl">Note HR</div><div class="val">${escHtml(c['Note HR'])}</div></div>` : ''}
+    </div>
+
+    <div class="modal-section">
+      <div style="display:flex;gap:8px;">
+        ${c['CV file'] ? `<a href="${c['CV file']}" target="_blank" class="btn btn-blue">📄 Mở CV (Drive)</a>` : '<div style="color:#C00000;font-size:13px;">Chưa có file CV</div>'}
+      </div>
+    </div>
+  `;
+
+  if (isPending) {
+    html += `
+    <div class="modal-section">
+      <h4 style="color:#0F766E;margin-bottom:10px;">✍️ Quyết định Lead/TPMKT</h4>
+      <div class="form-group">
+        <label>Note Lead (lý do, điểm cần kiểm tra ở PV...)</label>
+        <textarea id="leadNote" placeholder="Vd: CV có kinh nghiệm content sách. Cần test sâu chuyên môn Ads ở V2."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Tên Lead reviewer</label>
+        <input type="text" id="leadName" placeholder="Trưởng phòng MKT">
+      </div>
+      <div class="form-group">
+        <label>📅 Ngày giờ PV (chỉ cần nếu PASS)</label>
+        <input type="datetime-local" id="leadInterviewDate">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button class="btn btn-success" onclick="submitReview(${rowNum}, 'APPROVED')" style="flex:1;">✅ HẸN PHỎNG VẤN</button>
+        <button class="btn btn-danger" onclick="submitReview(${rowNum}, 'REJECTED')" style="flex:1;">❌ LOẠI</button>
+      </div>
+    </div>`;
+  } else {
+    html += `
+    <div class="modal-section">
+      <h4 style="color:#0F766E;margin-bottom:10px;">📋 Đã review</h4>
+      <div class="info-grid">
+        <div class="info-item"><div class="lbl">Trạng thái</div><div class="val">${c['Status']}</div></div>
+        <div class="info-item"><div class="lbl">Lead reviewer</div><div class="val">${escHtml(c['Lead reviewer'] || '-')}</div></div>
+        <div class="info-item"><div class="lbl">Reviewed at</div><div class="val">${formatDate(c['Reviewed at'])}</div></div>
+        ${c['Lịch PV'] ? `<div class="info-item"><div class="lbl">Lịch PV</div><div class="val">${escHtml(c['Lịch PV'])}</div></div>` : ''}
+      </div>
+      ${c['Note Lead'] ? `<div class="info-item" style="margin-top:8px;"><div class="lbl">Note Lead</div><div class="val">${escHtml(c['Note Lead'])}</div></div>` : ''}
+    </div>`;
+  }
+
+  document.getElementById('reviewBody').innerHTML = html;
+  document.getElementById('reviewModal').classList.add('show');
+}
+
+function closeReview() { document.getElementById('reviewModal').classList.remove('show'); }
+document.getElementById('reviewModal').addEventListener('click', e => {
+  if (e.target.id === 'reviewModal') closeReview();
+});
+
+async function submitReview(rowNum, decision) {
+  const cfg = getCloudConfig();
+  if (!cfg) return;
+
+  const leadNote = document.getElementById('leadNote').value.trim();
+  const leadName = document.getElementById('leadName').value.trim() || 'Lead';
+  const interviewDate = document.getElementById('leadInterviewDate').value;
+
+  if (decision === 'APPROVED' && !interviewDate) {
+    if (!confirm('⚠️ Chưa chọn lịch PV. Vẫn approve?\n(Có thể bổ sung lịch sau)')) return;
+  }
+
+  toast('⏳ Đang lưu...', 'info');
+
+  try {
+    const res = await fetch(cfg.url, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'review_cv',
+        apiKey: cfg.apiKey,
+        row: rowNum,
+        decision,
+        leadName,
+        leadNote,
+        interviewDate: interviewDate ? interviewDate.replace('T', ' ') : ''
+      })
+    });
+    const result = await res.json();
+    if (!result.ok) { alert('❌ ' + result.error); return; }
+    closeReview();
+    toast(decision === 'APPROVED' ? '✅ Đã hẹn PV' : '❌ Đã loại', 'success');
+    loadAllCVs();
+  } catch(e) {
+    alert('❌ Lỗi: ' + e.message);
+  }
+}
+
+// ============== TOAST ==============
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ' + (type || 'info') + ' show';
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ============== INIT ==============
+function initApp() { loadAllCVs(); }
+
+if (checkAuth()) {
+  document.getElementById('loginOverlay').classList.add('hidden');
+  initApp();
+} else {
+  document.getElementById('loginPassword').focus();
+}
+</script>
+</body>
+</html>
