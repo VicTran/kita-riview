@@ -478,11 +478,15 @@
     <div class="form-group"><label>Vị trí ứng tuyển</label>
       <select id="candidatePosition">
         <option value="">-- Chọn --</option>
-        <option>Fresher Bậc 0 (6tr)</option>
-        <option>Fresher Bậc 0+ (7tr)</option>
-        <option>Junior Bậc 1 (8tr)</option>
-        <option>Junior Bậc 2 (9tr)</option>
-        <option>Junior Bậc 3 (10tr)</option>
+        <optgroup label="🌱 FRESHER (0-1 năm)">
+          <option value="Fresher Bậc 0">Fresher Bậc 0 (cứng 6tr) - Chưa có KN MKT</option>
+          <option value="Fresher Bậc 0+">Fresher Bậc 0+ (cứng 7tr) - Có thực tập/project</option>
+        </optgroup>
+        <optgroup label="💼 JUNIOR (1-2 năm)">
+          <option value="Junior Bậc 1">Junior Bậc 1 (cứng 8tr) - 1 năm KN MKT</option>
+          <option value="Junior Bậc 2">Junior Bậc 2 (cứng 9tr) - 1.5-2 năm KN, có chuyên môn</option>
+          <option value="Junior Bậc 3">Junior Bậc 3 (cứng 10tr) - 2 năm KN, có thành tích đo được</option>
+        </optgroup>
       </select>
     </div>
     <div class="form-group"><label>Ngày phỏng vấn</label><input type="date" id="interviewDate"></div>
@@ -856,16 +860,29 @@ const QUESTIONS = {
   ]}
 };
 
+// SCORECARD theo JD Marketing KITA BOOKS:
+// - KEY: Đam mê đọc sách (20%) — yếu tố quan trọng nhất với KITA BOOKS (sách giấy)
+// - Chuyên môn Marketing: Content (20%) + Ads (15%) + AI (10%) = 45% — kỹ năng cốt lõi
+// - Soft Skills: Học hỏi (10%) + Áp lực (10%) + Trách nhiệm (5%) = 25%
+// - Văn hoá + Tư duy: Khát khao thu nhập (5%) + Cultural fit (5%) = 10%
+// Tổng: 100%
 const SCORECARD_CONFIG = [
-  { name: 'Tố chất / Đam mê đọc sách', weight: 20, qIds: ['q3', 'q4', 'q5'] },
-  { name: 'Khát khao thu nhập không giới hạn', weight: 5, qIds: ['q7'] },
-  { name: 'Khả năng học hỏi nhanh', weight: 10, qIds: ['q10', 'q11', 'q12'] },
-  { name: 'Tinh thần trách nhiệm', weight: 10, qIds: ['q13', 'q14', 'q15'] },
-  { name: 'Khả năng làm việc dưới áp lực', weight: 10, qIds: ['q16', 'q17', 'q18'] },
-  { name: 'Chuyên môn Content', weight: 15, qIds: ['q19', 'q20', 'q21', 'q22', 'q35', 'q36', 'q37', 'q38', 'q39'] },
-  { name: 'Chuyên môn Ads & Phân tích', weight: 15, qIds: ['q23', 'q24', 'q25', 'q26', 'q27'] },
-  { name: 'Kỹ năng sử dụng AI', weight: 10, qIds: ['q40', 'q41', 'q42', 'q43', 'q44'] },
-  { name: 'Tình huống / Cultural fit', weight: 5, qIds: ['q28', 'q29', 'q30', 'q31', 'q32', 'q33', 'q34'] },
+  // 🟦 VÒNG 1 - HR Sàng lọc (Tố chất + Văn hoá KITA: 25%)
+  { name: '🎯 A1. Đam mê đọc sách [V1: Q3-Q5]', weight: 20, qIds: ['q3', 'q4', 'q5'] },
+  { name: '💰 A2. Khát khao thu nhập không giới hạn [V1: Q7]', weight: 5, qIds: ['q7'] },
+
+  // 🟪 VÒNG 2 - TPMKT Soft Skills (25%)
+  { name: '📚 B1. Khả năng học hỏi nhanh [V2: Q10-Q12]', weight: 10, qIds: ['q10', 'q11', 'q12'] },
+  { name: '🤝 B2. Tinh thần trách nhiệm [V2: Q13-Q15]', weight: 5, qIds: ['q13', 'q14', 'q15'] },
+  { name: '🔥 B3. Làm việc dưới áp lực [V2: Q16-Q18]', weight: 10, qIds: ['q16', 'q17', 'q18'] },
+
+  // 🟪 VÒNG 2 - TPMKT Chuyên môn (45%)
+  { name: '✍️ C1. Chuyên môn Content + Nền tảng MKT [V2: Q19-Q22, Q35-Q39]', weight: 20, qIds: ['q19', 'q20', 'q21', 'q22', 'q35', 'q36', 'q37', 'q38', 'q39'] },
+  { name: '📊 C2. Chuyên môn Ads & Số liệu [V2: Q23-Q27]', weight: 15, qIds: ['q23', 'q24', 'q25', 'q26', 'q27'] },
+  { name: '🤖 C3. Kỹ năng sử dụng AI [V2: Q40-Q44]', weight: 10, qIds: ['q40', 'q41', 'q42', 'q43', 'q44'] },
+
+  // 🟩 VÒNG 4 - Giám đốc + V2 Tình huống (Cultural fit: 5%)
+  { name: '🎭 D1. Tình huống xử lý + Cultural fit [V2: Q28-Q30, V4: Q31-Q34]', weight: 5, qIds: ['q28', 'q29', 'q30', 'q31', 'q32', 'q33', 'q34'] },
 ];
 
 const state = { scores: {}, notes: {}, qa: [{ q: '', class: 'normal', note: '' }] };
