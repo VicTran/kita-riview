@@ -530,7 +530,28 @@ async function submitCV() {
       alert('❌ Lỗi: ' + (result.error || '?'));
       return;
     }
-    alert(`✅ ĐÃ UPLOAD CV!\n\n👤 ${name}\n📍 Dòng: ${result.row}\n📁 File: ${result.fileUrl ? 'OK' : 'không có link'}\n\nLead/TPMKT sẽ thấy ở tab "Chờ duyệt".`);
+
+    // Check: nếu không có fileUrl → Apps Script chưa update lên v4
+    if (!result.fileUrl) {
+      alert(
+        '⚠️ FILE CV CHƯA ĐƯỢC UPLOAD LÊN DRIVE!\n\n' +
+        'Sheet đã tạo row nhưng file CV không lưu được. Lý do:\n' +
+        '• Apps Script chưa update lên v4.0 (thiếu action "upload_cv")\n' +
+        '• HOẶC CV_DRIVE_FOLDER_ID chưa được set trong Apps Script\n\n' +
+        '🔧 CÁCH FIX:\n' +
+        '1. Vào trang /setup-database/\n' +
+        '2. Copy code Apps Script v4.0 mới nhất\n' +
+        '3. Mở Google Sheet → Extensions → Apps Script\n' +
+        '4. Xoá code cũ → Paste code mới\n' +
+        '5. Tìm dòng CV_DRIVE_FOLDER_ID và paste ID Drive folder\n' +
+        '6. Save → Deploy → Manage Deployments → Edit → New version → Deploy\n' +
+        '7. Cấp quyền Drive khi Google hỏi\n\n' +
+        'Sau khi update, upload CV lại → file sẽ lên Drive đầy đủ.'
+      );
+      return;
+    }
+
+    alert(`✅ ĐÃ UPLOAD CV THÀNH CÔNG!\n\n👤 ${name}\n📍 Dòng: ${result.row}\n📁 File: ${result.fileUrl}\n\nLead/TPMKT sẽ thấy ở tab "Chờ TPMKT".`);
     toast('✅ Upload thành công', 'success');
     // Reset form
     document.getElementById('newName').value = '';
