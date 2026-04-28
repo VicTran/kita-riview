@@ -262,10 +262,24 @@ function uploadCV(data) {
     try {
       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     } catch(shareErr) {
-      // Workspace policy chặn - bỏ qua, file vẫn lưu được
       Logger.log('setSharing skipped: ' + shareErr.message);
     }
     const fileUrl = file.getUrl();
+
+    // Upload Portfolio file (optional)
+    let portfolioFileUrl = '';
+    if (data.portfolioFileBase64 && data.portfolioFileName) {
+      try {
+        const pBytes = Utilities.base64Decode(data.portfolioFileBase64);
+        const pBlob = Utilities.newBlob(pBytes, data.portfolioFileMime || 'application/octet-stream', data.portfolioFileName);
+        const pFinalName = 'Portfolio_' + safeName + '_' + new Date().toISOString().slice(0,10) + '_' + data.portfolioFileName;
+        const pFile = folder.createFile(pBlob).setName(pFinalName);
+        try { pFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch(e) {}
+        portfolioFileUrl = pFile.getUrl();
+      } catch (pErr) {
+        Logger.log('Portfolio upload failed: ' + pErr.message);
+      }
+    }
 
     // Append vào CVQueue sheet
     let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CV_SHEET_NAME);
@@ -274,25 +288,34 @@ function uploadCV(data) {
       sheet.appendRow(['Timestamp','Tên','SĐT/Email','Vị trí','Nguồn','CV file','HR upload','Note HR','Status','Lead reviewer','Note Lead','Lịch PV','Reviewed at','HR Score','HR Score Detail']);
     }
 
-    // Đảm bảo có cột HR Score + HR Score Detail
+    // Đảm bảo có cột HR Score + HR Score Detail + Portfolio
     ensureHrScoreColumns(sheet);
+    ensurePortfolioColumns(sheet);
 
-    sheet.appendRow([
-      new Date(),
-      cand.name || '',
-      cand.contact || '',
-      cand.position || '',
-      cand.source || '',
-      fileUrl,
-      cand.hrUploader || 'HR',
-      cand.hrNote || '',
-      'PENDING',
-      '', '', '', '',
-      cand.hrScore || '',
-      JSON.stringify(cand.hrScoreDetail || {})
-    ]);
+    // Build row theo header để đảm bảo đúng vị trí
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const rowData = new Array(headers.length).fill('');
+    const setCol = (h, val) => {
+      const idx = headers.indexOf(h);
+      if (idx >= 0) rowData[idx] = val;
+    };
+    setCol('Timestamp', new Date());
+    setCol('Tên', cand.name || '');
+    setCol('SĐT/Email', cand.contact || '');
+    setCol('Vị trí', cand.position || '');
+    setCol('Nguồn', cand.source || '');
+    setCol('CV file', fileUrl);
+    setCol('HR upload', cand.hrUploader || 'HR');
+    setCol('Note HR', cand.hrNote || '');
+    setCol('Status', 'PENDING');
+    setCol('HR Score', cand.hrScore || '');
+    setCol('HR Score Detail', JSON.stringify(cand.hrScoreDetail || {}));
+    setCol('Portfolio link', cand.portfolio || '');
+    setCol('Portfolio file', portfolioFileUrl);
 
-    return jsonResponse({ ok: true, row: sheet.getLastRow(), fileUrl: fileUrl });
+    sheet.appendRow(rowData);
+
+    return jsonResponse({ ok: true, row: sheet.getLastRow(), fileUrl: fileUrl, portfolioFileUrl: portfolioFileUrl });
   } catch (err) {
     return jsonResponse({ ok: false, error: err.message });
   }
@@ -449,6 +472,18 @@ function ensureTestColumns(sheet) {
 function ensureHrScoreColumns(sheet) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const need = ['HR Score', 'HR Score Detail'];
+  let lastCol = headers.length;
+  need.forEach(h => {
+    if (headers.indexOf(h) === -1) {
+      lastCol++;
+      sheet.getRange(1, lastCol).setValue(h);
+    }
+  });
+}
+
+function ensurePortfolioColumns(sheet) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const need = ['Portfolio link', 'Portfolio file'];
   let lastCol = headers.length;
   need.forEach(h => {
     if (headers.indexOf(h) === -1) {

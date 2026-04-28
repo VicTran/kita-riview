@@ -350,8 +350,15 @@
         </select>
       </div>
       <div class="form-group" style="grid-column: span 2;">
+        <label>🔗 Link Portfolio / Kênh cá nhân (tuỳ chọn)</label>
+        <input type="text" id="newPortfolio" placeholder="VD: behance.net/abc | tiktok.com/@xyz | drive.google.com/folder/... | blog cá nhân">
+        <div style="font-size:11px;color:#718096;margin-top:2px;font-style:italic;">
+          Behance / Dribbble / TikTok / Instagram / Notion / Google Drive folder / Blog cá nhân... — gì cũng được, có thể paste nhiều link cách nhau bằng dấu phẩy.
+        </div>
+      </div>
+      <div class="form-group" style="grid-column: span 2;">
         <label>Note của HR (tóm tắt nhanh / điểm chú ý)</label>
-        <textarea id="newHrNote" placeholder="Vd: Có 1 năm kinh nghiệm content sách. CV sạch sẽ, có ảnh."></textarea>
+        <textarea id="newHrNote" placeholder="Vd: Có 1 năm kinh nghiệm content sách. CV sạch sẽ, có ảnh. Portfolio TikTok có 5K follow."></textarea>
       </div>
     </div>
 
@@ -383,19 +390,42 @@
       </p>
     </div>
 
-    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()" style="margin-top: 12px;">
-      <div class="upload-icon">📄</div>
-      <div class="upload-text"><strong>Bấm chọn file CV</strong> hoặc kéo thả vào đây</div>
-      <div class="upload-hint">PDF / DOCX / DOC / Image (tối đa 10MB)</div>
-      <input type="file" id="fileInput" accept=".pdf,.docx,.doc,image/*" onchange="handleFile(this.files[0])">
-    </div>
-    <div class="file-info" id="fileInfo">
-      <div class="icon">📄</div>
-      <div style="flex:1;">
-        <div class="name" id="fileName">-</div>
-        <div class="meta" id="fileMeta">-</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#0F766E;margin-bottom:6px;">📄 File CV (bắt buộc) <span style="color:#C00000;">*</span></div>
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+          <div class="upload-icon">📄</div>
+          <div class="upload-text"><strong>Bấm chọn CV</strong> hoặc kéo thả</div>
+          <div class="upload-hint">PDF / DOCX / Image (max 10MB)</div>
+          <input type="file" id="fileInput" accept=".pdf,.docx,.doc,image/*" onchange="handleFile(this.files[0])">
+        </div>
+        <div class="file-info" id="fileInfo">
+          <div class="icon">📄</div>
+          <div style="flex:1;">
+            <div class="name" id="fileName">-</div>
+            <div class="meta" id="fileMeta">-</div>
+          </div>
+          <button class="btn btn-gray btn-sm" onclick="clearFile()">Xoá</button>
+        </div>
       </div>
-      <button class="btn btn-gray btn-sm" onclick="clearFile()">Xoá</button>
+
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#0F766E;margin-bottom:6px;">📂 File Portfolio (tuỳ chọn)</div>
+        <div class="upload-area" id="uploadAreaPortfolio" onclick="document.getElementById('fileInputPortfolio').click()" style="background:#fffbf0;border-color:#fbd38d;">
+          <div class="upload-icon">📂</div>
+          <div class="upload-text"><strong>Bấm chọn Portfolio</strong> hoặc kéo thả</div>
+          <div class="upload-hint">PDF / PPT / ZIP / Image (max 15MB)</div>
+          <input type="file" id="fileInputPortfolio" accept=".pdf,.docx,.doc,.pptx,.ppt,.zip,image/*" onchange="handlePortfolioFile(this.files[0])">
+        </div>
+        <div class="file-info" id="fileInfoPortfolio" style="background:#fef3c7;">
+          <div class="icon">📂</div>
+          <div style="flex:1;">
+            <div class="name" id="fileNamePortfolio">-</div>
+            <div class="meta" id="fileMetaPortfolio">-</div>
+          </div>
+          <button class="btn btn-gray btn-sm" onclick="clearPortfolioFile()">Xoá</button>
+        </div>
+      </div>
     </div>
 
     <button class="btn btn-success" onclick="submitCV()" style="width:100%;padding:14px;font-size:15px;margin-top:14px;font-weight:700;">
@@ -667,6 +697,30 @@ function clearFile() {
   document.getElementById('fileInfo').classList.remove('show');
 }
 
+// Portfolio file
+let currentPortfolioFile = null;
+function handlePortfolioFile(file) {
+  if (!file) return;
+  if (file.size > 15 * 1024 * 1024) { toast('Portfolio file quá lớn (max 15MB)', 'error'); return; }
+  currentPortfolioFile = file;
+  document.getElementById('fileNamePortfolio').textContent = file.name;
+  document.getElementById('fileMetaPortfolio').textContent = `${(file.size/1024).toFixed(1)} KB · ${file.type || 'Unknown'}`;
+  document.getElementById('fileInfoPortfolio').classList.add('show');
+}
+function clearPortfolioFile() {
+  currentPortfolioFile = null;
+  document.getElementById('fileInputPortfolio').value = '';
+  document.getElementById('fileInfoPortfolio').classList.remove('show');
+}
+// Drag-drop cho portfolio
+document.addEventListener('DOMContentLoaded', () => {
+  const ar = document.getElementById('uploadAreaPortfolio');
+  if (!ar) return;
+  ['dragover','dragenter'].forEach(ev => ar.addEventListener(ev, e => { e.preventDefault(); ar.classList.add('dragover'); }));
+  ['dragleave','drop'].forEach(ev => ar.addEventListener(ev, e => { e.preventDefault(); ar.classList.remove('dragover'); }));
+  ar.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files[0]) handlePortfolioFile(e.dataTransfer.files[0]); });
+});
+
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -697,6 +751,18 @@ async function submitCV() {
   try {
     const fileBase64 = await fileToBase64(currentFile);
     const hrScoreTotal = calcHrTotal();
+    const portfolioLink = document.getElementById('newPortfolio').value.trim();
+
+    // Portfolio file (optional)
+    let portfolioFileB64 = '';
+    let portfolioFileName = '';
+    let portfolioFileMime = '';
+    if (currentPortfolioFile) {
+      portfolioFileB64 = await fileToBase64(currentPortfolioFile);
+      portfolioFileName = currentPortfolioFile.name;
+      portfolioFileMime = currentPortfolioFile.type || 'application/pdf';
+    }
+
     const res = await fetch(cfg.url, {
       method: 'POST',
       body: JSON.stringify({
@@ -704,12 +770,16 @@ async function submitCV() {
         apiKey: cfg.apiKey,
         candidate: {
           name, contact, position, source, hrNote, hrUploader: 'HR',
+          portfolio: portfolioLink,
           hrScore: hrScoreTotal !== null ? hrScoreTotal.toFixed(2) : '',
           hrScoreDetail: { ...hrScores }
         },
         fileName: currentFile.name,
         fileMimeType: currentFile.type || 'application/pdf',
-        fileBase64: fileBase64
+        fileBase64: fileBase64,
+        portfolioFileBase64: portfolioFileB64,
+        portfolioFileName: portfolioFileName,
+        portfolioFileMime: portfolioFileMime
       })
     });
     const result = await res.json();
@@ -745,11 +815,13 @@ async function submitCV() {
     document.getElementById('newContact').value = '';
     document.getElementById('newPosition').value = '';
     document.getElementById('newSource').value = '';
+    document.getElementById('newPortfolio').value = '';
     document.getElementById('newHrNote').value = '';
     Object.keys(hrScores).forEach(k => delete hrScores[k]);
     renderHrCriteria();
     updateHrTotal();
     clearFile();
+    clearPortfolioFile();
   } catch(e) {
     alert('❌ Lỗi: ' + e.message);
   }
@@ -903,6 +975,17 @@ function escHtml(s) {
   return (s + '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+function formatPortfolioLinks(text) {
+  if (!text) return '';
+  // Tách bằng dấu phẩy hoặc xuống dòng
+  const links = text.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
+  return links.map(l => {
+    let url = l;
+    if (!/^https?:\/\//.test(url)) url = 'https://' + url;
+    return `<a href="${url}" target="_blank" style="color:#1F4E79;text-decoration:underline;display:inline-block;margin-right:8px;">${escHtml(l)}</a>`;
+  }).join(' ');
+}
+
 function formatDate(d) {
   if (!d) return '-';
   const date = new Date(d);
@@ -978,9 +1061,14 @@ function openReview(rowNum) {
     ${renderHrScoreReview(c)}
 
     <div class="modal-section">
-      <div style="display:flex;gap:8px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
         ${c['CV file'] ? `<a href="${c['CV file']}" target="_blank" class="btn btn-blue">📄 Mở CV (Drive)</a>` : '<div style="color:#C00000;font-size:13px;">Chưa có file CV</div>'}
+        ${c['Portfolio file'] ? `<a href="${c['Portfolio file']}" target="_blank" class="btn btn-success">📂 Mở Portfolio file (Drive)</a>` : ''}
       </div>
+      ${c['Portfolio link'] ? `<div style="margin-top:10px;padding:10px 12px;background:#fffbf0;border-left:4px solid #d97706;border-radius:6px;font-size:12px;">
+        <strong>🔗 Link Portfolio / Kênh cá nhân:</strong><br>
+        ${formatPortfolioLinks(c['Portfolio link'])}
+      </div>` : ''}
     </div>
   `;
 
@@ -1047,7 +1135,7 @@ function openReview(rowNum) {
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
             <input type="checkbox" class="test-check" value="plan" onchange="updateTestDesc()">
-            <strong>Bài 2: Lập kế hoạch Marketing</strong> <span style="color:#718096;">(60-90p)</span>
+            <strong>Bài 2: Mô tả quy trình làm content</strong> <span style="color:#718096;">(30-45p)</span>
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
             <input type="checkbox" class="test-check" value="data" onchange="updateTestDesc()">
@@ -1059,7 +1147,7 @@ function openReview(rowNum) {
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
             <input type="checkbox" class="test-check" value="caption" onchange="updateTestDesc()">
-            <strong>Bài 5: Viết caption FB tại chỗ</strong> <span style="color:#718096;">(15-20p)</span>
+            <strong>Bài 5: Viết bài đăng FB tại chỗ</strong> <span style="color:#718096;">(15-20p)</span>
           </label>
         </div>
         <div id="totalTime" style="margin-top:6px;font-size:11px;color:#0F766E;font-weight:600;"></div>
@@ -1180,125 +1268,141 @@ async function submitReview(rowNum, decision) {
 
 // ============== SEND TEST ==============
 const TEST_TEMPLATES = {
-  content: { name: 'Bài 1: Viết review sách', duration: 90, desc: `📚 BÀI 1: VIẾT REVIEW SÁCH (60-90 phút)
+  content: { name: 'Bài 1: Viết bài quảng bá sách thiếu nhi', duration: 90, desc: `📚 BÀI 1: VIẾT BÀI QUẢNG BÁ SÁCH THIẾU NHI (60-90 phút)
 
-🎯 MỤC TIÊU: Đánh giá kỹ năng content cơ bản (review + caption + script video)
+🎯 MỤC TIÊU: Đánh giá kỹ năng viết bài quảng bá cho mảng sách thiếu nhi (đối tượng KITA BOOKS)
 
-📖 NGUỒN SÁCH (CHỌN 1 CUỐN BẤT KỲ):
+📖 NGUỒN SÁCH:
 👉 Vào website KITA BOOKS: https://www.kitabook.vn/
-   • Browse các đầu sách hiện có
-   • Chọn 1 cuốn bạn THÍCH NHẤT (đọc qua mô tả + reviews)
-   • Lưu ý: chọn sách phù hợp đối tượng phụ nữ 25-40 tuổi
+   • Xem qua các đầu sách thiếu nhi của KITA
+   • Chọn 1 cuốn bạn thấy phù hợp nhất (đọc kỹ mô tả + đánh giá)
 
 📋 ĐỀ BÀI:
-Bạn vừa được giao quảng bá cuốn sách bạn chọn ở trên (xem giá thực tế trên web). Hãy hoàn thành 3 nội dung sau:
+Bạn được giao quảng bá cuốn sách thiếu nhi bạn chọn ở trên (xem giá thực tế trên web), nhắm đến cha mẹ có con từ 3-12 tuổi. Hãy hoàn thành 2 nội dung sau:
 
-1️⃣ Bài review trên Facebook fanpage (300-500 chữ)
-   • Hook 3 giây đầu thu hút
-   • Insight chính của sách (1-2 điểm)
-   • Quote nổi bật + CTA mua hàng
+1️⃣ Bài đăng trên Facebook fanpage KITA BOOKS (300-500 chữ)
+   • Câu mở đầu thu hút trong 3 giây đầu
+   • Lợi ích cuốn sách mang lại cho con (1-2 điểm cốt lõi)
+   • Trích đoạn ấn tượng / chi tiết hay
+   • Lời kêu gọi mua hàng rõ ràng (giá, link mua, ưu đãi nếu có)
 
-2️⃣ Caption Instagram (100-150 chữ)
-   • Pain point ngắn gọn
-   • Lợi ích cuốn sách + Hashtag + CTA
+2️⃣ Kịch bản video TikTok 30-45 giây
+   • 0-3 giây: Câu mở đầu thu hút phụ huynh dừng xem
+   • 3-30 giây: Giới thiệu lợi ích / điểm hay của sách cho trẻ
+   • 30-45 giây: Lời kêu gọi mua sách (kèm chi tiết hành động)
 
-3️⃣ Script TikTok 30-45 giây
-   • Hook (0-3s) → Body insight (3-30s) → CTA (30-45s)
+✅ TIÊU CHÍ ĐÁNH GIÁ:
+   • Câu mở đầu thu hút (30%)
+   • Hiểu sâu nội dung sách + phù hợp đối tượng phụ huynh (30%)
+   • Lời kêu gọi mua hàng rõ ràng (20%)
+   • Phù hợp đặc tính từng nền tảng (FB / TikTok) (20%)
 
-✅ TIÊU CHÍ: Hook 3 giây (30%) | Hiểu sách thật (30%) | CTA rõ (20%) | Phù hợp platform (20%)
+💡 LƯU Ý: Ghi rõ TÊN SÁCH + LINK SÁCH bạn chọn ở đầu bài làm để chúng tôi đối chiếu.` },
 
-💡 LƯU Ý: Ghi rõ tên + link sách bạn chọn ở đầu bài làm để chúng tôi đối chiếu.` },
+  plan: { name: 'Bài 2: Mô tả quy trình làm content', duration: 45, desc: `📝 BÀI 2: MÔ TẢ QUY TRÌNH LÀM CONTENT (30-45 phút)
 
-  plan: { name: 'Bài 2: Lập kế hoạch Marketing', duration: 90, desc: `📊 BÀI 2: LẬP KẾ HOẠCH MARKETING 30 NGÀY (60-90 phút)
+🎯 MỤC TIÊU: Đánh giá kinh nghiệm thực tế và tư duy có hệ thống của ứng viên khi làm 1 bài content
 
-🎯 MỤC TIÊU: Đánh giá tư duy chiến lược + khả năng plan từ A-Z
+📋 ĐỀ BÀI:
+Hãy MÔ TẢ QUY TRÌNH bạn thường làm khi nhận đầu việc viết 1 bài đăng quảng bá cho 1 cuốn sách thiếu nhi của KITA BOOKS — từ lúc nhận đầu việc cho đến khi đăng lên fanpage.
 
-📦 BÀI TẬP:
-- Tựa sách self-help mới của KITA BOOKS
-- Đối tượng: Phụ nữ 25-40 tuổi, thu nhập 10-20tr/tháng
-- Giá: 250.000đ | Mục tiêu DT: 500tr/tháng | Ads: 100tr
-- Kênh: Facebook + TikTok + Website
+📌 YÊU CẦU:
+   • Liệt kê các bước theo thứ tự bạn thực hiện
+   • Mỗi bước nói rõ: làm gì + công cụ / cách làm + kết quả đầu ra
+   • Trình bày bằng cách bạn thấy phù hợp nhất (bảng / sơ đồ / gạch đầu dòng...)
 
-📋 PLAN GỒM:
-1. Phase 7-15-30 + Mục tiêu mỗi phase
-2. Content calendar khả thi (3-5 chủ đề chính)
-3. Audience targeting cụ thể (interest, behavior, age...)
-4. Budget allocation theo tuần/phase/kênh
-5. KPI từng phase (CPL, CR, ROAS)
-6. Forecast doanh thu
-7. Backup plan nếu KPI không đạt
+✅ TIÊU CHÍ ĐÁNH GIÁ:
+   • Quy trình có hệ thống và logic (35%)
+   • Các bước thực tế, không nói chung chung (30%)
+   • Có dùng công cụ phù hợp (Canva, ChatGPT, Excel...) (20%)
+   • Hiểu được các bước quan trọng (nghiên cứu khách hàng, kiểm tra trước đăng, theo dõi sau đăng...) (15%)
 
-✅ TIÊU CHÍ: Phase + Mục tiêu (25%) | Content calendar (20%) | Audience (20%) | Budget (20%) | Forecast + Backup (15%)
+💡 LƯU Ý:
+   • KHÔNG có quy trình "đúng" chung — mỗi người có cách làm khác nhau
+   • Chúng tôi đánh giá CÁCH BẠN TƯ DUY và KINH NGHIỆM THỰC TẾ
+   • Càng cụ thể, càng tốt (vd: thay vì "tìm hiểu sách" → ghi "đọc mục lục + 2 chương đầu, lưu lại 3 quote hay")` },
 
-💡 GỢI Ý: Có thể trình bày bằng PowerPoint, Excel hoặc Word.` },
+  data: { name: 'Bài 3: Phân tích số liệu quảng cáo', duration: 45, desc: `📈 BÀI 3: PHÂN TÍCH SỐ LIỆU QUẢNG CÁO FACEBOOK (45 phút)
 
-  data: { name: 'Bài 3: Phân tích số liệu', duration: 45, desc: `📈 BÀI 3: PHÂN TÍCH SỐ LIỆU FB ADS (45 phút)
+🎯 MỤC TIÊU: Đánh giá khả năng đọc - hiểu - đề xuất tối ưu trên số liệu quảng cáo thực tế
 
-🎯 MỤC TIÊU: Đánh giá tư duy số liệu + khả năng đề xuất tối ưu
-
-🖼️ BÁO CÁO FB ADS GIẢ LẬP - XEM TẠI:
+🖼️ BÁO CÁO QUẢNG CÁO GIẢ LẬP - XEM TẠI:
 👉 https://phongvanmkt.kitagroupvn.com/anh-ads-fb/
-   (Mở link → bạn sẽ thấy báo cáo Meta Ads Manager với đầy đủ số liệu chi tiết:
-    Top metrics, Daily spend chart, Breakdown 5 ad sets, Top 5 creative)
+   (Mở link để xem báo cáo Facebook Ads chi tiết: số liệu tổng, biểu đồ chi tiêu hàng ngày, chi tiết 5 nhóm quảng cáo, hiệu quả 5 hình ảnh/video)
 
 📋 YÊU CẦU (dựa trên báo cáo ở link trên):
-1. Phân tích các vấn đề chính (xếp theo độ ưu tiên)
-2. Xác định nguyên nhân gốc rễ cho top 3 vấn đề
-3. Đánh giá hiệu quả của TỪNG ad set (5 ad sets) — pause/scale/optimize cái nào?
-4. Đánh giá creative — đề xuất giữ / pause / sản xuất mới
-5. Đề xuất 5 hành động cụ thể (kèm KPI mong muốn)
-6. Forecast: Nếu áp dụng đề xuất, ROAS có thể đạt bao nhiêu sau 30 ngày?
+   1. Liệt kê các vấn đề chính (sắp xếp theo mức độ quan trọng)
+   2. Tìm ra nguyên nhân gốc cho 3 vấn đề lớn nhất
+   3. Đánh giá hiệu quả của TỪNG nhóm quảng cáo (có 5 nhóm) — nên dừng / mở rộng / tối ưu nhóm nào?
+   4. Đánh giá hiệu quả các hình ảnh & video — nên giữ / dừng / làm mới?
+   5. Đề xuất 5 hành động cụ thể (kèm chỉ số mong muốn)
+   6. Dự báo: Nếu áp dụng đề xuất, hiệu quả quảng cáo (lợi nhuận / chi tiêu) có thể đạt bao nhiêu sau 30 ngày?
 
-✅ TIÊU CHÍ: Phân tích đúng vấn đề (30%) | Phân tích ad set + creative (25%) | Đề xuất khả thi (25%) | Forecast hợp lý (20%)
+✅ TIÊU CHÍ ĐÁNH GIÁ:
+   • Phân tích đúng vấn đề (30%)
+   • Phân tích nhóm quảng cáo + hình ảnh / video (25%)
+   • Đề xuất khả thi (25%)
+   • Dự báo hợp lý (20%)
 
 💡 GỢI Ý:
-- Có thể chụp màn hình trang báo cáo để dán vào bài làm
-- Trình bày dạng bảng + diễn giải. Càng cụ thể số càng tốt.
-- Phân tích cả 2 chiều: macro (toàn campaign) + micro (ad set / creative)` },
+   • Có thể chụp màn hình trang báo cáo để dán vào bài làm
+   • Trình bày dạng bảng + giải thích. Càng cụ thể số càng tốt.` },
 
-  ai: { name: 'Bài 4: Sử dụng AI tạo content', duration: 45, desc: `🤖 BÀI 4: SỬ DỤNG AI TẠO CONTENT (30-45 phút)
+  ai: { name: 'Bài 4: Sử dụng AI tạo nội dung', duration: 45, desc: `🤖 BÀI 4: SỬ DỤNG AI TẠO NỘI DUNG (30-45 phút)
 
-🎯 MỤC TIÊU: Đánh giá kỹ năng tận dụng AI trong workflow Marketing
+🎯 MỤC TIÊU: Đánh giá khả năng tận dụng các công cụ AI (như ChatGPT, Gemini, Claude...) trong công việc Marketing
 
-📋 YÊU CẦU 3 PHẦN:
+📋 YÊU CẦU GỒM 3 PHẦN:
 
-1️⃣ VIẾT 1 PROMPT CHẤT LƯỢNG bằng tiếng Việt
-   • Để AI viết bài quảng bá sách self-help cho phụ nữ 30+
-   • Prompt structured: Role + Context + Task + Audience + Tone + Format + Constraints
-   • Copy luôn output AI trả về để minh chứng
+1️⃣ VIẾT 1 CÂU LỆNH (PROMPT) CHẤT LƯỢNG bằng tiếng Việt
+   • Yêu cầu AI viết 1 bài đăng Facebook quảng bá 1 cuốn sách thiếu nhi của KITA BOOKS cho phụ huynh có con 6-10 tuổi
+   • Câu lệnh phải đủ ý: vai trò AI / bối cảnh / việc cần làm / đối tượng / giọng văn / định dạng / điều kiện ràng buộc
+   • Copy luôn nội dung AI trả về để minh chứng
 
-2️⃣ MÔ TẢ WORKFLOW 5 BƯỚC dùng AI tạo 1 video TikTok hoàn chỉnh
-   • Bước 1: Tool nào, làm gì
+2️⃣ MÔ TẢ QUY TRÌNH 5 BƯỚC dùng AI để tạo 1 video TikTok hoàn chỉnh
+   • Bước 1: Dùng công cụ nào, làm gì
    • Bước 2: ...
-   • Output cuối: Video gì, dài bao lâu, format
+   • ...
+   • Sản phẩm cuối: Video gì, dài bao lâu, ai đăng
 
-3️⃣ PHÂN TÍCH CASE
-   AI vừa tạo content quảng bá sách self-help nhưng có 3 lỗi (sai sự thật, lệch tone, thiếu CTA).
+3️⃣ PHÂN TÍCH 1 TÌNH HUỐNG
+   Giả sử AI vừa viết 1 bài quảng bá sách thiếu nhi cho bạn nhưng có 3 lỗi (sai thông tin, giọng văn không hợp với phụ huynh, thiếu lời kêu gọi mua).
    • Liệt kê 3 lỗi điển hình bạn phát hiện
    • Cách sửa cụ thể từng lỗi
-   • Quy trình check trước khi đăng
+   • Quy trình tự kiểm tra của bạn trước khi đăng
 
-✅ TIÊU CHÍ: Prompt chất lượng + output (40%) | Workflow rõ + tools cụ thể (30%) | Phát hiện + sửa lỗi AI (30%)
+✅ TIÊU CHÍ ĐÁNH GIÁ:
+   • Chất lượng câu lệnh + nội dung AI trả về (40%)
+   • Quy trình rõ + công cụ cụ thể (30%)
+   • Phát hiện + cách sửa lỗi AI (30%)
 
-💡 GỢI Ý: Có thể nộp screenshot conversation AI + giải thích.` },
+💡 GỢI Ý: Có thể nộp ảnh chụp màn hình hội thoại với AI kèm giải thích.` },
 
-  caption: { name: 'Bài 5: Viết caption FB tại chỗ', duration: 20, desc: `✍️ BÀI 5: VIẾT CAPTION FACEBOOK TẠI CHỖ (15-20 phút)
+  caption: { name: 'Bài 5: Viết bài đăng Facebook tại chỗ', duration: 20, desc: `✍️ BÀI 5: VIẾT 3 BÀI ĐĂNG FACEBOOK TẠI CHỖ (15-20 phút)
 
-🎯 MỤC TIÊU: Test khả năng viết content nhanh dưới áp lực
+🎯 MỤC TIÊU: Đánh giá khả năng viết nội dung nhanh dưới áp lực thời gian
 
 📦 BÀI TẬP:
-• Cuốn sách: "Đắc Nhân Tâm" - Dale Carnegie (200.000đ)
-• Đối tượng: Phụ nữ văn phòng 25-35 tuổi
-• Mục đích: Tăng engagement + dẫn về website đặt hàng
+   • Cuốn sách: 1 cuốn sách thiếu nhi bạn chọn trên https://www.kitabook.vn/
+   • Đối tượng: Phụ huynh có con từ 4-10 tuổi
+   • Mục tiêu: Tăng tương tác + dẫn về website đặt mua
 
-📝 VIẾT 3 CAPTION FACEBOOK (mỗi caption 100-150 chữ):
-1. Caption HOOK (kéo người dừng scroll)
-2. Caption STORY (kể chuyện gắn pain point)
-3. Caption CTA mạnh (giảm giá / urgency)
+📝 VIẾT 3 BÀI ĐĂNG FACEBOOK (mỗi bài 100-150 chữ):
 
-✅ TIÊU CHÍ: Hook 3s (25%) | Pain point đúng (25%) | CTA rõ (25%) | Emoji + format (25%)
+   Bài 1 - THU HÚT:
+      Câu mở đầu kéo người dừng cuộn xem
+   Bài 2 - KỂ CHUYỆN:
+      Kể 1 câu chuyện gắn với khó khăn của ba mẹ khi nuôi dạy con
+   Bài 3 - KÊU GỌI MUA HÀNG MẠNH:
+      Có yếu tố giảm giá / số lượng có hạn / ưu đãi thời gian ngắn
 
-💡 LƯU Ý: Đây là bài test SPEED - nộp gọn, không cần dài.` }
+✅ TIÊU CHÍ ĐÁNH GIÁ:
+   • Câu mở đầu thu hút trong 3 giây (25%)
+   • Đúng nỗi đau / quan tâm của phụ huynh (25%)
+   • Lời kêu gọi mua rõ ràng (25%)
+   • Biểu tượng + định dạng phù hợp (25%)
+
+💡 LƯU Ý: Đây là bài test viết NHANH — nộp gọn, đúng yêu cầu, không cần dài.` }
 };
 
 function updateTestDesc() {
