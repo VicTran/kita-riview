@@ -494,8 +494,8 @@
     <div class="form-group"><label>Vòng phỏng vấn</label>
       <select id="interviewRound">
         <option value="V1">Vòng 1 - HR Sàng lọc</option>
-        <option value="V2">Vòng 2 - TPMKT</option>
-        <option value="V3">Vòng 3 - Bài tập</option>
+        <option value="V2">Vòng 2 - Bài tập thực tế</option>
+        <option value="V3">Vòng 3 - TPMKT Chuyên môn</option>
         <option value="V4">Vòng 4 - Giám đốc</option>
       </select>
     </div>
@@ -515,10 +515,10 @@
 
 <nav class="tabs">
   <button class="tab active" data-section="rubric" onclick="showSection('rubric')">📖 Rubric</button>
-  <button class="tab" data-section="round1" onclick="showSection('round1')">Vòng 1<span class="tab-badge" id="badge-round1">0/10</span></button>
-  <button class="tab" data-section="round2" onclick="showSection('round2')">Vòng 2<span class="tab-badge" id="badge-round2">0/31</span></button>
-  <button class="tab" data-section="round3" onclick="showSection('round3')">Vòng 3<span class="tab-badge">3 BT</span></button>
-  <button class="tab" data-section="round4" onclick="showSection('round4')">Vòng 4<span class="tab-badge" id="badge-round4">0/4</span></button>
+  <button class="tab" data-section="round1" onclick="showSection('round1')">Vòng 1 - HR<span class="tab-badge" id="badge-round1">0/10</span></button>
+  <button class="tab" data-section="round3" onclick="showSection('round3')">Vòng 2 - Bài tập<span class="tab-badge">3 BT</span></button>
+  <button class="tab" data-section="round2" onclick="showSection('round2')">Vòng 3 - TPMKT<span class="tab-badge" id="badge-round2">0/31</span></button>
+  <button class="tab" data-section="round4" onclick="showSection('round4')">Vòng 4 - GĐ<span class="tab-badge" id="badge-round4">0/4</span></button>
   <button class="tab" data-section="qa" onclick="showSection('qa')">💬 Q&A</button>
   <button class="tab" data-section="scorecard" onclick="showSection('scorecard')">📊 Scorecard</button>
   <button class="tab" data-section="decision" onclick="showSection('decision')">✅ Quyết định</button>
@@ -582,7 +582,23 @@
 </section>
 
 <section class="section" id="section-round3">
-  <div class="section-header"><h2>📝 VÒNG 3 - BÀI TẬP THỰC HÀNH</h2><p>⏱️ 1-3 giờ về nhà | Thang điểm: 1-10</p></div>
+  <div class="section-header"><h2>📝 VÒNG 2 - BÀI TẬP THỰC HÀNH</h2><p>⏱️ Ứng viên làm tại nhà sau Vòng 1 HR | Thang điểm: 1-10</p></div>
+
+  <!-- Card kéo bài làm từ /bai-test/ -->
+  <div class="info-card" style="border-left:4px solid #0F766E;">
+    <h2 style="color:#0F766E;border-color:#0F766E;">📋 Bài làm của ứng viên (đã nộp qua /bai-test/)</h2>
+    <p style="font-size:13px;color:#4a5568;margin-bottom:10px;">
+      💡 Workflow: Sau khi HR gửi bài test ở <a href="/cv/" target="_blank" style="color:#0F766E;font-weight:600;">/cv/</a> → ứng viên nộp bài qua link <code style="background:#edf2f7;padding:2px 6px;border-radius:4px;font-size:12px;">/bai-test/?token=XXX</code> → bấm nút bên dưới để kéo bài làm về đây.
+    </p>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="fetchCandidateTestSubmission()">🔍 Tìm bài ứng viên đã nộp</button>
+      <a href="/cv/" target="_blank" class="btn btn-light" style="background:#718096;">📥 Mở /cv/ (quản lý CV)</a>
+    </div>
+    <div id="test-submission-info" style="margin-top:12px;font-size:13px;color:#718096;font-style:italic;">
+      Nhập "Họ tên ứng viên" ở đầu trang → bấm "🔍 Tìm bài ứng viên đã nộp" để load bài làm về đây trước khi chấm điểm.
+    </div>
+  </div>
+
   <div id="exercises-round3"></div>
 </section>
 
@@ -861,30 +877,37 @@ const QUESTIONS = {
   ]}
 };
 
-// SCORECARD theo JD Marketing KITA BOOKS:
-// - Văn hoá KITA: Đam mê đọc sách (5%) + Khát khao TN (5%) = 10%
-// - Soft Skills: Học hỏi (10%) + Áp lực (10%) + Trách nhiệm (5%) = 25%
-// - Chuyên môn (CORE): Content+Nền tảng (25%) + Ads (20%) + AI (15%) = 60%
-// - Cultural fit + Red flags: 5%
+// SCORECARD theo JD Marketing KITA BOOKS (workflow mới: HR → Bài tập → TPMKT → GĐ):
+// - V1 - HR Sàng lọc (Văn hoá KITA + Red flags): 15%
+// - V2 - Bài tập thực tế (PRACTICAL skills test): 20%
+// - V3 - TPMKT Soft Skills + Chuyên môn CORE: 60%
+// - V4 - Giám đốc + Cultural fit: 5%
 // Tổng: 100%
 const SCORECARD_CONFIG = [
-  // 🟦 VÒNG 1 - HR Sàng lọc (Văn hoá KITA + Red flags: 15%)
+  // 🟦 VÒNG 1 - HR Sàng lọc (15%)
   { name: '🎯 A1. Đam mê đọc sách [V1: Q3-Q5]', weight: 5, qIds: ['q3', 'q4', 'q5'] },
   { name: '💰 A2. Khát khao thu nhập không giới hạn [V1: Q7]', weight: 5, qIds: ['q7'] },
   { name: '🚩 A3. Loại bỏ Red flags [V1: Q9, Q45]', weight: 5, qIds: ['q9', 'q45'] },
 
-  // 🟪 VÒNG 2 - TPMKT Soft Skills (25%)
-  { name: '📚 B1. Khả năng học hỏi nhanh [V2: Q10-Q12]', weight: 10, qIds: ['q10', 'q11', 'q12'] },
-  { name: '🤝 B2. Tinh thần trách nhiệm [V2: Q13-Q15]', weight: 5, qIds: ['q13', 'q14', 'q15'] },
-  { name: '🔥 B3. Làm việc dưới áp lực [V2: Q16-Q18]', weight: 10, qIds: ['q16', 'q17', 'q18'] },
+  // 🟧 VÒNG 2 - BÀI TẬP THỰC TẾ (20%) - PRACTICAL SKILLS
+  { name: '📝 E1. Bài tập thực tế [V2: BT1+BT2+BT3]', weight: 20, qIds: [
+    'bt1-c0', 'bt1-c1', 'bt1-c2', 'bt1-c3',
+    'bt2-c0', 'bt2-c1', 'bt2-c2', 'bt2-c3', 'bt2-c4',
+    'bt3-c0', 'bt3-c1', 'bt3-c2'
+  ]},
 
-  // 🟪 VÒNG 2 - TPMKT Chuyên môn CORE (55%)
-  { name: '✍️ C1. Chuyên môn Content + Nền tảng MKT [V2: Q19-Q22, Q35-Q39]', weight: 25, qIds: ['q19', 'q20', 'q21', 'q22', 'q35', 'q36', 'q37', 'q38', 'q39'] },
-  { name: '📊 C2. Chuyên môn Ads & Số liệu [V2: Q23-Q27]', weight: 20, qIds: ['q23', 'q24', 'q25', 'q26', 'q27'] },
-  { name: '🤖 C3. Kỹ năng sử dụng AI [V2: Q40-Q44]', weight: 10, qIds: ['q40', 'q41', 'q42', 'q43', 'q44'] },
+  // 🟪 VÒNG 3 - TPMKT Soft Skills (25%)
+  { name: '📚 B1. Khả năng học hỏi nhanh [V3: Q10-Q12]', weight: 10, qIds: ['q10', 'q11', 'q12'] },
+  { name: '🤝 B2. Tinh thần trách nhiệm [V3: Q13-Q15]', weight: 5, qIds: ['q13', 'q14', 'q15'] },
+  { name: '🔥 B3. Làm việc dưới áp lực [V3: Q16-Q18]', weight: 10, qIds: ['q16', 'q17', 'q18'] },
 
-  // 🟩 VÒNG 4 - Giám đốc + V2 Tình huống (Cultural fit: 5%)
-  { name: '🎭 D1. Tình huống xử lý + Cultural fit [V2: Q28-Q30, V4: Q31-Q34]', weight: 5, qIds: ['q28', 'q29', 'q30', 'q31', 'q32', 'q33', 'q34'] },
+  // 🟪 VÒNG 3 - TPMKT Chuyên môn CORE (35%)
+  { name: '✍️ C1. Chuyên môn Content + Nền tảng MKT [V3: Q19-Q22, Q35-Q39]', weight: 15, qIds: ['q19', 'q20', 'q21', 'q22', 'q35', 'q36', 'q37', 'q38', 'q39'] },
+  { name: '📊 C2. Chuyên môn Ads & Số liệu [V3: Q23-Q27]', weight: 15, qIds: ['q23', 'q24', 'q25', 'q26', 'q27'] },
+  { name: '🤖 C3. Kỹ năng sử dụng AI [V3: Q40-Q44]', weight: 5, qIds: ['q40', 'q41', 'q42', 'q43', 'q44'] },
+
+  // 🟩 VÒNG 4 - Giám đốc + V3 Tình huống (Cultural fit: 5%)
+  { name: '🎭 D1. Tình huống xử lý + Cultural fit [V3: Q28-Q30, V4: Q31-Q34]', weight: 5, qIds: ['q28', 'q29', 'q30', 'q31', 'q32', 'q33', 'q34'] },
 ];
 
 const state = { scores: {}, notes: {}, qa: [{ q: '', class: 'normal', note: '' }] };
@@ -1572,6 +1595,91 @@ function loadData() {
   } catch (err) {
     alert('❌ Lỗi đọc dữ liệu: ' + err.message);
   }
+}
+
+// ============== KÉO BÀI ỨNG VIÊN ĐÃ NỘP (từ CVQueue) ==============
+async function fetchCandidateTestSubmission() {
+  const cfg = getCloudConfig();
+  if (!cfg) { alert('⚠️ Chưa setup Cloud (xem /setup-database/)'); return; }
+
+  const name = document.getElementById('candidateName').value.trim();
+  if (!name) {
+    alert('⚠️ Nhập "Họ tên ứng viên" ở đầu trang trước!');
+    document.getElementById('candidateName').focus();
+    return;
+  }
+
+  const infoEl = document.getElementById('test-submission-info');
+  infoEl.innerHTML = '⏳ Đang tìm bài làm trong CVQueue...';
+
+  try {
+    const url = `${cfg.url || cfg.cloudUrl}?apiKey=${encodeURIComponent(cfg.apiKey || cfg.cloudApiKey)}&action=list_cv_queue`;
+    const res = await fetch(url);
+    const result = await res.json();
+    if (!result.ok) {
+      infoEl.innerHTML = `<div style="color:#C00000;">❌ Lỗi: ${result.error || 'Không xác định'}</div>`;
+      return;
+    }
+
+    // Tìm theo tên (case insensitive, trim)
+    const rows = result.data || [];
+    const norm = (s) => (s || '').toString().trim().toLowerCase();
+    const candName = norm(name);
+    const matches = rows.filter(r => norm(r['Tên']) === candName);
+
+    if (matches.length === 0) {
+      infoEl.innerHTML = `<div style="color:#C00000;">❌ Không tìm thấy ứng viên "${name}" trong CVQueue.<br>Hãy đảm bảo HR đã upload CV ở <a href="/cv/" target="_blank" style="color:#1F4E79;">/cv/</a>.</div>`;
+      return;
+    }
+
+    // Ưu tiên: TEST_SUBMITTED có Test file
+    const submitted = matches.find(r => r['Test file']) || matches[0];
+
+    if (!submitted['Test file']) {
+      infoEl.innerHTML = `<div style="background:#fef3c7;padding:14px;border-radius:8px;border-left:4px solid #d97706;color:#78350f;">
+        ⚠️ <strong>Ứng viên chưa nộp bài test.</strong><br>
+        Status hiện tại: <strong>${submitted['Status'] || '?'}</strong><br>
+        Vui lòng đợi ứng viên nộp bài tại link đã gửi, hoặc xem chi tiết tại <a href="/cv/" target="_blank" style="color:#78350f;font-weight:700;">/cv/</a>.
+      </div>`;
+      return;
+    }
+
+    // Hiển thị bài đã nộp
+    let html = `<div style="background:#c6f6d5;padding:16px;border-radius:8px;border-left:4px solid #00B050;">`;
+    html += `<div style="font-weight:700;color:#22543d;margin-bottom:8px;font-size:14px;">✅ Tìm thấy bài đã nộp của "${escHtmlSimple(submitted['Tên'])}"</div>`;
+    html += `<div style="font-size:12px;color:#22543d;display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">`;
+    html += `<div>📅 <strong>Đã nộp:</strong> ${formatDateSimple(submitted['Test submitted at'])}</div>`;
+    html += `<div>📦 <strong>Loại bài:</strong> ${escHtmlSimple(submitted['Test type'] || '-')}</div>`;
+    html += `<div>⏰ <strong>Deadline:</strong> ${escHtmlSimple(submitted['Test deadline'] || '-')}</div>`;
+    html += `<div>📍 <strong>Status:</strong> ${escHtmlSimple(submitted['Status'] || '-')}</div>`;
+    html += `</div>`;
+    html += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">`;
+    html += `<a href="${submitted['Test file']}" target="_blank" class="btn btn-primary" style="background:#00B050;">📋 Mở file bài làm (Drive)</a>`;
+    html += `</div>`;
+    if (submitted['Test note']) {
+      html += `<div style="margin-top:8px;padding:10px;background:white;border-radius:6px;font-size:12px;color:#22543d;"><strong>📝 Ghi chú từ ứng viên:</strong><br>${escHtmlSimple(submitted['Test note'])}</div>`;
+    }
+    if (submitted['Test description']) {
+      html += `<details style="margin-top:8px;"><summary style="cursor:pointer;font-size:12px;color:#22543d;font-weight:600;">📋 Xem đề bài đã gửi</summary>`;
+      html += `<div style="margin-top:6px;padding:10px;background:white;border-radius:6px;font-size:11px;color:#2d3748;white-space:pre-wrap;max-height:300px;overflow-y:auto;">${escHtmlSimple(submitted['Test description'])}</div>`;
+      html += `</details>`;
+    }
+    html += `<div style="margin-top:12px;padding:10px;background:rgba(255,255,255,0.6);border-radius:6px;font-size:11px;color:#22543d;font-style:italic;">💡 Mở file bài làm ở Drive → đối chiếu với đề bài → chấm điểm 12 tiêu chí (BT1+BT2+BT3) bên dưới.</div>`;
+    html += `</div>`;
+    infoEl.innerHTML = html;
+  } catch(e) {
+    infoEl.innerHTML = `<div style="color:#C00000;">❌ Lỗi kết nối: ${e.message}</div>`;
+  }
+}
+
+function escHtmlSimple(s) {
+  return (s + '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function formatDateSimple(d) {
+  if (!d) return '-';
+  const dt = new Date(d);
+  if (isNaN(dt)) return d;
+  return dt.toLocaleString('vi-VN');
 }
 
 // ============== GOOGLE SHEET CLOUD DATABASE ==============
