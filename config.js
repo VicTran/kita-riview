@@ -19,7 +19,7 @@ window.KITA_CONFIG = {
 
   // Google Gemini (FREE 1500/day) - lấy tại https://aistudio.google.com/app/apikey
   geminiKey: "",
-  geminiModel: "gemini-2.0-flash-exp",
+  geminiModel: "gemini-2.5-flash",
 
   // OpenAI (cần trả phí)
   openaiKey: "",

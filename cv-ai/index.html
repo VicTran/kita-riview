@@ -321,9 +321,12 @@
         <div class="form-group">
           <label>Model</label>
           <select id="geminiModelInput">
-            <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (mới nhất, free) - Khuyến nghị</option>
-            <option value="gemini-1.5-flash">Gemini 1.5 Flash (ổn định, free)</option>
-            <option value="gemini-1.5-pro">Gemini 1.5 Pro (chất lượng cao hơn, free 50/ngày)</option>
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash (mới nhất + free 1500/day) - Khuyến nghị</option>
+            <option value="gemini-2.0-flash">Gemini 2.0 Flash (free 1500/day)</option>
+            <option value="gemini-1.5-flash">Gemini 1.5 Flash (ổn định nhất, free 1500/day)</option>
+            <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash 8B (nhanh nhất, free 4000/day)</option>
+            <option value="gemini-1.5-pro">Gemini 1.5 Pro (chất lượng cao, free 50/day)</option>
+            <option value="gemini-2.5-pro">Gemini 2.5 Pro (chất lượng cao nhất, free 50/day)</option>
           </select>
         </div>
       </div>
@@ -603,7 +606,7 @@ function getApiConfig() {
     return {
       provider: g.aiProvider,
       geminiKey: g.geminiKey || '',
-      geminiModel: g.geminiModel || 'gemini-2.0-flash-exp',
+      geminiModel: g.geminiModel || 'gemini-2.5-flash',
       key: g.openaiKey || '',
       model: g.openaiModel || 'gpt-4o-mini',
       claudeModel: g.claudeModel || 'claude-haiku-4-5-20251001'
@@ -617,7 +620,7 @@ function openApiModal() {
   if (cfg) {
     document.getElementById('providerInput').value = cfg.provider || 'gemini';
     document.getElementById('geminiKeyInput').value = cfg.geminiKey || '';
-    document.getElementById('geminiModelInput').value = cfg.geminiModel || 'gemini-2.0-flash-exp';
+    document.getElementById('geminiModelInput').value = cfg.geminiModel || 'gemini-2.5-flash';
     document.getElementById('apiKeyInput').value = cfg.key || '';
     document.getElementById('apiModelInput').value = cfg.model || 'gpt-4o-mini';
     document.getElementById('claudeModelInput').value = cfg.claudeModel || 'claude-haiku-4-5-20251001';
@@ -945,7 +948,7 @@ async function analyzeCV() {
 
 async function analyzeWithGemini(cvText, cfg) {
   const key = cfg.geminiKey;
-  const model = cfg.geminiModel || 'gemini-2.0-flash-exp';
+  const model = cfg.geminiModel || 'gemini-2.5-flash';
   if (!key) throw new Error('Chưa có Gemini API Key. Bấm 🔑 API Key để setup (free tại aistudio.google.com)');
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
