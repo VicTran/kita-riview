@@ -69,6 +69,39 @@
   }
   .filters input:focus, .filters select:focus { outline: none; border-color: #1F4E79; }
 
+  /* Autocomplete dropdown */
+  .search-wrap { position: relative; }
+  .search-dropdown {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: white; border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    border: 1px solid #e2e8f0;
+    max-height: 380px; overflow-y: auto;
+    z-index: 200; display: none;
+  }
+  .search-dropdown.show { display: block; }
+  .search-dd-header {
+    padding: 8px 12px; background: #f7fafc; border-bottom: 1px solid #e2e8f0;
+    font-size: 11px; color: #718096; font-weight: 600; text-transform: uppercase;
+    position: sticky; top: 0;
+  }
+  .search-dd-item {
+    padding: 10px 12px; cursor: pointer; display: flex;
+    justify-content: space-between; align-items: center; gap: 10px;
+    border-bottom: 1px solid #f1f5f9; transition: background 0.1s;
+  }
+  .search-dd-item:hover { background: #DDEBF7; }
+  .search-dd-item:last-child { border-bottom: none; }
+  .search-dd-item .dd-name { font-weight: 700; color: #1F4E79; font-size: 14px; }
+  .search-dd-item .dd-meta { font-size: 11px; color: #718096; margin-top: 2px; }
+  .search-dd-item .dd-score { text-align: right; flex-shrink: 0; }
+  .search-dd-item .dd-score-num { font-weight: 700; font-size: 16px; color: #1F4E79; line-height: 1; }
+  .search-dd-item .dd-rec { font-size: 10px; padding: 2px 6px; border-radius: 8px; font-weight: 700; margin-top: 3px; display: inline-block; }
+  .search-dd-item.dd-pass .dd-rec { background: #c6f6d5; color: #22543d; }
+  .search-dd-item.dd-consider .dd-rec { background: #fefcbf; color: #744210; }
+  .search-dd-item.dd-fail .dd-rec { background: #fed7d7; color: #742a2a; }
+  .search-dd-item .highlight { background: #fbd38d; padding: 0 2px; border-radius: 2px; }
+
   .table-wrap {
     background: white; border-radius: 10px; overflow: hidden;
     box-shadow: 0 2px 12px rgba(0,0,0,0.06);
@@ -299,7 +332,10 @@
 
 <!-- Filters -->
 <div class="filters">
-  <input type="text" id="filter-search" placeholder="🔍 Tìm tên / SĐT / email..." oninput="applyFilters()">
+  <div class="search-wrap">
+    <input type="text" id="filter-search" placeholder="🔍 Gõ tên / SĐT / email để tìm..." autocomplete="off">
+    <div class="search-dropdown" id="searchDropdown"></div>
+  </div>
   <select id="filter-round" onchange="applyFilters()">
     <option value="">Tất cả vòng</option>
     <option value="V1">V1 - HR</option>
@@ -393,6 +429,11 @@ const QUESTION_DATA = {
   q28: { round: 'V2', group: 'D. FUNNEL & PHỐI HỢP', text: 'Sales chốt đơn từ inbox thấp (10% vs 25%), bạn làm gì?' },
   q29: { round: 'V2', group: 'E. TÌNH HUỐNG XỬ LÝ', text: 'Khách comment gay gắt fanpage chê sách lừa đảo. Xử lý 30 phút đầu?' },
   q30: { round: 'V2', group: 'E. TÌNH HUỐNG XỬ LÝ', text: 'Sách mới ra mắt, 50tr ads, 30 ngày đạt 200tr DT. Lập plan 5 phút.' },
+  q40: { round: 'V2', group: 'F. KỸ NĂNG SỬ DỤNG AI', text: 'Bạn đã sử dụng những AI tools nào trong công việc/học tập? Mức độ thành thạo từng tool?' },
+  q41: { round: 'V2', group: 'F. KỸ NĂNG SỬ DỤNG AI', text: 'Kể chi tiết 1 workflow Marketing có sử dụng AI từ đầu đến cuối — đầu vào, các bước, công cụ, đầu ra cụ thể?' },
+  q42: { round: 'V2', group: 'F. KỸ NĂNG SỬ DỤNG AI', text: 'Viết ngay tại chỗ 1 prompt cho AI tạo content quảng bá sách self-help cho phụ nữ 30+ (ngân sách 10tr ads).' },
+  q43: { round: 'V2', group: 'F. KỸ NĂNG SỬ DỤNG AI', text: 'AI vừa generate 1 content nhưng có lỗi (sai sự thật / tone không đúng / vi phạm brand). Làm sao phát hiện và sửa?' },
+  q44: { round: 'V2', group: 'F. KỸ NĂNG SỬ DỤNG AI', text: 'Theo bạn AI có thay thế Marketer trong 3-5 năm tới không? Tại sao? Bạn upskill thế nào để không bị thay thế?' },
   // VÒNG 3 - BÀI TẬP
   'bt1-c0': { round: 'V3', group: 'BT1: Viết review sách', text: 'Hook 3 giây đầu thu hút? (Trọng số 30%)' },
   'bt1-c1': { round: 'V3', group: 'BT1: Viết review sách', text: 'Hiểu nội dung sách qua review? (Trọng số 30%)' },
@@ -534,8 +575,90 @@ function resetFilters() {
   document.getElementById('filter-rec').value = '';
   document.getElementById('filter-from').value = '';
   document.getElementById('filter-to').value = '';
+  hideSearchDropdown();
   applyFilters();
 }
+
+// ============== AUTOCOMPLETE DROPDOWN ==============
+function showSearchDropdown(query) {
+  const dd = document.getElementById('searchDropdown');
+  if (!query || !query.trim() || !allRows.length) {
+    dd.classList.remove('show');
+    return;
+  }
+  const q = query.toLowerCase().trim();
+  const matches = allRows.filter(r =>
+    ((r['Tên ứng viên']||'')+'').toLowerCase().includes(q) ||
+    ((r['SĐT/Email']||'')+'').toLowerCase().includes(q) ||
+    ((r['Vị trí']||'')+'').toLowerCase().includes(q)
+  );
+
+  if (matches.length === 0) {
+    dd.innerHTML = `<div class="search-dd-header">Không có kết quả cho "${escapeHtml(query)}"</div>`;
+    dd.classList.add('show');
+    return;
+  }
+
+  const top = matches.slice(0, 10);
+  let html = `<div class="search-dd-header">Tìm thấy ${matches.length} hồ sơ (hiển thị ${top.length} đầu)</div>`;
+  top.forEach(r => {
+    const rec = (r['Đề xuất']||'')+'';
+    const ddClass = rec.includes('PASS') ? 'dd-pass' : rec.includes('CÂN NHẮC') ? 'dd-consider' : rec.includes('LOẠI') ? 'dd-fail' : '';
+    const name = highlightMatch(r['Tên ứng viên']||'', q);
+    html += `<div class="search-dd-item ${ddClass}" onclick="selectFromDropdown(${r._row})">
+      <div>
+        <div class="dd-name">${name}</div>
+        <div class="dd-meta">${escapeHtml(r['Vị trí']||'-')} · ${r['Vòng']||'-'} · ${escapeHtml(r['SĐT/Email']||'-')} · ${(r['Timestamp']+'').slice(0,10)}</div>
+      </div>
+      <div class="dd-score">
+        <div class="dd-score-num">${r['Điểm TB']||'-'}</div>
+        <div class="dd-rec">${rec || '-'}</div>
+      </div>
+    </div>`;
+  });
+  dd.innerHTML = html;
+  dd.classList.add('show');
+}
+
+function highlightMatch(text, query) {
+  if (!query) return escapeHtml(text);
+  const escapedText = escapeHtml(text);
+  const lcText = text.toLowerCase();
+  const idx = lcText.indexOf(query);
+  if (idx === -1) return escapedText;
+  return escapeHtml(text.slice(0, idx)) +
+    `<span class="highlight">${escapeHtml(text.slice(idx, idx + query.length))}</span>` +
+    escapeHtml(text.slice(idx + query.length));
+}
+
+function hideSearchDropdown() {
+  document.getElementById('searchDropdown').classList.remove('show');
+}
+
+function selectFromDropdown(rowNum) {
+  hideSearchDropdown();
+  showDetail(rowNum);
+}
+
+// Bind events khi DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('filter-search');
+  if (!inp) return;
+  inp.addEventListener('input', (e) => {
+    showSearchDropdown(e.target.value);
+    applyFilters();
+  });
+  inp.addEventListener('focus', (e) => {
+    if (e.target.value) showSearchDropdown(e.target.value);
+  });
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { hideSearchDropdown(); inp.blur(); }
+    if (e.key === 'Enter') { hideSearchDropdown(); }
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-wrap')) hideSearchDropdown();
+  });
+});
 
 function renderTable(rows) {
   const tbody = document.getElementById('tbody');

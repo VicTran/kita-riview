@@ -198,9 +198,52 @@
   .login-remember input { width: auto; margin: 0; }
   .login-footer { margin-top: 16px; padding-top: 14px; border-top: 1px solid #e2e8f0; font-size: 10px; color: #a0aec0; }
   @media print { .login-overlay, header .actions { display: none !important; } }
+
+  /* Cloud search modal */
+  .cloud-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9998; display: none; align-items: flex-start; justify-content: center; padding: 60px 20px 20px; }
+  .cloud-modal.show { display: flex; }
+  .cloud-modal-content { background: white; border-radius: 14px; max-width: 700px; width: 100%; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: cloudIn 0.2s ease; }
+  @keyframes cloudIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+  .cloud-modal-header { background: linear-gradient(135deg, #1F4E79, #163a5c); color: white; padding: 16px 20px; border-radius: 14px 14px 0 0; display: flex; justify-content: space-between; align-items: center; }
+  .cloud-modal-header h3 { font-size: 16px; }
+  .cloud-modal-close { width: 28px; height: 28px; background: rgba(255,255,255,0.2); border: none; border-radius: 50%; color: white; cursor: pointer; font-size: 14px; }
+  .cloud-modal-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
+  .cloud-search-input { width: 100%; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-family: inherit; margin-bottom: 12px; }
+  .cloud-search-input:focus { outline: none; border-color: #1F4E79; }
+  .cloud-results { display: flex; flex-direction: column; gap: 6px; }
+  .cloud-result-card { padding: 10px 12px; background: #f7fafc; border-radius: 8px; border-left: 3px solid #cbd5e0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 10px; transition: all 0.15s; }
+  .cloud-result-card:hover { background: #edf2f7; border-color: #1F4E79; transform: translateX(2px); }
+  .cloud-result-card .card-name { font-weight: 700; color: #1F4E79; font-size: 14px; }
+  .cloud-result-card .card-meta { font-size: 11px; color: #718096; margin-top: 2px; }
+  .cloud-result-card .card-score-block { text-align: right; flex-shrink: 0; }
+  .cloud-result-card .card-score-num { font-size: 18px; font-weight: 700; color: #1F4E79; line-height: 1; }
+  .cloud-result-card .card-rec { font-size: 10px; padding: 2px 8px; border-radius: 8px; font-weight: 700; margin-top: 3px; display: inline-block; }
+  .cloud-result-card.row-pass { border-color: #00B050; }
+  .cloud-result-card.row-pass .card-rec { background: #c6f6d5; color: #22543d; }
+  .cloud-result-card.row-consider { border-color: #ecc94b; }
+  .cloud-result-card.row-consider .card-rec { background: #fefcbf; color: #744210; }
+  .cloud-result-card.row-fail { border-color: #C00000; }
+  .cloud-result-card.row-fail .card-rec { background: #fed7d7; color: #742a2a; }
+  .cloud-loading, .cloud-empty, .cloud-error { text-align: center; padding: 24px; color: #718096; font-size: 13px; }
+  .cloud-error { color: #C00000; }
+  .cloud-more { text-align: center; padding: 8px; font-size: 11px; color: #a0aec0; font-style: italic; }
 </style>
 </head>
 <body>
+
+<!-- CLOUD SEARCH MODAL -->
+<div class="cloud-modal" id="cloudLoadModal" onclick="if(event.target===this) closeCloudLoad()">
+  <div class="cloud-modal-content">
+    <div class="cloud-modal-header">
+      <h3>🔍 Tìm hồ sơ V1 trên Google Sheet</h3>
+      <button class="cloud-modal-close" onclick="closeCloudLoad()">✕</button>
+    </div>
+    <div class="cloud-modal-body">
+      <input type="text" class="cloud-search-input" id="cloudSearchInput" placeholder="🔍 Gõ tên ứng viên / SĐT / email..." autocomplete="off">
+      <div class="cloud-results" id="cloudSearchResults"></div>
+    </div>
+  </div>
+</div>
 
 <!-- LOGIN -->
 <div class="login-overlay" id="loginOverlay">
@@ -694,38 +737,98 @@ async function cloudSave() {
   } catch(e) { alert('❌ Lỗi kết nối: ' + e.message); }
 }
 
+let cloudCacheV1 = null;
+
 async function cloudLoad() {
   const cfg = getCloudConfig();
   if (!cfg) { promptCloudSetup(); return; }
-  const search = prompt('🔍 TÌM HỒ SƠ V1 TRÊN CLOUD\n\nNhập tên / SĐT / email:\n(Trống = 50 hồ sơ mới nhất)');
-  if (search === null) return;
 
-  toast('⏳ Đang tải...', 'success');
+  document.getElementById('cloudLoadModal').classList.add('show');
+  document.getElementById('cloudSearchInput').value = '';
+  const resultsEl = document.getElementById('cloudSearchResults');
+  resultsEl.innerHTML = '<div class="cloud-loading">⏳ Đang tải hồ sơ V1...</div>';
+
   try {
-    const res = await fetch(`${cfg.url}?apiKey=${encodeURIComponent(cfg.apiKey)}&search=${encodeURIComponent(search || '')}`);
+    const res = await fetch(`${cfg.url}?apiKey=${encodeURIComponent(cfg.apiKey)}&search=`);
     const result = await res.json();
-    if (!result.ok) { alert('❌ ' + (result.error || '?')); return; }
+    if (!result.ok) {
+      resultsEl.innerHTML = `<div class="cloud-error">❌ ${result.error || '?'}</div>`;
+      return;
+    }
+    // Chỉ lọc V1 hoặc all
+    cloudCacheV1 = (result.data || []).filter(r => r['Vòng'] === 'V1' || r['Vòng'] === 'all');
+    renderCloudResultsV1('');
+    setTimeout(() => document.getElementById('cloudSearchInput').focus(), 100);
+  } catch(e) {
+    resultsEl.innerHTML = `<div class="cloud-error">❌ Lỗi kết nối: ${e.message}</div>`;
+  }
+}
 
-    // Filter chỉ V1
-    const v1Only = (result.data || []).filter(r => r['Vòng'] === 'V1' || r['Vòng'] === 'all');
-    if (v1Only.length === 0) { alert('📭 Không có hồ sơ V1 nào'); return; }
+function renderCloudResultsV1(query) {
+  const container = document.getElementById('cloudSearchResults');
+  if (!cloudCacheV1 || cloudCacheV1.length === 0) {
+    container.innerHTML = '<div class="cloud-empty">📭 Chưa có hồ sơ V1 nào trên Cloud</div>';
+    return;
+  }
+  let filtered = cloudCacheV1;
+  if (query && query.trim()) {
+    const q = query.toLowerCase().trim();
+    filtered = cloudCacheV1.filter(r =>
+      ((r['Tên ứng viên']||'')+'').toLowerCase().includes(q) ||
+      ((r['SĐT/Email']||'')+'').toLowerCase().includes(q)
+    );
+  }
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="cloud-empty">📭 Không tìm thấy "${escapeHtmlSimple(query)}"</div>`;
+    return;
+  }
+  const items = filtered.slice(0, 30);
+  container.innerHTML = items.map(r => {
+    const rec = (r['Đề xuất']||'')+'';
+    const rowClass = rec.includes('PASS') ? 'row-pass' : rec.includes('CÂN NHẮC') ? 'row-consider' : rec.includes('LOẠI') ? 'row-fail' : '';
+    return `<div class="cloud-result-card ${rowClass}" onclick="loadCloudCandidateV1(${r._row})">
+      <div>
+        <div class="card-name">${escapeHtmlSimple(r['Tên ứng viên'])}</div>
+        <div class="card-meta">${escapeHtmlSimple(r['Vị trí']||'-')} · ${escapeHtmlSimple(r['HR/PV viên']||'-')} · ${(r['Timestamp']+'').slice(0,10)}</div>
+      </div>
+      <div class="card-score-block">
+        <div class="card-score-num">${r['Điểm TB'] || '-'}</div>
+        <div class="card-rec">${rec || '-'}</div>
+      </div>
+    </div>`;
+  }).join('');
+  if (filtered.length > 30) {
+    container.innerHTML += `<div class="cloud-more">... và ${filtered.length - 30} hồ sơ khác. Gõ thêm để lọc.</div>`;
+  }
+}
 
-    const list = v1Only.map((r, i) =>
-      `${i + 1}. ${r['Tên ứng viên']} | TB ${r['Điểm TB'] || '?'} | ${r['Đề xuất'] || ''} | ${(r['Timestamp']+'').slice(0,10)}`
-    ).join('\n');
+function escapeHtmlSimple(s) {
+  return (s + '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
-    const choice = prompt(`📋 ${v1Only.length} HỒ SƠ V1:\n\n${list}\n\nNhập số:`);
-    if (!choice) return;
-    const num = parseInt(choice);
-    if (isNaN(num) || num < 1 || num > v1Only.length) { alert('❌ Sai số'); return; }
-
-    const fullJson = v1Only[num - 1]['Full JSON'];
-    if (!fullJson) { alert('❌ Không có data'); return; }
+function loadCloudCandidateV1(rowId) {
+  const r = cloudCacheV1 && cloudCacheV1.find(x => x._row === rowId);
+  if (!r) { alert('❌ Không tìm thấy'); return; }
+  const fullJson = r['Full JSON'];
+  if (!fullJson) { alert('❌ Không có data'); return; }
+  try {
     applyData(JSON.parse(fullJson));
-    alert(`✅ ĐÃ TẢI HỒ SƠ V1!\n\n👤 ${v1Only[num-1]['Tên ứng viên']}\n📊 TB: ${v1Only[num-1]['Điểm TB']}`);
-    toast('☁️ Đã tải Cloud', 'success');
+    closeCloudLoad();
+    toast(`☁️ Đã tải: ${r['Tên ứng viên']}`, 'success');
   } catch(e) { alert('❌ Lỗi: ' + e.message); }
 }
+
+function closeCloudLoad() {
+  document.getElementById('cloudLoadModal').classList.remove('show');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('cloudSearchInput');
+  if (inp) {
+    inp.addEventListener('input', (e) => renderCloudResultsV1(e.target.value));
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCloudLoad(); });
+  }
+});
 
 function exportV1() {
   const name = document.getElementById('candidateName').value.trim();

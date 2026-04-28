@@ -354,6 +354,62 @@
   }
   .btn-logout:hover { background: rgba(255,255,255,0.25); }
   @media print { .login-overlay { display: none !important; } }
+
+  /* ============== CLOUD SEARCH MODAL ============== */
+  .cloud-modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    z-index: 9998; display: none; align-items: flex-start; justify-content: center;
+    padding: 60px 20px 20px;
+  }
+  .cloud-modal.show { display: flex; }
+  .cloud-modal-content {
+    background: white; border-radius: 14px; max-width: 700px; width: 100%;
+    max-height: 80vh; display: flex; flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: cloudIn 0.2s ease;
+  }
+  @keyframes cloudIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+  .cloud-modal-header {
+    background: linear-gradient(135deg, #1F4E79, #163a5c); color: white;
+    padding: 16px 20px; border-radius: 14px 14px 0 0;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .cloud-modal-header h3 { font-size: 16px; }
+  .cloud-modal-close {
+    width: 28px; height: 28px; background: rgba(255,255,255,0.2);
+    border: none; border-radius: 50%; color: white; cursor: pointer; font-size: 14px;
+  }
+  .cloud-modal-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
+  .cloud-search-input {
+    width: 100%; padding: 12px 14px; border: 2px solid #e2e8f0;
+    border-radius: 10px; font-size: 14px; font-family: inherit;
+    margin-bottom: 12px;
+  }
+  .cloud-search-input:focus { outline: none; border-color: #1F4E79; }
+  .cloud-results { display: flex; flex-direction: column; gap: 6px; }
+  .cloud-result-card {
+    padding: 10px 12px; background: #f7fafc; border-radius: 8px;
+    border-left: 3px solid #cbd5e0;
+    cursor: pointer; display: flex; justify-content: space-between;
+    align-items: center; gap: 10px; transition: all 0.15s;
+  }
+  .cloud-result-card:hover { background: #edf2f7; border-color: #1F4E79; transform: translateX(2px); }
+  .cloud-result-card .card-name { font-weight: 700; color: #1F4E79; font-size: 14px; }
+  .cloud-result-card .card-meta { font-size: 11px; color: #718096; margin-top: 2px; }
+  .cloud-result-card .card-score-block { text-align: right; flex-shrink: 0; }
+  .cloud-result-card .card-score-num { font-size: 18px; font-weight: 700; color: #1F4E79; line-height: 1; }
+  .cloud-result-card .card-rec { font-size: 10px; padding: 2px 8px; border-radius: 8px; font-weight: 700; margin-top: 3px; display: inline-block; }
+  .cloud-result-card.row-pass { border-color: #00B050; }
+  .cloud-result-card.row-pass .card-rec { background: #c6f6d5; color: #22543d; }
+  .cloud-result-card.row-consider { border-color: #ecc94b; }
+  .cloud-result-card.row-consider .card-rec { background: #fefcbf; color: #744210; }
+  .cloud-result-card.row-fail { border-color: #C00000; }
+  .cloud-result-card.row-fail .card-rec { background: #fed7d7; color: #742a2a; }
+  .cloud-loading, .cloud-empty, .cloud-error {
+    text-align: center; padding: 24px; color: #718096; font-size: 13px;
+  }
+  .cloud-error { color: #C00000; }
+  .cloud-more { text-align: center; padding: 8px; font-size: 11px; color: #a0aec0; font-style: italic; }
 </style>
 </head>
 <body>
@@ -375,6 +431,20 @@
     <div class="login-footer">
       🔒 Bảo mật bằng SHA-256 hash<br>
       Chỉ dành cho nhân sự được uỷ quyền
+    </div>
+  </div>
+</div>
+
+<!-- CLOUD SEARCH MODAL -->
+<div class="cloud-modal" id="cloudLoadModal" onclick="if(event.target===this) closeCloudLoad()">
+  <div class="cloud-modal-content">
+    <div class="cloud-modal-header">
+      <h3>🔍 Tìm hồ sơ trên Google Sheet</h3>
+      <button class="cloud-modal-close" onclick="closeCloudLoad()">✕</button>
+    </div>
+    <div class="cloud-modal-body">
+      <input type="text" class="cloud-search-input" id="cloudSearchInput" placeholder="🔍 Gõ tên ứng viên / SĐT / email..." autocomplete="off">
+      <div class="cloud-results" id="cloudSearchResults"></div>
     </div>
   </div>
 </div>
@@ -440,7 +510,7 @@
 <nav class="tabs">
   <button class="tab active" data-section="rubric" onclick="showSection('rubric')">📖 Rubric</button>
   <button class="tab" data-section="round1" onclick="showSection('round1')">Vòng 1<span class="tab-badge" id="badge-round1">0/9</span></button>
-  <button class="tab" data-section="round2" onclick="showSection('round2')">Vòng 2<span class="tab-badge" id="badge-round2">0/26</span></button>
+  <button class="tab" data-section="round2" onclick="showSection('round2')">Vòng 2<span class="tab-badge" id="badge-round2">0/31</span></button>
   <button class="tab" data-section="round3" onclick="showSection('round3')">Vòng 3<span class="tab-badge">3 BT</span></button>
   <button class="tab" data-section="round4" onclick="showSection('round4')">Vòng 4<span class="tab-badge" id="badge-round4">0/4</span></button>
   <button class="tab" data-section="qa" onclick="showSection('qa')">💬 Q&A</button>
@@ -740,6 +810,13 @@ const QUESTIONS = {
       { id: 'q29', text: 'Khách comment gay gắt fanpage chê sách lừa đảo. Xử lý 30 phút đầu?', tip: 'TỐT: Không xoá - phản hồi lịch sự - xác minh - báo cấp trên - inbox riêng.' },
       { id: 'q30', text: 'Sách mới ra mắt, 50tr ads, 30 ngày đạt 200tr DT. Lập plan 5 phút.', tip: 'TỐT: phase ngân sách, milestone 7-15-30, KPI rõ. XẤU: chung chung không số.' },
     ]},
+    { name: 'F. KỸ NĂNG SỬ DỤNG AI', qs: [
+      { id: 'q40', text: 'Bạn đã sử dụng những AI tools nào trong công việc/học tập? Mức độ thành thạo từng tool?', tip: 'Tools nên có: ChatGPT/Claude (text), Midjourney/DALL-E (image), Canva AI, ElevenLabs/AI video. Ít nhất 2-3 tools đa dạng.' },
+      { id: 'q41', text: 'Kể chi tiết 1 workflow Marketing có sử dụng AI từ đầu đến cuối — đầu vào, các bước, công cụ, đầu ra cụ thể?', tip: 'TỐT: 5+ bước rõ (research → outline → draft → edit → tối ưu platform), có output đo được. XẤU: "Hỏi ChatGPT viết bài rồi đăng".' },
+      { id: 'q42', text: 'Viết ngay tại chỗ 1 prompt cho AI tạo content quảng bá sách self-help cho phụ nữ 30+ (ngân sách 10tr ads).', tip: 'Prompt tốt = Role + Context + Task + Audience + Tone + Format + Constraints + Example. Chỉ "viết bài về sách" = yếu.' },
+      { id: 'q43', text: 'AI vừa generate 1 content nhưng có lỗi (sai sự thật / tone không đúng / vi phạm brand). Làm sao phát hiện và sửa?', tip: 'TỐT: Quy trình check (fact-check, tone, brand voice, plagiarism) + cách sửa cụ thể. XẤU: "AI viết thì đúng rồi".' },
+      { id: 'q44', text: 'Theo bạn AI có thay thế Marketer trong 3-5 năm tới không? Tại sao? Bạn upskill thế nào để không bị thay thế?', tip: 'TỐT: Quan điểm rõ + lý giải (AI thay task lặp lại, người làm chiến lược + cảm xúc) + plan upskill cụ thể. XẤU: cực đoan/né.' },
+    ]},
   ]},
   round3: [
     { id: 'bt1', title: 'BÀI TẬP 1: VIẾT REVIEW SÁCH (60-90 phút)',
@@ -779,13 +856,14 @@ const QUESTIONS = {
 
 const SCORECARD_CONFIG = [
   { name: 'Tố chất / Đam mê đọc sách', weight: 20, qIds: ['q3', 'q4', 'q5'] },
-  { name: 'Khát khao thu nhập không giới hạn', weight: 10, qIds: ['q7'] },
+  { name: 'Khát khao thu nhập không giới hạn', weight: 5, qIds: ['q7'] },
   { name: 'Khả năng học hỏi nhanh', weight: 10, qIds: ['q10', 'q11', 'q12'] },
   { name: 'Tinh thần trách nhiệm', weight: 10, qIds: ['q13', 'q14', 'q15'] },
   { name: 'Khả năng làm việc dưới áp lực', weight: 10, qIds: ['q16', 'q17', 'q18'] },
   { name: 'Chuyên môn Content', weight: 15, qIds: ['q19', 'q20', 'q21', 'q22', 'q35', 'q36', 'q37', 'q38', 'q39'] },
   { name: 'Chuyên môn Ads & Phân tích', weight: 15, qIds: ['q23', 'q24', 'q25', 'q26', 'q27'] },
-  { name: 'Tình huống / Cultural fit', weight: 10, qIds: ['q28', 'q29', 'q30', 'q31', 'q32', 'q33', 'q34'] },
+  { name: 'Kỹ năng sử dụng AI', weight: 10, qIds: ['q40', 'q41', 'q42', 'q43', 'q44'] },
+  { name: 'Tình huống / Cultural fit', weight: 5, qIds: ['q28', 'q29', 'q30', 'q31', 'q32', 'q33', 'q34'] },
 ];
 
 const state = { scores: {}, notes: {}, qa: [{ q: '', class: 'normal', note: '' }] };
@@ -1086,6 +1164,41 @@ const QUESTION_SCORES = {
     3: ['✓ "Có hook + nội dung tốt" - còn chung chung', '✓ Hiểu cơ bản nhưng thiếu hệ thống', '✓ Chưa có công thức rõ ràng'],
     4: ['✓ Có công thức 3-4 yếu tố rõ ràng', '✓ Ví dụ thực tế cụ thể', '✓ Xác định target reader trước khi viết'],
     5: ['✓ Công thức đầy đủ: Hook + Insight + Story + Value + CTA', '✓ Hiểu nguyên tắc tối ưu theo từng platform', '✓ Có ví dụ áp dụng với số liệu engagement'],
+  },
+  q40: { // Đã dùng AI tools nào?
+    1: ['✗ Chưa từng dùng AI / "nghe nói thôi"', '✗ Phản đối / dị ứng với AI', '✗ Không có khái niệm về AI tools'],
+    2: ['✗ Chỉ thử qua ChatGPT 1-2 lần', '✗ Không nhớ tên tool nào khác', '✗ Chưa dùng vào công việc thực'],
+    3: ['✓ Dùng 1-2 tools (chủ yếu ChatGPT) ở mức cơ bản', '✓ Chưa khám phá tools chuyên dụng', '✓ Workflow đơn giản'],
+    4: ['✓ 2-3 tools quen thuộc + dùng đều đặn', '✓ Biết phân biệt tool nào cho task nào', '✓ Có prompt template cá nhân'],
+    5: ['✓ ≥3-5 tools chuyên sâu (text + image + video + design)', '✓ Workflow rõ ràng cho từng tool', '✓ Có output làm việc thật, đo được hiệu quả'],
+  },
+  q41: { // Workflow Marketing dùng AI từ đầu đến cuối
+    1: ['✗ Không có workflow nào', '✗ Chưa từng dùng AI vào Marketing', '✗ Không hình dung được quy trình'],
+    2: ['✗ "Hỏi ChatGPT viết bài rồi đăng" - không có bước nào', '✗ Không edit lại output AI', '✗ Không có ví dụ cụ thể'],
+    3: ['✓ Workflow đơn giản 1-2 bước', '✓ Có copy + edit nhẹ', '✓ Chưa tối ưu theo platform'],
+    4: ['✓ Workflow 3-4 bước rõ', '✓ Có ví dụ thực tế kèm output', '✓ Biết edit lại để giữ giọng riêng'],
+    5: ['✓ Workflow 5+ bước (research → outline → draft → edit → tối ưu platform)', '✓ Tools cụ thể từng bước', '✓ Có kết quả định lượng (engagement, reach, ROAS)'],
+  },
+  q42: { // Viết prompt tại chỗ
+    1: ['✗ Không viết được prompt / từ chối', '✗ Không biết bắt đầu từ đâu', '✗ Không hiểu khái niệm prompt'],
+    2: ['✗ Prompt rất ngắn, mơ hồ ("viết bài hay")', '✗ Thiếu context về sản phẩm', '✗ Không có audience cụ thể'],
+    3: ['✓ Prompt cơ bản 1-2 dòng có target', '✓ "Viết bài quảng cáo sách self-help cho phụ nữ"', '✓ Thiếu structure rõ'],
+    4: ['✓ Prompt có 4-5 yếu tố (task, audience, tone, format)', '✓ Đủ context để AI hiểu', '✓ Có ràng buộc số chữ / platform'],
+    5: ['✓ Prompt structured: Role + Context + Task + Audience + Tone + Format + Constraints + Examples', '✓ ≥100 từ, có ràng buộc rõ ràng', '✓ Lường trước được output mong muốn'],
+  },
+  q43: { // AI ra content có lỗi - phát hiện và sửa?
+    1: ['✗ "AI viết là đúng rồi" - không kiểm tra', '✗ Đăng nguyên xi không edit', '✗ Không có tư duy phản biện AI'],
+    2: ['✗ "Đọc thấy lỗi thì sửa" - không có quy trình', '✗ Chỉ sửa lỗi chính tả/ngữ pháp', '✗ Không phát hiện được fact sai'],
+    3: ['✓ Phát hiện 1-2 loại lỗi cơ bản', '✓ Có nhận thức về AI hallucination', '✓ Quy trình check chưa hệ thống'],
+    4: ['✓ Phát hiện 2-3 lỗi (fact, tone, brand)', '✓ Có cách sửa cụ thể', '✓ Hiểu giới hạn của AI'],
+    5: ['✓ Liệt kê 3+ loại lỗi điển hình (factual, tone, brand voice, plagiarism)', '✓ Quy trình check rõ (cross-check + tone audit)', '✓ Có cách sửa từng loại + biết khi nào không nên dùng AI'],
+  },
+  q44: { // AI có thay thế Marketer không?
+    1: ['✗ Không có quan điểm', '✗ Né câu hỏi / "Em không biết"', '✗ Không nhận thức về AI trends'],
+    2: ['✗ Cực đoan: "AI thay thế hết" hoặc "Không bao giờ thay được"', '✗ Không lý giải được', '✗ Tư duy thiếu nuance'],
+    3: ['✓ Trả lời mơ hồ "tuỳ thuộc"', '✓ Hiểu cơ bản nhưng thiếu lập luận sâu', '✓ Chưa có plan upskill rõ'],
+    4: ['✓ Quan điểm rõ + lý giải hợp lý', '✓ Phân biệt được task lặp lại vs sáng tạo', '✓ Có ý tưởng upskill bản thân'],
+    5: ['✓ Quan điểm rõ + lý giải sâu (AI thay task lặp lại, marketer = chiến lược + sáng tạo + cảm xúc)', '✓ Plan upskill cụ thể (học prompt, học data, học chiến lược)', '✓ Tư duy mở, không sợ AI'],
   },
 };
 
@@ -1493,71 +1606,109 @@ async function cloudSave() {
   }
 }
 
+let cloudCache = null;
+
 async function cloudLoad() {
   const cfg = getCloudConfig();
   if (!cfg) { promptCloudSetup(); return; }
 
-  const search = prompt(
-    '🔍 TÌM HỒ SƠ TRÊN CLOUD\n\n' +
-    'Nhập tên ứng viên / SĐT / Email cần tìm:\n' +
-    '(Để trống = xem 50 hồ sơ mới nhất)'
-  );
-  if (search === null) return;
+  // Mở modal
+  document.getElementById('cloudLoadModal').classList.add('show');
+  document.getElementById('cloudSearchInput').value = '';
 
-  toast('⏳ Đang tải từ Google Sheet...', 'info');
+  const resultsEl = document.getElementById('cloudSearchResults');
+  resultsEl.innerHTML = '<div class="cloud-loading">⏳ Đang tải danh sách...</div>';
 
   try {
-    const url = `${cfg.url}?apiKey=${encodeURIComponent(cfg.apiKey)}&search=${encodeURIComponent(search || '')}`;
+    const url = `${cfg.url}?apiKey=${encodeURIComponent(cfg.apiKey)}&search=`;
     const res = await fetch(url);
     const result = await res.json();
-
     if (!result.ok) {
-      alert('❌ Lỗi: ' + (result.error || 'Không xác định'));
+      resultsEl.innerHTML = `<div class="cloud-error">❌ ${result.error || 'Lỗi không xác định'}</div>`;
       return;
     }
-    if (!result.data || result.data.length === 0) {
-      alert('📭 Không tìm thấy hồ sơ nào' + (search ? ` cho "${search}"` : ''));
-      return;
-    }
-
-    // Hiển thị danh sách
-    const list = result.data.map((r, i) =>
-      `${i + 1}. ${r['Tên ứng viên']} | ${r['Vòng']} | TB ${r['Điểm TB'] || '?'} | ${r['Đề xuất'] || ''} | ${(r['Timestamp'] + '').slice(0, 10)}`
-    ).join('\n');
-
-    const choice = prompt(
-      `📋 TÌM THẤY ${result.data.length} HỒ SƠ:\n\n${list}\n\n` +
-      `Nhập SỐ THỨ TỰ (1-${result.data.length}) để tải hồ sơ đó:`
-    );
-    if (!choice) return;
-
-    const num = parseInt(choice);
-    if (isNaN(num) || num < 1 || num > result.data.length) {
-      alert('❌ Lựa chọn không hợp lệ');
-      return;
-    }
-
-    const selected = result.data[num - 1];
-    const fullJson = selected['Full JSON'];
-    if (!fullJson) {
-      alert('❌ Hồ sơ không có dữ liệu chi tiết');
-      return;
-    }
-
-    const parsed = JSON.parse(fullJson);
-    applyLoadedData(parsed);
-    alert(
-      `✅ ĐÃ TẢI HỒ SƠ TỪ CLOUD!\n\n` +
-      `👤 Tên: ${parsed.candidate?.name || '?'}\n` +
-      `📅 Ngày PV: ${parsed.candidate?.date || '?'}\n` +
-      `🧑‍💼 PV viên: ${parsed.candidate?.interviewer || '?'}\n` +
-      `📊 Điểm TB: ${selected['Điểm TB']}`
-    );
-    toast('☁️ Đã tải từ Cloud', 'success');
+    cloudCache = result.data || [];
+    renderCloudResults('');
+    setTimeout(() => document.getElementById('cloudSearchInput').focus(), 100);
   } catch (e) {
-    alert('❌ Lỗi: ' + e.message);
+    resultsEl.innerHTML = `<div class="cloud-error">❌ Lỗi kết nối: ${e.message}</div>`;
   }
 }
+
+function renderCloudResults(query) {
+  const container = document.getElementById('cloudSearchResults');
+  if (!cloudCache || cloudCache.length === 0) {
+    container.innerHTML = '<div class="cloud-empty">📭 Chưa có hồ sơ nào trên Cloud</div>';
+    return;
+  }
+
+  let filtered = cloudCache;
+  if (query && query.trim()) {
+    const q = query.toLowerCase().trim();
+    filtered = cloudCache.filter(r =>
+      ((r['Tên ứng viên'] || '') + '').toLowerCase().includes(q) ||
+      ((r['SĐT/Email'] || '') + '').toLowerCase().includes(q) ||
+      ((r['Vị trí'] || '') + '').toLowerCase().includes(q)
+    );
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="cloud-empty">📭 Không tìm thấy hồ sơ nào với từ khoá "${escapeHtmlSimple(query)}"</div>`;
+    return;
+  }
+
+  const items = filtered.slice(0, 30);
+  container.innerHTML = items.map(r => {
+    const rec = (r['Đề xuất'] || '') + '';
+    const rowClass = rec.includes('PASS') ? 'row-pass' : rec.includes('CÂN NHẮC') ? 'row-consider' : rec.includes('LOẠI') ? 'row-fail' : '';
+    return `<div class="cloud-result-card ${rowClass}" onclick="loadCloudCandidate(${r._row})">
+      <div>
+        <div class="card-name">${escapeHtmlSimple(r['Tên ứng viên'])}</div>
+        <div class="card-meta">${escapeHtmlSimple(r['Vị trí']||'-')} · ${r['Vòng']||'-'} · ${escapeHtmlSimple(r['HR/PV viên']||'-')} · ${(r['Timestamp']+'').slice(0,10)}</div>
+      </div>
+      <div class="card-score-block">
+        <div class="card-score-num">${r['Điểm TB'] || '-'}</div>
+        <div class="card-rec">${rec || '-'}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  if (filtered.length > 30) {
+    container.innerHTML += `<div class="cloud-more">... và ${filtered.length - 30} hồ sơ khác. Gõ thêm để lọc.</div>`;
+  }
+}
+
+function escapeHtmlSimple(s) {
+  return (s + '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function loadCloudCandidate(rowId) {
+  const r = cloudCache && cloudCache.find(x => x._row === rowId);
+  if (!r) { alert('❌ Không tìm thấy hồ sơ'); return; }
+  const fullJson = r['Full JSON'];
+  if (!fullJson) { alert('❌ Hồ sơ không có dữ liệu chi tiết'); return; }
+  try {
+    const parsed = JSON.parse(fullJson);
+    applyLoadedData(parsed);
+    closeCloudLoad();
+    toast(`☁️ Đã tải: ${r['Tên ứng viên']}`, 'success');
+  } catch(e) { alert('❌ Lỗi đọc dữ liệu: ' + e.message); }
+}
+
+function closeCloudLoad() {
+  document.getElementById('cloudLoadModal').classList.remove('show');
+}
+
+// Live filter khi gõ
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('cloudSearchInput');
+  if (inp) {
+    inp.addEventListener('input', (e) => renderCloudResults(e.target.value));
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeCloudLoad();
+    });
+  }
+});
 
 // ============== XUẤT THEO VÒNG / NHẬP & GỘP DỮ LIỆU ==============
 function getRoundQuestionIds(roundType) {
