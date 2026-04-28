@@ -153,14 +153,19 @@
     <span class="step-num">2</span>
     <h3>Xoá toàn bộ code mặc định, paste code dưới đây:</h3>
     <button class="copy-btn" onclick="copyText('script')">📋 Copy Code Apps Script</button>
-    <div class="code-block" id="scriptCode">// ============== KITA INTERVIEW DATABASE ==============
-// Apps Script Web App - Kết nối hệ thống phỏng vấn với Google Sheet
-// Phiên bản: 1.0 | Tác giả: KITA Interview System
+    <div class="code-block" id="scriptCode">// ============== KITA INTERVIEW DATABASE + AI ==============
+// Apps Script Web App - Kết nối hệ thống phỏng vấn với Google Sheet + Claude AI
+// Phiên bản: 2.0 | Tác giả: KITA Interview System
 
 const SHEET_NAME = 'PhongVan';
 const API_KEY = 'KITA-2026-SECRET'; // ⚠️ Đổi key này thành chuỗi bí mật của bạn
 
-// ============== POST: Lưu hồ sơ mới ==============
+// ⚠️ Nếu muốn dùng Claude (Anthropic) cho AI đánh giá CV, paste key vào đây
+// Lấy key tại: https://console.anthropic.com/settings/keys
+// Để trống nếu chỉ dùng OpenAI từ trang cv-ai
+const ANTHROPIC_API_KEY = ''; // Ví dụ: 'sk-ant-api03-...'
+
+// ============== POST: Lưu hồ sơ HOẶC phân tích CV bằng Claude ==============
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
@@ -168,22 +173,25 @@ function doPost(e) {
       return jsonResponse({ ok: false, error: 'Sai API key' });
     }
 
+    // Action: phân tích CV bằng Claude
+    if (data.action === 'analyze_cv') {
+      return analyzeCVWithClaude(data);
+    }
+
+    // Action mặc định: lưu hồ sơ vào sheet
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
     if (!sheet) {
       return jsonResponse({ ok: false, error: 'Không tìm thấy sheet "' + SHEET_NAME + '"' });
     }
 
-    // Tính điểm TB
     const scores = Object.values(data.scores || {}).filter(s => typeof s === 'number');
     const avg = scores.length ? (scores.reduce((a,b) => a+b, 0) / scores.length).toFixed(2) : '';
 
-    // Đề xuất
     let rec = '';
     if (avg >= 4) rec = '✅ PASS';
     else if (avg >= 3) rec = '🟡 CÂN NHẮC';
     else if (scores.length > 0) rec = '❌ LOẠI';
 
-    // Ghi đè nếu cùng tên + cùng vòng
     const candName = (data.candidate || {}).name || '';
     const exportType = data.exportType || 'all';
     const existingRow = findExistingRow(sheet, candName, exportType);
@@ -216,6 +224,54 @@ function doPost(e) {
     }
   } catch (err) {
     return jsonResponse({ ok: false, error: err.message });
+  }
+}
+
+// ============== Phân tích CV bằng Claude (Anthropic) ==============
+function analyzeCVWithClaude(data) {
+  if (!ANTHROPIC_API_KEY || !ANTHROPIC_API_KEY.startsWith('sk-ant')) {
+    return jsonResponse({ ok: false, error: 'ANTHROPIC_API_KEY chưa được cấu hình trong Apps Script. Xem hướng dẫn ở /setup-database/' });
+  }
+
+  try {
+    const res = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+      method: 'post',
+      contentType: 'application/json',
+      headers: {
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      payload: JSON.stringify({
+        model: data.model || 'claude-haiku-4-5-20251001',
+        max_tokens: 2000,
+        system: data.systemPrompt,
+        messages: [{ role: 'user', content: 'CV ỨNG VIÊN:\n\n' + (data.cvText || '').slice(0, 12000) }]
+      }),
+      muteHttpExceptions: true
+    });
+
+    const code = res.getResponseCode();
+    const text = res.getContentText();
+    if (code !== 200) {
+      return jsonResponse({ ok: false, error: 'Claude API ' + code + ': ' + text.slice(0, 300) });
+    }
+    const result = JSON.parse(text);
+    const content = result.content[0].text;
+
+    // Try parse JSON từ response của Claude
+    let analysis;
+    try {
+      // Claude đôi khi wrap JSON trong ```json ... ```
+      const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || content.match(/\{[\s\S]*\}/);
+      const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content;
+      analysis = JSON.parse(jsonStr);
+    } catch (e) {
+      return jsonResponse({ ok: false, error: 'Claude trả về không phải JSON: ' + content.slice(0, 200) });
+    }
+
+    return jsonResponse({ ok: true, analysis: analysis, model: data.model });
+  } catch (err) {
+    return jsonResponse({ ok: false, error: 'Lỗi: ' + err.message });
   }
 }
 
@@ -350,6 +406,39 @@ function jsonResponse(obj) {
     <li>Sort theo "Điểm TB" để xem top ứng viên</li>
     <li>Cột "Full JSON" có đầy đủ data — copy cell đó để load lại vào hệ thống</li>
   </ul>
+</div>
+
+<div class="card">
+  <h2>🤖 (Tuỳ chọn) Bật Claude AI cho /cv-ai/</h2>
+  <p style="font-size: 14px; color: #4a5568; margin-bottom: 12px;">
+    Mặc định trang <a href="/cv-ai/" style="color:#1F4E79;">/cv-ai/</a> dùng OpenAI gọi trực tiếp từ browser. Nếu muốn dùng <strong>Claude (Anthropic)</strong> chất lượng cao hơn, cần bật route qua Apps Script:
+  </p>
+  <div class="step">
+    <span class="step-num">1</span>
+    <h3>Lấy Anthropic API Key</h3>
+    <p>Vào <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:#1F4E79;font-weight:600;">console.anthropic.com/settings/keys</a> → Create Key → Copy</p>
+    <p>Key có dạng: <code>sk-ant-api03-...</code> (~$5 free credit cho người mới)</p>
+  </div>
+  <div class="step">
+    <span class="step-num">2</span>
+    <h3>Mở Apps Script đã setup ở Bước 2 ở trên</h3>
+    <p>Tìm dòng: <code>const ANTHROPIC_API_KEY = '';</code></p>
+    <p>Thay bằng: <code>const ANTHROPIC_API_KEY = 'sk-ant-api03-...';</code> (paste key vừa copy)</p>
+  </div>
+  <div class="step">
+    <span class="step-num">3</span>
+    <h3>Lưu file (Ctrl+S) → Deploy → Manage deployments → Edit (icon bút chì)</h3>
+    <p>Chọn <strong>"New version"</strong> → bấm <strong>Deploy</strong> → cấp quyền nếu Google hỏi</p>
+    <p>URL Web App KHÔNG đổi — chỉ đợi 30s là code mới có hiệu lực</p>
+  </div>
+  <div class="step">
+    <span class="step-num">4</span>
+    <h3>Sang trang /cv-ai/ → bấm 🔑 API Key → chọn provider "Claude"</h3>
+    <p>Không cần điền thêm key (key đã trong Apps Script). Bấm Lưu là xong.</p>
+  </div>
+  <div class="alert alert-success">
+    ✅ Sau bước này, mọi phân tích CV sẽ chạy qua Claude Haiku 4.5 — nhanh, chất lượng cao, ~$0.001 / CV (gần miễn phí).
+  </div>
 </div>
 
 <div class="card">

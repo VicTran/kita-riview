@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI đánh giá CV - KITA Interview</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf3 100%);
+    color: #2d3748; line-height: 1.5; min-height: 100vh; padding: 16px;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  header {
+    background: linear-gradient(135deg, #6B46C1 0%, #4C1D95 100%);
+    color: white; padding: 22px 28px; border-radius: 12px;
+    margin-bottom: 16px; box-shadow: 0 4px 20px rgba(107,70,193,0.25);
+  }
+  header h1 { font-size: 24px; margin-bottom: 4px; }
+  header .sub { opacity: 0.9; font-size: 13px; }
+  header .header-flex { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+  header .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    padding: 9px 14px; border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: inherit; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .btn-light { background: rgba(255,255,255,0.2); color: white; }
+  .btn-light:hover { background: rgba(255,255,255,0.3); }
+  .btn-primary { background: #6B46C1; color: white; }
+  .btn-primary:hover { background: #553C9A; }
+  .btn-success { background: #00B050; color: white; }
+  .btn-success:hover { background: #008a3f; }
+  .btn-blue { background: #4299e1; color: white; }
+  .btn-gray { background: #718096; color: white; }
+
+  .card {
+    background: white; padding: 22px; border-radius: 12px;
+    margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .card h2 {
+    color: #6B46C1; font-size: 17px; margin-bottom: 14px;
+    border-bottom: 2px solid #6B46C1; padding-bottom: 8px;
+  }
+
+  /* Upload area */
+  .upload-area {
+    border: 3px dashed #cbd5e0; border-radius: 12px;
+    padding: 40px 20px; text-align: center;
+    transition: all 0.2s; cursor: pointer; background: #f7fafc;
+  }
+  .upload-area:hover, .upload-area.dragover {
+    border-color: #6B46C1; background: #ede9fe;
+  }
+  .upload-icon { font-size: 48px; margin-bottom: 8px; }
+  .upload-text { font-size: 15px; color: #4a5568; margin-bottom: 4px; }
+  .upload-hint { font-size: 12px; color: #718096; }
+  #fileInput { display: none; }
+  .file-info {
+    background: #ede9fe; padding: 10px 14px; border-radius: 8px;
+    margin-top: 12px; display: none; align-items: center; gap: 10px;
+  }
+  .file-info.show { display: flex; }
+  .file-info .icon { font-size: 24px; }
+  .file-info .name { font-weight: 600; color: #4C1D95; }
+  .file-info .meta { font-size: 11px; color: #718096; }
+
+  /* Text preview */
+  .text-preview {
+    background: #1a202c; color: #cbd5e0; padding: 14px;
+    border-radius: 8px; font-family: 'SF Mono', Consolas, monospace;
+    font-size: 12px; line-height: 1.6; max-height: 240px;
+    overflow-y: auto; white-space: pre-wrap; word-break: break-word;
+    margin-top: 10px; display: none;
+  }
+  .text-preview.show { display: block; }
+
+  /* Or paste */
+  .divider {
+    text-align: center; margin: 16px 0; color: #718096;
+    font-size: 12px; font-weight: 600; text-transform: uppercase;
+  }
+  textarea.cv-paste {
+    width: 100%; min-height: 200px; padding: 12px;
+    border: 2px solid #e2e8f0; border-radius: 8px;
+    font-family: inherit; font-size: 13px; line-height: 1.5;
+    resize: vertical;
+  }
+  textarea.cv-paste:focus { outline: none; border-color: #6B46C1; }
+
+  .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .form-group label { font-size: 13px; font-weight: 600; color: #4a5568; }
+  .form-group input, .form-group select {
+    padding: 9px 11px; border: 1.5px solid #e2e8f0; border-radius: 8px;
+    font-size: 13px; font-family: inherit;
+  }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: #6B46C1; }
+
+  .analyze-btn {
+    width: 100%; padding: 16px; font-size: 16px; font-weight: 700;
+    background: linear-gradient(135deg, #6B46C1, #4C1D95); color: white;
+    border: none; border-radius: 10px; cursor: pointer;
+    transition: transform 0.15s; font-family: inherit;
+  }
+  .analyze-btn:hover:not(:disabled) { transform: translateY(-2px); }
+  .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .loading { display: none; text-align: center; padding: 24px; color: #6B46C1; }
+  .loading.show { display: block; }
+  .loading .spinner {
+    display: inline-block; width: 36px; height: 36px;
+    border: 4px solid #e9d5ff; border-top-color: #6B46C1;
+    border-radius: 50%; animation: spin 1s linear infinite;
+    margin-bottom: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Result */
+  .result { display: none; }
+  .result.show { display: block; }
+  .fit-score-card {
+    background: linear-gradient(135deg, #6B46C1, #4C1D95);
+    color: white; padding: 24px; border-radius: 12px;
+    text-align: center; margin-bottom: 16px;
+  }
+  .fit-score { font-size: 64px; font-weight: 800; line-height: 1; }
+  .fit-score-label { font-size: 14px; opacity: 0.9; margin-top: 4px; }
+  .fit-rec {
+    display: inline-block; padding: 6px 16px; border-radius: 20px;
+    font-weight: 700; font-size: 13px; margin-top: 10px;
+    background: rgba(255,255,255,0.25);
+  }
+  .result-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    margin-bottom: 14px;
+  }
+  @media (max-width: 768px) { .result-grid { grid-template-columns: 1fr; } }
+  .result-section {
+    background: white; padding: 16px; border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .result-section h3 {
+    font-size: 13px; padding-bottom: 6px; border-bottom: 2px solid;
+    margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .result-section.strengths h3 { color: #00B050; border-color: #c6f6d5; }
+  .result-section.weaknesses h3 { color: #b7791f; border-color: #fefcbf; }
+  .result-section.redflags h3 { color: #C00000; border-color: #fed7d7; }
+  .result-section.questions h3 { color: #1F4E79; border-color: #DDEBF7; }
+  .result-section ul { list-style: none; }
+  .result-section li {
+    padding: 6px 0 6px 22px; position: relative;
+    font-size: 13px; line-height: 1.5;
+  }
+  .result-section.strengths li::before { content: '✓'; position: absolute; left: 0; color: #00B050; font-weight: 700; }
+  .result-section.weaknesses li::before { content: '⚠'; position: absolute; left: 0; color: #b7791f; }
+  .result-section.redflags li::before { content: '🚩'; position: absolute; left: 0; }
+  .result-section.questions li::before { content: '❓'; position: absolute; left: 0; }
+  .summary-card {
+    background: #ede9fe; padding: 16px; border-radius: 10px;
+    border-left: 4px solid #6B46C1; margin-bottom: 14px;
+    font-size: 14px; line-height: 1.7; color: #4C1D95;
+  }
+  .action-bar {
+    display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+    padding: 14px; background: white; border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  /* Error */
+  .error {
+    background: #fed7d7; color: #742a2a; padding: 12px 16px;
+    border-radius: 8px; border-left: 4px solid #C00000;
+    font-size: 13px; margin: 10px 0; display: none;
+  }
+  .error.show { display: block; }
+
+  /* Login */
+  .login-overlay {
+    position: fixed; inset: 0; background: linear-gradient(135deg, #6B46C1 0%, #4C1D95 100%);
+    z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .login-overlay.hidden { display: none; }
+  .login-card {
+    background: white; padding: 36px 28px; border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    max-width: 380px; width: 100%; text-align: center;
+  }
+  .login-card.shake { animation: shake 0.4s; }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+  .login-logo { width: 56px; height: 56px; margin: 0 auto 14px; background: linear-gradient(135deg, #6B46C1, #4C1D95); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; }
+  .login-card h1 { color: #6B46C1; font-size: 20px; margin-bottom: 6px; }
+  .login-card .login-sub { color: #718096; font-size: 12px; margin-bottom: 20px; }
+  .login-card input { width: 100%; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-family: inherit; margin-bottom: 10px; }
+  .login-card input:focus { outline: none; border-color: #6B46C1; }
+  .login-card button { width: 100%; padding: 12px; background: linear-gradient(135deg, #6B46C1, #4C1D95); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .login-error { color: #C00000; font-size: 12px; min-height: 16px; margin-bottom: 8px; font-weight: 600; }
+
+  /* API Key Modal */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9998; display: none; align-items: center; justify-content: center; padding: 20px; }
+  .modal.show { display: flex; }
+  .modal-content { background: white; border-radius: 14px; max-width: 540px; width: 100%; max-height: 90vh; overflow-y: auto; }
+  .modal-header { background: linear-gradient(135deg, #6B46C1, #4C1D95); color: white; padding: 16px 20px; border-radius: 14px 14px 0 0; display: flex; justify-content: space-between; align-items: center; }
+  .modal-body { padding: 20px; }
+  .modal-body h3 { color: #6B46C1; font-size: 14px; margin-top: 14px; margin-bottom: 8px; }
+  .modal-body ol { padding-left: 20px; font-size: 13px; line-height: 1.7; color: #4a5568; }
+  .modal-body code { background: #ede9fe; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #6B46C1; font-size: 12px; }
+  .modal-close { background: rgba(255,255,255,0.2); border: none; width: 28px; height: 28px; border-radius: 50%; color: white; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card" id="loginCard">
+    <div class="login-logo">🤖</div>
+    <h1>AI ĐÁNH GIÁ CV</h1>
+    <div class="login-sub">KITA BOOKS - Nội bộ</div>
+    <form onsubmit="event.preventDefault(); doLogin();">
+      <input type="password" id="loginPassword" placeholder="Mật khẩu..." autofocus>
+      <div class="login-error" id="loginError"></div>
+      <button type="submit">ĐĂNG NHẬP</button>
+    </form>
+  </div>
+</div>
+
+<!-- API Key Setup Modal -->
+<div class="modal" id="apiModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>🔑 Setup AI Provider</h3>
+      <button class="modal-close" onclick="closeApiModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>🤖 AI Provider</label>
+        <select id="providerInput" onchange="onProviderChange()">
+          <option value="openai">OpenAI - GPT (gọi trực tiếp từ browser)</option>
+          <option value="claude">Claude - Anthropic (qua Apps Script proxy) — Khuyến nghị 🌟</option>
+        </select>
+      </div>
+
+      <!-- OpenAI section -->
+      <div id="openaiSection">
+        <p style="font-size: 13px; color: #4a5568; margin-bottom: 8px;">
+          Cần 1 OpenAI API Key (~$0.0001 / CV ≈ miễn phí).
+        </p>
+        <h3>Cách lấy:</h3>
+        <ol>
+          <li><a href="https://platform.openai.com/api-keys" target="_blank" style="color:#6B46C1;font-weight:600;">platform.openai.com/api-keys</a></li>
+          <li>Đăng ký + Create new secret key (có $5 free credit)</li>
+          <li>Copy key dạng <code>sk-...</code> → paste dưới</li>
+        </ol>
+        <div class="form-group" style="margin-top: 12px;">
+          <label>OpenAI API Key</label>
+          <input type="password" id="apiKeyInput" placeholder="sk-proj-...">
+        </div>
+        <div class="form-group">
+          <label>Model</label>
+          <select id="apiModelInput">
+            <option value="gpt-4o-mini">GPT-4o mini (rẻ + nhanh)</option>
+            <option value="gpt-4o">GPT-4o (chất lượng cao, đắt 10x)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Claude section -->
+      <div id="claudeSection" style="display:none;">
+        <p style="font-size: 13px; color: #4a5568; margin-bottom: 8px;">
+          Claude AI gọi qua <strong>Apps Script proxy</strong> (do Anthropic chặn CORS từ browser).<br>
+          Anthropic API Key được lưu trong Apps Script (secure hơn OpenAI direct).
+        </p>
+        <h3>Cách setup:</h3>
+        <ol>
+          <li>Đã setup Google Sheet ở <a href="/setup-database/" target="_blank" style="color:#6B46C1;font-weight:600;">/setup-database/</a> (cần làm trước)</li>
+          <li>Lấy key tại <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:#6B46C1;font-weight:600;">console.anthropic.com/settings/keys</a> ($5 free)</li>
+          <li>Mở Apps Script → tìm <code>const ANTHROPIC_API_KEY = '';</code> → paste key</li>
+          <li>Deploy → New version → Deploy</li>
+          <li>Quay lại đây → bấm Lưu (không cần điền key dưới)</li>
+        </ol>
+        <div class="form-group" style="margin-top: 12px;">
+          <label>Model Claude</label>
+          <select id="claudeModelInput">
+            <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (rẻ + cực nhanh) - Khuyến nghị</option>
+            <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (chất lượng cao nhất, đắt hơn)</option>
+          </select>
+        </div>
+        <div class="alert" style="margin-top: 8px; padding: 10px; background: #DDEBF7; border-left: 4px solid #1F4E79; font-size: 12px; color: #1a365d; border-radius: 6px;">
+          ℹ️ Phải hoàn tất <strong>Bước 2</strong> ở <a href="/setup-database/" target="_blank">setup-database</a> để Apps Script biết Anthropic Key.
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 14px;">
+        <button class="btn btn-success" onclick="saveApiKey()" style="flex:1;">💾 Lưu cấu hình</button>
+        <button class="btn btn-gray" onclick="closeApiModal()">Để sau</button>
+      </div>
+      <p style="font-size: 11px; color: #a0aec0; margin-top: 10px; font-style: italic;">
+        🔒 OpenAI key lưu localStorage máy này. Anthropic key lưu trong Apps Script (an toàn hơn).
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<header>
+  <div class="header-flex">
+    <div>
+      <h1>🤖 AI Đánh giá CV ứng viên</h1>
+      <div class="sub">Upload CV → AI phân tích → Đề xuất câu hỏi phỏng vấn</div>
+    </div>
+    <div class="actions">
+      <a href="/" class="btn btn-light">📋 Hệ thống chính</a>
+      <a href="/hr/" class="btn btn-light">👤 HR</a>
+      <a href="/danh-sach/" class="btn btn-light">📊 Danh sách</a>
+      <button class="btn btn-light" onclick="openApiModal()">🔑 API Key</button>
+      <button class="btn btn-light" onclick="doLogout()">🚪 Đăng xuất</button>
+    </div>
+  </div>
+</header>
+
+<!-- Step 1: Thông tin ứng viên -->
+<div class="card">
+  <h2>📝 Thông tin ứng viên (tuỳ chọn)</h2>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+    <div class="form-group">
+      <label>Họ tên ứng viên</label>
+      <input type="text" id="candidateName" placeholder="Nguyễn Văn A">
+    </div>
+    <div class="form-group">
+      <label>Vị trí ứng tuyển</label>
+      <select id="candidatePosition">
+        <option value="">-- Chọn --</option>
+        <option value="Fresher">Fresher (Bậc 0/0+)</option>
+        <option value="Junior">Junior (Bậc 1/2/3)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>SĐT / Email</label>
+      <input type="text" id="candidateContact" placeholder="0912... / a@email.com">
+    </div>
+  </div>
+</div>
+
+<!-- Step 2: Upload CV -->
+<div class="card">
+  <h2>📤 Tải CV ứng viên</h2>
+  <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+    <div class="upload-icon">📄</div>
+    <div class="upload-text"><strong>Bấm để chọn file</strong> hoặc kéo thả vào đây</div>
+    <div class="upload-hint">Hỗ trợ: PDF, DOCX, DOC, TXT (tối đa 5MB)</div>
+    <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.txt" onchange="handleFile(this.files[0])">
+  </div>
+  <div class="file-info" id="fileInfo">
+    <div class="icon">📄</div>
+    <div style="flex: 1;">
+      <div class="name" id="fileName">-</div>
+      <div class="meta" id="fileMeta">-</div>
+    </div>
+    <button class="btn btn-gray" onclick="clearFile()" style="padding: 5px 10px; font-size: 11px;">Xoá</button>
+  </div>
+
+  <div class="divider">— HOẶC PASTE TEXT CV —</div>
+  <textarea class="cv-paste" id="cvText" placeholder="Paste nội dung CV vào đây nếu không có file..."></textarea>
+
+  <div class="text-preview" id="textPreview"></div>
+  <div class="error" id="errorBox"></div>
+
+  <button class="analyze-btn" id="analyzeBtn" onclick="analyzeCV()" style="margin-top: 14px;">
+    🤖 PHÂN TÍCH BẰNG AI
+  </button>
+</div>
+
+<!-- Loading -->
+<div class="loading" id="loadingBox">
+  <div class="spinner"></div>
+  <div style="font-weight: 600; font-size: 15px;">⏳ AI đang phân tích CV...</div>
+  <div style="font-size: 12px; color: #718096; margin-top: 4px;">Mất ~10-20 giây</div>
+</div>
+
+<!-- Result -->
+<div class="result" id="resultBox">
+  <div class="fit-score-card">
+    <div class="fit-score" id="fitScore">--</div>
+    <div class="fit-score-label">/10 - Mức phù hợp với JD KITA BOOKS</div>
+    <div class="fit-rec" id="fitRec">--</div>
+  </div>
+
+  <div class="card">
+    <h2>📋 Tóm tắt ứng viên</h2>
+    <div class="summary-card" id="summary">--</div>
+  </div>
+
+  <div class="result-grid">
+    <div class="result-section strengths">
+      <h3>💪 Điểm mạnh phù hợp</h3>
+      <ul id="strengths"></ul>
+    </div>
+    <div class="result-section weaknesses">
+      <h3>⚠️ Điểm yếu / Thiếu sót</h3>
+      <ul id="weaknesses"></ul>
+    </div>
+    <div class="result-section redflags">
+      <h3>🚩 Red Flags cần xác minh</h3>
+      <ul id="redflags"></ul>
+    </div>
+    <div class="result-section questions">
+      <h3>❓ Câu hỏi nên hỏi khi PV</h3>
+      <ul id="questions"></ul>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn btn-success" onclick="saveToCloud()">☁️ Lưu vào Google Sheet</button>
+    <button class="btn btn-blue" onclick="copyAnalysis()">📋 Copy phân tích</button>
+    <button class="btn btn-primary" onclick="startInterview()">📋 Bắt đầu phỏng vấn V1</button>
+    <button class="btn btn-gray" onclick="resetAll()">🔄 Phân tích CV khác</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ============== LOGIN ==============
+const PASSWORD_HASH = 'a9c82a91311cb01ff918ca5e37029cfd5275608b3dc557f333cc30c4254ba8da';
+const AUTH_KEY = 'kita_cvai_auth';
+
+async function sha256(text) {
+  const buf = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function doLogin() {
+  const pwd = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  if (!pwd) { errEl.textContent = 'Nhập mật khẩu'; return; }
+  const hash = await sha256(pwd);
+  if (hash === PASSWORD_HASH) {
+    sessionStorage.setItem(AUTH_KEY, '1');
+    document.getElementById('loginOverlay').classList.add('hidden');
+    initApp();
+  } else {
+    errEl.textContent = '❌ Sai mật khẩu';
+    document.getElementById('loginCard').classList.add('shake');
+    setTimeout(() => document.getElementById('loginCard').classList.remove('shake'), 400);
+    document.getElementById('loginPassword').value = '';
+  }
+}
+
+function doLogout() {
+  if (!confirm('Đăng xuất?')) return;
+  sessionStorage.removeItem(AUTH_KEY);
+  document.getElementById('loginOverlay').classList.remove('hidden');
+}
+
+function checkAuth() {
+  if (sessionStorage.getItem(AUTH_KEY) === '1') return true;
+  // SSO từ trang khác
+  if (sessionStorage.getItem('kita_interview_auth') === '1' || sessionStorage.getItem('kita_v1hr_auth') === '1') {
+    sessionStorage.setItem(AUTH_KEY, '1');
+    return true;
+  }
+  return false;
+}
+
+// ============== AI PROVIDER CONFIG ==============
+function getApiConfig() {
+  try {
+    const cfg = localStorage.getItem('kita_ai_config');
+    return cfg ? JSON.parse(cfg) : null;
+  } catch(e) { return null; }
+}
+
+function openApiModal() {
+  const cfg = getApiConfig();
+  if (cfg) {
+    document.getElementById('providerInput').value = cfg.provider || 'openai';
+    document.getElementById('apiKeyInput').value = cfg.key || '';
+    document.getElementById('apiModelInput').value = cfg.model || 'gpt-4o-mini';
+    document.getElementById('claudeModelInput').value = cfg.claudeModel || 'claude-haiku-4-5-20251001';
+  }
+  onProviderChange();
+  document.getElementById('apiModal').classList.add('show');
+}
+
+function onProviderChange() {
+  const provider = document.getElementById('providerInput').value;
+  document.getElementById('openaiSection').style.display = provider === 'openai' ? 'block' : 'none';
+  document.getElementById('claudeSection').style.display = provider === 'claude' ? 'block' : 'none';
+}
+
+function closeApiModal() {
+  document.getElementById('apiModal').classList.remove('show');
+}
+
+function saveApiKey() {
+  const provider = document.getElementById('providerInput').value;
+  if (provider === 'openai') {
+    const key = document.getElementById('apiKeyInput').value.trim();
+    const model = document.getElementById('apiModelInput').value;
+    if (!key) { alert('⚠️ Nhập OpenAI API key'); return; }
+    if (!key.startsWith('sk-')) { alert('⚠️ Key phải bắt đầu bằng "sk-"'); return; }
+    localStorage.setItem('kita_ai_config', JSON.stringify({ provider: 'openai', key, model }));
+    alert('✅ Đã lưu! Giờ phân tích CV bằng OpenAI.');
+  } else if (provider === 'claude') {
+    const cloudCfg = getCloudConfig();
+    if (!cloudCfg) {
+      alert('⚠️ Chưa setup Google Sheet (cần thiết cho Claude proxy).\n\nMở /setup-database/ làm trước.');
+      window.open('/setup-database/', '_blank');
+      return;
+    }
+    const claudeModel = document.getElementById('claudeModelInput').value;
+    localStorage.setItem('kita_ai_config', JSON.stringify({ provider: 'claude', claudeModel }));
+    alert('✅ Đã chọn Claude!\n\nLưu ý: Anthropic API Key phải đã được paste vào Apps Script (xem hướng dẫn trong /setup-database/).\n\nGiờ phân tích CV sẽ chạy qua Claude.');
+  }
+  closeApiModal();
+}
+
+// ============== FILE HANDLING ==============
+let extractedText = '';
+
+const uploadArea = document.getElementById('uploadArea');
+['dragover', 'dragenter'].forEach(ev => {
+  uploadArea.addEventListener(ev, e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+});
+['dragleave', 'drop'].forEach(ev => {
+  uploadArea.addEventListener(ev, e => { e.preventDefault(); uploadArea.classList.remove('dragover'); });
+});
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+
+async function handleFile(file) {
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { showError('File quá lớn (max 5MB)'); return; }
+
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileMeta').textContent = `${(file.size/1024).toFixed(1)} KB · ${file.type || 'Unknown'}`;
+  document.getElementById('fileInfo').classList.add('show');
+  hideError();
+
+  try {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'pdf') {
+      extractedText = await extractPDF(file);
+    } else if (ext === 'docx' || ext === 'doc') {
+      extractedText = await extractDOCX(file);
+    } else if (ext === 'txt') {
+      extractedText = await file.text();
+    } else {
+      throw new Error('Định dạng không hỗ trợ. Dùng PDF/DOCX/TXT.');
+    }
+    showPreview(extractedText);
+  } catch(e) {
+    showError('Lỗi đọc file: ' + e.message);
+    extractedText = '';
+  }
+}
+
+async function extractPDF(file) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let text = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(it => it.str).join(' ') + '\n\n';
+  }
+  return text.trim();
+}
+
+async function extractDOCX(file) {
+  const buf = await file.arrayBuffer();
+  const result = await mammoth.extractRawText({ arrayBuffer: buf });
+  return result.value.trim();
+}
+
+function showPreview(text) {
+  const preview = document.getElementById('textPreview');
+  preview.textContent = '📄 Text trích xuất (' + text.length + ' ký tự):\n\n' + text.slice(0, 2000) + (text.length > 2000 ? '\n\n... (rút gọn)' : '');
+  preview.classList.add('show');
+}
+
+function clearFile() {
+  document.getElementById('fileInput').value = '';
+  document.getElementById('fileInfo').classList.remove('show');
+  document.getElementById('textPreview').classList.remove('show');
+  extractedText = '';
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorBox');
+  el.textContent = '⚠️ ' + msg;
+  el.classList.add('show');
+}
+
+function hideError() {
+  document.getElementById('errorBox').classList.remove('show');
+}
+
+// ============== AI ANALYSIS ==============
+let lastAnalysis = null;
+
+const SYSTEM_PROMPT = `Bạn là chuyên gia tuyển dụng Marketing với 15-20 năm kinh nghiệm tại các công ty xuất bản sách giấy ở Việt Nam.
+
+CÔNG TY: KITA BOOKS - chuyên xuất bản và bán sách giấy qua Fanpage/Website (KD, kỹ năng sống, văn học, thiếu nhi).
+
+VỊ TRÍ TUYỂN: Nhân viên Marketing (Fresher hoặc Junior 1-2 năm).
+
+MÔ TẢ CÔNG VIỆC:
+- Sản xuất content (review sách, caption FB, video TikTok, hình ảnh)
+- Vận hành quảng cáo (FB Ads, Google Ads, TikTok Ads)
+- Phối hợp KOL/Reviewer
+- Phân tích số liệu, tối ưu funnel
+- Phối hợp Sales chốt đơn
+
+YÊU CẦU LÝ TƯỞNG:
+- Đam mê đọc sách (KEY - rất quan trọng cho KITA BOOKS)
+- Kỹ năng content / video / ads
+- Tư duy số liệu, ham học hỏi
+- Khát khao thu nhập theo cơ chế hoa hồng không giới hạn
+- Có kênh review sách / blog / TikTok cá nhân là +++
+
+CƠ CHẾ LƯƠNG: Cứng 6-10tr (Fresher 6-7tr, Junior 8-10tr) + KPI 2-3tr + Hoa hồng theo % CP Ads/DT (capped ~4.5-5% TN/DT).
+
+Phân tích CV được cung cấp và TRẢ VỀ JSON (KHÔNG có markdown, KHÔNG ghi chú thêm) với cấu trúc:
+{
+  "summary": "Tóm tắt 3-5 dòng về ứng viên (tên, học vấn, kinh nghiệm, điểm nổi bật).",
+  "fit_score": 8,
+  "recommendation": "RECOMMEND_INTERVIEW | CONSIDER | NO_INTERVIEW",
+  "strengths": ["Điểm mạnh 1", "Điểm mạnh 2", "Điểm mạnh 3", ...],
+  "weaknesses": ["Điểm yếu 1", "Điểm yếu 2", ...],
+  "red_flags": ["Cảnh báo 1", "Cảnh báo 2", ...],
+  "interview_focus": ["Câu hỏi 1 cụ thể", "Câu hỏi 2 cụ thể", "Câu hỏi 3 cụ thể", "Câu hỏi 4", "Câu hỏi 5"]
+}
+
+LƯU Ý:
+- fit_score 1-10 (1 = rất không phù hợp, 10 = ứng viên xuất sắc)
+- Câu hỏi phỏng vấn phải SPECIFIC dựa vào CV (không generic)
+- Red flags: gap thời gian dài, nhảy việc nhiều, kỳ vọng lương quá cao, không match JD
+- Trả về CHỈ JSON, không có chữ giới thiệu hay markdown wrapper.`;
+
+async function analyzeCV() {
+  hideError();
+  const cvText = extractedText || document.getElementById('cvText').value.trim();
+  if (!cvText) { showError('Chưa có CV. Vui lòng upload file hoặc paste text.'); return; }
+  if (cvText.length < 100) { showError('CV quá ngắn (< 100 ký tự).'); return; }
+
+  const cfg = getApiConfig();
+  if (!cfg) {
+    if (confirm('🔑 CHƯA CẤU HÌNH AI\n\nChọn provider: OpenAI (đơn giản) hoặc Claude (chất lượng cao).\n\nOK = Mở setup\nCancel = Để sau')) {
+      openApiModal();
+    }
+    return;
+  }
+
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('loadingBox').classList.add('show');
+  document.getElementById('resultBox').classList.remove('show');
+
+  try {
+    let analysis;
+    if (cfg.provider === 'claude') {
+      analysis = await analyzeWithClaude(cvText, cfg);
+    } else {
+      analysis = await analyzeWithOpenAI(cvText, cfg);
+    }
+    lastAnalysis = analysis;
+    displayResult(analysis);
+  } catch(e) {
+    showError('Lỗi AI: ' + e.message);
+  } finally {
+    document.getElementById('analyzeBtn').disabled = false;
+    document.getElementById('loadingBox').classList.remove('show');
+  }
+}
+
+async function analyzeWithOpenAI(cvText, cfg) {
+  if (!cfg.key) throw new Error('Chưa có OpenAI API Key. Bấm 🔑 API Key để setup.');
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.key}` },
+    body: JSON.stringify({
+      model: cfg.model || 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: 'CV ỨNG VIÊN:\n\n' + cvText.slice(0, 8000) }
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.3,
+      max_tokens: 1500
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `OpenAI HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return JSON.parse(data.choices[0].message.content);
+}
+
+async function analyzeWithClaude(cvText, cfg) {
+  const cloudCfg = getCloudConfig();
+  if (!cloudCfg) throw new Error('Chưa setup Google Sheet (Claude phải qua Apps Script proxy). Mở /setup-database/');
+
+  const res = await fetch(cloudCfg.url, {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'analyze_cv',
+      apiKey: cloudCfg.apiKey,
+      systemPrompt: SYSTEM_PROMPT + '\n\nQUAN TRỌNG: Trả về CHỈ JSON object hợp lệ, không có ```json wrapper, không có chữ giới thiệu.',
+      cvText: cvText,
+      model: cfg.claudeModel || 'claude-haiku-4-5-20251001'
+    })
+  });
+  const result = await res.json();
+  if (!result.ok) throw new Error('Claude proxy: ' + (result.error || 'Không xác định'));
+  return result.analysis;
+}
+
+function displayResult(a) {
+  document.getElementById('fitScore').textContent = a.fit_score || '?';
+  const recMap = {
+    RECOMMEND_INTERVIEW: '✅ NÊN PHỎNG VẤN',
+    CONSIDER: '🟡 CÂN NHẮC',
+    NO_INTERVIEW: '❌ KHÔNG NÊN PHỎNG VẤN'
+  };
+  document.getElementById('fitRec').textContent = recMap[a.recommendation] || a.recommendation || '--';
+
+  document.getElementById('summary').textContent = a.summary || '--';
+
+  const fillList = (id, items) => {
+    const ul = document.getElementById(id);
+    ul.innerHTML = (items || []).map(it => `<li>${escHtml(it)}</li>`).join('') || '<li><em>(Không có)</em></li>';
+  };
+  fillList('strengths', a.strengths);
+  fillList('weaknesses', a.weaknesses);
+  fillList('redflags', a.red_flags);
+  fillList('questions', a.interview_focus);
+
+  document.getElementById('resultBox').classList.add('show');
+  setTimeout(() => document.getElementById('resultBox').scrollIntoView({ behavior: 'smooth' }), 100);
+}
+
+function escHtml(s) {
+  return (s + '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// ============== ACTIONS ==============
+function copyAnalysis() {
+  if (!lastAnalysis) return;
+  const a = lastAnalysis;
+  let text = `=== AI ĐÁNH GIÁ CV - KITA BOOKS ===\n\n`;
+  text += `Mức phù hợp: ${a.fit_score}/10 - ${a.recommendation}\n\n`;
+  text += `📋 TÓM TẮT:\n${a.summary}\n\n`;
+  text += `💪 ĐIỂM MẠNH:\n${(a.strengths||[]).map(s => '• ' + s).join('\n')}\n\n`;
+  text += `⚠️ ĐIỂM YẾU:\n${(a.weaknesses||[]).map(s => '• ' + s).join('\n')}\n\n`;
+  text += `🚩 RED FLAGS:\n${(a.red_flags||[]).map(s => '• ' + s).join('\n')}\n\n`;
+  text += `❓ CÂU HỎI NÊN HỎI:\n${(a.interview_focus||[]).map((s,i) => `${i+1}. ${s}`).join('\n')}\n`;
+  navigator.clipboard.writeText(text).then(() => alert('✅ Đã copy!'));
+}
+
+async function saveToCloud() {
+  if (!lastAnalysis) { alert('Chưa có phân tích'); return; }
+  const cfg = getCloudConfig();
+  if (!cfg) {
+    if (confirm('Chưa setup Cloud. Mở hướng dẫn?')) window.open('/setup-database/', '_blank');
+    return;
+  }
+
+  const name = document.getElementById('candidateName').value.trim();
+  if (!name) { alert('⚠️ Vui lòng nhập tên ứng viên!'); document.getElementById('candidateName').focus(); return; }
+
+  const data = {
+    apiKey: cfg.apiKey,
+    candidate: {
+      name: name,
+      position: document.getElementById('candidatePosition').value,
+      contact: document.getElementById('candidateContact').value,
+      date: new Date().toISOString().slice(0,10),
+      interviewer: 'AI Phân tích',
+      round: 'CV-AI',
+      source: 'CV Upload'
+    },
+    exportType: 'CV-AI',
+    scores: {},
+    notes: { 'cv-summary': lastAnalysis.summary },
+    aiAnalysis: lastAnalysis
+  };
+
+  try {
+    const res = await fetch(cfg.url, { method: 'POST', body: JSON.stringify(data) });
+    const result = await res.json();
+    if (result.ok) {
+      alert(`☁️ ĐÃ LƯU LÊN GOOGLE SHEET!\n\n📍 Dòng: ${result.row}\n👤 ${name}`);
+    } else {
+      alert('❌ Lỗi: ' + (result.error || '?'));
+    }
+  } catch(e) { alert('❌ Lỗi: ' + e.message); }
+}
+
+function getCloudConfig() {
+  try { return JSON.parse(localStorage.getItem('kita_cloud_config') || 'null'); }
+  catch(e) { return null; }
+}
+
+function startInterview() {
+  const name = document.getElementById('candidateName').value.trim();
+  const position = document.getElementById('candidatePosition').value;
+  const contact = document.getElementById('candidateContact').value;
+  if (!name) { alert('⚠️ Nhập tên ứng viên trước'); return; }
+
+  // Pass data via sessionStorage để hr page tự load
+  const pendingData = {
+    candidate: { name, position, contact, date: new Date().toISOString().slice(0,10) },
+    scores: {}, notes: {}, qa: [{ q: '', class: 'normal', note: '' }],
+    aiAnalysis: lastAnalysis
+  };
+  sessionStorage.setItem('kita_pending_load', JSON.stringify(pendingData));
+  window.location.href = '/hr/';
+}
+
+function resetAll() {
+  if (!confirm('Phân tích CV mới?')) return;
+  document.getElementById('candidateName').value = '';
+  document.getElementById('candidatePosition').value = '';
+  document.getElementById('candidateContact').value = '';
+  document.getElementById('cvText').value = '';
+  clearFile();
+  document.getElementById('resultBox').classList.remove('show');
+  lastAnalysis = null;
+  hideError();
+}
+
+// ============== INIT ==============
+function initApp() {
+  // Đã đăng nhập, không cần làm gì thêm ở đây
+}
+
+if (checkAuth()) {
+  document.getElementById('loginOverlay').classList.add('hidden');
+  initApp();
+} else {
+  document.getElementById('loginPassword').focus();
+}
+</script>
+</body>
+</html>
