@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Setup Lark Bot - KITA Interview</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: #f5f7fa; color: #2d3748; line-height: 1.6; padding: 20px;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+  header {
+    background: linear-gradient(135deg, #00D6B9 0%, #008FB5 100%);
+    color: white; padding: 28px 32px; border-radius: 12px;
+    margin-bottom: 20px; text-align: center;
+  }
+  header h1 { font-size: 26px; margin-bottom: 6px; }
+  .nav-back { display: inline-block; padding: 8px 16px; background: white; color: #00D6B9; border-radius: 8px; text-decoration: none; font-weight: 600; margin-bottom: 12px; }
+  .card { background: white; padding: 22px 26px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .card h2 { color: #00839A; font-size: 18px; margin-bottom: 12px; border-bottom: 2px solid #00D6B9; padding-bottom: 8px; }
+  .step { margin-bottom: 16px; padding-left: 36px; position: relative; }
+  .step-num { position: absolute; left: 0; top: 0; width: 28px; height: 28px; background: #00D6B9; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+  .step h3 { font-size: 15px; color: #00839A; margin-bottom: 6px; }
+  .step p, .step li { font-size: 13px; color: #4a5568; line-height: 1.7; }
+  .step ul { padding-left: 20px; margin-top: 4px; }
+  code { background: #e6fffa; padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono', Consolas, monospace; font-size: 12px; color: #008FB5; }
+  .code-block { background: #1a202c; color: #68d391; padding: 14px; border-radius: 8px; font-family: monospace; font-size: 12px; overflow-x: auto; line-height: 1.6; white-space: pre; margin: 8px 0; }
+  .alert { padding: 12px 16px; border-radius: 8px; margin: 12px 0; font-size: 13px; border-left: 4px solid; }
+  .alert-info { background: #e6fffa; border-color: #00D6B9; color: #00839A; }
+  .alert-warn { background: #fefcbf; border-color: #d69e2e; color: #744210; }
+  .alert-success { background: #c6f6d5; border-color: #00B050; color: #22543d; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0; }
+  th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; }
+  th { background: #e6fffa; color: #00839A; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<a href="/" class="nav-back">← Về trang chủ</a>
+
+<header>
+  <h1>🤖 Setup Lark Bot Notification</h1>
+  <p style="opacity:0.95;font-size:13px;">Khi có thay đổi trạng thái → bot tự gửi tin nhắn vào group Lark + @mention người liên quan + nút mở hệ thống</p>
+</header>
+
+<div class="card">
+  <h2>📋 Workflow notification</h2>
+  <table>
+    <thead><tr><th>Sự kiện</th><th>Tin nhắn</th><th>Mention ai</th></tr></thead>
+    <tbody>
+      <tr><td>📥 HR upload CV mới</td><td>"CV mới chờ TPMKT duyệt"</td><td>TPMKT</td></tr>
+      <tr><td>❌ TPMKT loại CV</td><td>"Đã loại CV"</td><td>HR</td></tr>
+      <tr><td>🟡 TPMKT đánh dấu Tiềm năng</td><td>"CV được đánh dấu Tiềm năng"</td><td>HR</td></tr>
+      <tr><td>🟢 TPMKT hẹn PV V1</td><td>"TPMKT hẹn PV — HR triển khai"</td><td>HR</td></tr>
+      <tr><td>📝 HR gửi bài test</td><td>"Đã gửi test cho ứng viên"</td><td>(không mention)</td></tr>
+      <tr><td>✅ Ứng viên nộp bài</td><td>"Ứng viên ĐÃ NỘP BÀI TEST"</td><td>HR + TPMKT</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>🚀 BƯỚC 1: Tạo Custom Bot trong group Lark</h2>
+  <div class="step">
+    <span class="step-num">1</span>
+    <h3>Mở Lark / Feishu app → vào group muốn nhận thông báo</h3>
+    <p>Vd: tạo group "📥 KITA Tuyển dụng" gồm HR + TPMKT + GĐ</p>
+  </div>
+  <div class="step">
+    <span class="step-num">2</span>
+    <h3>Bấm icon ⚙️ Cài đặt nhóm (góc phải trên)</h3>
+  </div>
+  <div class="step">
+    <span class="step-num">3</span>
+    <h3>Chọn <strong>Group Bot</strong> → bấm <strong>+ Add Bot</strong></h3>
+  </div>
+  <div class="step">
+    <span class="step-num">4</span>
+    <h3>Chọn <strong>Custom Bot</strong></h3>
+    <ul>
+      <li><strong>Bot name:</strong> KITA Interview</li>
+      <li><strong>Description:</strong> Thông báo trạng thái CV / phỏng vấn</li>
+      <li><strong>Avatar:</strong> upload logo KITA (tuỳ chọn)</li>
+    </ul>
+  </div>
+  <div class="step">
+    <span class="step-num">5</span>
+    <h3>Bấm <strong>Add</strong> → màn hình hiện <strong>Webhook URL</strong></h3>
+    <p>URL có dạng: <code>https://open.larksuite.com/open-apis/bot/v2/hook/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code></p>
+    <p><strong>Copy URL này</strong> — sẽ paste vào Apps Script ở Bước 2.</p>
+    <div class="alert alert-warn">
+      ⚠️ Bot chỉ gửi tin nhắn vào ĐÚNG group này. Muốn gửi đến nhiều group → tạo nhiều bot.
+    </div>
+  </div>
+  <div class="step">
+    <span class="step-num">6</span>
+    <h3>(Tuỳ chọn) Bật Security Setting</h3>
+    <p>Có thể bỏ qua để đơn giản. Nếu muốn bảo mật → chọn <strong>Custom Keywords</strong> với từ khoá <code>KITA</code> (mọi tin nhắn phải chứa từ này — em đã đảm bảo trong code).</p>
+  </div>
+</div>
+
+<div class="card">
+  <h2>⚙️ BƯỚC 2: Cấu hình trong Apps Script</h2>
+  <div class="step">
+    <span class="step-num">1</span>
+    <h3>Mở Google Sheet → Extensions → Apps Script</h3>
+  </div>
+  <div class="step">
+    <span class="step-num">2</span>
+    <h3>Tìm phần config ở đầu code:</h3>
+    <div class="code-block">const LARK_WEBHOOK_URL = ''; // Paste webhook ở đây
+const LARK_USERS = {
+  hr: '',         // Email Lark của HR
+  tpmkt: '',      // Email Lark của TPMKT
+  director: ''    // Email Lark của Giám đốc
+};</div>
+    <p>Sửa thành:</p>
+    <div class="code-block">const LARK_WEBHOOK_URL = 'https://open.larksuite.com/open-apis/bot/v2/hook/xxx-xxx-xxx';
+const LARK_USERS = {
+  hr: 'hr@kitabooks.com',
+  tpmkt: 'tpmkt@kitabooks.com',
+  director: 'gd@kitabooks.com'
+};</div>
+  </div>
+  <div class="step">
+    <span class="step-num">3</span>
+    <h3>Lưu code (Ctrl+S) → Deploy New Version</h3>
+    <p>Apps Script → Deploy → Manage Deployments → ✏️ Edit → New Version → Deploy</p>
+  </div>
+</div>
+
+<div class="card">
+  <h2>👥 Cách lấy Email Lark của thành viên</h2>
+  <div class="step">
+    <span class="step-num">1</span>
+    <h3>Mở Lark → Click vào avatar người đó</h3>
+  </div>
+  <div class="step">
+    <span class="step-num">2</span>
+    <h3>Xem mục "Email" trong profile</h3>
+    <p>Đây là email đăng ký Lark (thường giống email công ty). Copy chính xác email này vào <code>LARK_USERS</code>.</p>
+  </div>
+  <div class="alert alert-info">
+    💡 Mention bằng email có lợi: dùng được cho Lark Suite + Lark Personal. Người dùng nhận notification trên app Lark như bị tag trực tiếp.
+  </div>
+</div>
+
+<div class="card">
+  <h2>🧪 BƯỚC 3: Test thử</h2>
+  <p>Sau khi setup + deploy, vào <a href="/cv/" style="color:#00839A;font-weight:600;">/cv/</a> upload 1 CV thử.</p>
+  <p>→ Trong group Lark sẽ nhận được card đẹp:</p>
+  <div class="code-block">┌─────────────────────────────────────┐
+│ 📥 CV mới chờ TPMKT duyệt          │
+├─────────────────────────────────────┤
+│ @TPMKT                              │
+│                                     │
+│ 👤 Ứng viên: Nguyễn Văn A           │
+│ 💼 Vị trí: Junior Bậc 2             │
+│ 📞 Liên hệ: 0912xxx                 │
+│ 📝 Ghi chú: CV sạch sẽ, có ảnh.    │
+├─────────────────────────────────────┤
+│  [✍️ Vào duyệt CV]                  │
+└─────────────────────────────────────┘</div>
+  <div class="alert alert-success">
+    ✅ Card có nút bấm — TPMKT click 1 phát mở luôn /cv/ trên browser, không cần copy URL.
+  </div>
+</div>
+
+<div class="card">
+  <h2>🔧 Tuỳ chỉnh thêm (advanced)</h2>
+  <p style="font-size:13px;color:#4a5568;">Trong code Apps Script function <code>notifyLark()</code> có biến <code>events</code> chứa template cho từng sự kiện:</p>
+  <ul style="padding-left:20px;font-size:13px;color:#4a5568;line-height:1.8;">
+    <li><strong>title</strong>: Tiêu đề card</li>
+    <li><strong>template</strong>: Màu header (blue / green / red / yellow / purple)</li>
+    <li><strong>mention</strong>: Email người được @ mention</li>
+    <li><strong>url</strong>: Nút bấm dẫn đến trang nào</li>
+    <li><strong>btn</strong>: Text nút bấm</li>
+  </ul>
+  <p style="font-size:13px;color:#4a5568;margin-top:8px;">Anh có thể sửa template tuỳ ý. Lark hỗ trợ Markdown, có thể dùng <code>**bold**</code>, danh sách, link...</p>
+</div>
+
+<div class="card">
+  <h2>📞 Troubleshoot</h2>
+  <table>
+    <thead><tr><th>Lỗi</th><th>Cách sửa</th></tr></thead>
+    <tbody>
+      <tr><td>Không nhận tin nhắn</td><td>Check LARK_WEBHOOK_URL đã paste đúng + đã Deploy New Version</td></tr>
+      <tr><td>Card hiện nhưng không @mention</td><td>Email trong LARK_USERS sai format — phải đúng email Lark đăng ký</td></tr>
+      <tr><td>Bot bị remove khỏi group</td><td>Tạo lại bot, copy URL mới, update Apps Script</td></tr>
+      <tr><td>Bot 1 ngày spam quá</td><td>Lark giới hạn 5 tin/giây/group — đủ cho HR thông thường</td></tr>
+    </tbody>
+  </table>
+</div>
+
+</div>
+</body>
+</html>

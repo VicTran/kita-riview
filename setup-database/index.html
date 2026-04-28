@@ -166,6 +166,21 @@ const API_KEY = 'KITA-MyTeam-2026'; // ⚠️ Phải khớp với cloudApiKey tr
 // VD: drive.google.com/drive/folders/ABCxyz123 → ID là "ABCxyz123"
 const CV_DRIVE_FOLDER_ID = '1lKAXidD-Vd46IO2J400ihDr40-Q5_3yr'; // KITA CV Storage folder
 
+// ⚠️ LARK BOT WEBHOOK (tuỳ chọn)
+// Tạo Bot trong group Lark → copy webhook URL (xem hướng dẫn /setup-lark/)
+// Để trống = không gửi notify
+const LARK_WEBHOOK_URL = ''; // VD: 'https://open.larksuite.com/open-apis/bot/v2/hook/xxx-xxx-xxx'
+
+// Email Lark của các thành viên — để @mention khi gửi notify
+const LARK_USERS = {
+  hr: '',         // VD: 'hr@kitabooks.com'
+  tpmkt: '',      // VD: 'tpmkt@kitabooks.com'
+  director: ''    // VD: 'gd@kitabooks.com'
+};
+
+// Public URL hệ thống
+const SYSTEM_URL = 'https://phongvanmkt.kitagroupvn.com';
+
 // ============== POST: Lưu hồ sơ HOẶC phân tích CV bằng Claude ==============
 function doPost(e) {
   try {
@@ -315,6 +330,9 @@ function uploadCV(data) {
 
     sheet.appendRow(rowData);
 
+    // 🔔 Lark notify: HR vừa upload CV mới
+    notifyLark('NEW_CV', { candidate: cand, note: cand.hrNote });
+
     return jsonResponse({ ok: true, row: sheet.getLastRow(), fileUrl: fileUrl, portfolioFileUrl: portfolioFileUrl });
   } catch (err) {
     return jsonResponse({ ok: false, error: err.message });
@@ -356,6 +374,20 @@ function reviewCV(data) {
     if (data.interviewDate) sheet.getRange(row, 12).setValue(data.interviewDate);
     sheet.getRange(row, 13).setValue(new Date());
 
+    // 🔔 Lark notify: TPMKT vừa duyệt
+    const candName = sheet.getRange(row, 2).getValue();
+    const position = sheet.getRange(row, 4).getValue();
+    const contact = sheet.getRange(row, 3).getValue();
+    const eventMap = { REJECTED: 'TPMKT_REJECTED', POTENTIAL: 'TPMKT_POTENTIAL', SCHEDULED: 'TPMKT_SCHEDULED' };
+    const eventType = eventMap[data.decision];
+    if (eventType) {
+      notifyLark(eventType, {
+        candidate: { name: candName, position: position, contact: contact },
+        note: data.leadNote,
+        interviewDate: data.interviewDate
+      });
+    }
+
     return jsonResponse({ ok: true, row: row });
   } catch (err) {
     return jsonResponse({ ok: false, error: err.message });
@@ -380,6 +412,14 @@ function sendTest(data) {
     sheet.getRange(row, 15).setValue(data.testDescription || '');
     sheet.getRange(row, 16).setValue(data.testDeadline || '');
     sheet.getRange(row, 17).setValue(token);
+
+    // 🔔 Lark notify: HR đã gửi bài test
+    const candName2 = sheet.getRange(row, 2).getValue();
+    const position2 = sheet.getRange(row, 4).getValue();
+    notifyLark('TEST_SENT', {
+      candidate: { name: candName2, position: position2 },
+      deadline: data.testDeadline
+    });
 
     return jsonResponse({ ok: true, row: row, token: token });
   } catch (err) {
@@ -418,6 +458,12 @@ function submitTest(data) {
     sheet.getRange(row, 18).setValue(file.getUrl());
     sheet.getRange(row, 19).setValue(data.note || '');
     sheet.getRange(row, 20).setValue(new Date());
+
+    // 🔔 Lark notify: Ứng viên đã nộp bài test
+    notifyLark('TEST_SUBMITTED', {
+      candidate: { name: candName, position: sheet.getRange(row, 4).getValue() },
+      note: data.note
+    });
 
     return jsonResponse({ ok: true, fileUrl: file.getUrl() });
   } catch (err) {
@@ -565,6 +611,111 @@ function findExistingRow(sheet, name, exportType) {
 function jsonResponse(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ============== LARK BOT NOTIFICATION ==============
+function notifyLark(eventType, data) {
+  if (!LARK_WEBHOOK_URL) return; // Không cấu hình → bỏ qua
+
+  const events = {
+    'NEW_CV': {
+      title: '📥 CV mới chờ TPMKT duyệt',
+      template: 'blue',
+      mention: LARK_USERS.tpmkt,
+      url: SYSTEM_URL + '/cv/',
+      btn: '✍️ Vào duyệt CV'
+    },
+    'TPMKT_REJECTED': {
+      title: '❌ TPMKT đã loại CV',
+      template: 'red',
+      mention: LARK_USERS.hr,
+      url: SYSTEM_URL + '/cv/',
+      btn: '📋 Xem chi tiết'
+    },
+    'TPMKT_POTENTIAL': {
+      title: '🟡 CV được đánh dấu Tiềm năng',
+      template: 'yellow',
+      mention: LARK_USERS.hr,
+      url: SYSTEM_URL + '/cv/',
+      btn: '📋 Xem chi tiết'
+    },
+    'TPMKT_SCHEDULED': {
+      title: '🟢 TPMKT hẹn PV V1 - HR triển khai',
+      template: 'green',
+      mention: LARK_USERS.hr,
+      url: SYSTEM_URL + '/hr/',
+      btn: '👤 Vào phỏng vấn V1'
+    },
+    'TEST_SENT': {
+      title: '📝 Đã gửi bài test cho ứng viên',
+      template: 'purple',
+      mention: '',
+      url: SYSTEM_URL + '/cv/',
+      btn: '📋 Xem chi tiết'
+    },
+    'TEST_SUBMITTED': {
+      title: '✅ Ứng viên ĐÃ NỘP BÀI TEST',
+      template: 'green',
+      mention: (LARK_USERS.tpmkt + ',' + LARK_USERS.hr).replace(/^,|,$/g, ''),
+      url: SYSTEM_URL + '/',
+      btn: '📊 Vào chấm bài'
+    }
+  };
+
+  const ev = events[eventType];
+  if (!ev) return;
+
+  const cand = data.candidate || {};
+  const lines = [];
+  lines.push('**👤 Ứng viên:** ' + (cand.name || '?'));
+  if (cand.position) lines.push('**💼 Vị trí:** ' + cand.position);
+  if (cand.contact) lines.push('**📞 Liên hệ:** ' + cand.contact);
+  if (data.note) lines.push('**📝 Ghi chú:** ' + data.note);
+  if (data.interviewDate) lines.push('**📅 Lịch PV:** ' + data.interviewDate);
+  if (data.deadline) lines.push('**⏰ Deadline test:** ' + data.deadline);
+
+  // Build mention(s)
+  let mentionStr = '';
+  if (ev.mention) {
+    const emails = ev.mention.split(',').map(e => e.trim()).filter(Boolean);
+    mentionStr = emails.map(e => `<at email="${e}"></at>`).join(' ') + '\n\n';
+  }
+
+  const card = {
+    msg_type: 'interactive',
+    card: {
+      header: {
+        title: { tag: 'plain_text', content: ev.title },
+        template: ev.template
+      },
+      elements: [
+        { tag: 'div', text: { tag: 'lark_md', content: mentionStr + lines.join('\n') } },
+        { tag: 'hr' },
+        {
+          tag: 'action',
+          actions: [
+            {
+              tag: 'button',
+              text: { tag: 'plain_text', content: ev.btn },
+              url: ev.url,
+              type: 'primary'
+            }
+          ]
+        }
+      ]
+    }
+  };
+
+  try {
+    UrlFetchApp.fetch(LARK_WEBHOOK_URL, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(card),
+      muteHttpExceptions: true
+    });
+  } catch(e) {
+    Logger.log('Lark notify failed: ' + e.message);
+  }
 }</div>
   </div>
   <div class="step">
