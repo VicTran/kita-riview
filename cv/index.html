@@ -558,7 +558,13 @@ async function loadAllCVs() {
       document.getElementById('queueList').innerHTML = `<div class="empty"><div class="icon">⚠️</div><div>${result.error}</div></div>`;
       return;
     }
-    allCVs = result.data || [];
+    // Normalize: row nào không có Status → mặc định PENDING (cho data cũ)
+    allCVs = (result.data || []).map(c => {
+      if (!c['Status'] || (c['Status'] + '').trim() === '') {
+        c['Status'] = 'PENDING';
+      }
+      return c;
+    });
     renderQueue();
     renderPotential();
     renderScheduled();
