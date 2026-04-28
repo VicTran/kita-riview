@@ -258,7 +258,13 @@ function uploadCV(data) {
     const safeName = (cand.name || 'unknown').replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
     const finalName = safeName + '_' + new Date().toISOString().slice(0,10) + '_' + data.fileName;
     const file = folder.createFile(blob).setName(finalName);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    // Try set sharing public (có thể fail do Workspace policy → bỏ qua, file vẫn truy cập được khi folder đã share)
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch(shareErr) {
+      // Workspace policy chặn - bỏ qua, file vẫn lưu được
+      Logger.log('setSharing skipped: ' + shareErr.message);
+    }
     const fileUrl = file.getUrl();
 
     // Append vào CVQueue sheet
@@ -374,7 +380,11 @@ function submitTest(data) {
     const safeName = (candName + '').replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
     const fileFinal = 'BaiTest_' + safeName + '_' + new Date().toISOString().slice(0,10) + '_' + data.fileName;
     const file = folder.createFile(blob).setName(fileFinal);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch(shareErr) {
+      Logger.log('setSharing skipped: ' + shareErr.message);
+    }
 
     sheet.getRange(row, 9).setValue('TEST_SUBMITTED');
     sheet.getRange(row, 18).setValue(file.getUrl());
