@@ -167,6 +167,65 @@
   .notes-list .note-item { padding: 8px; background: #f7fafc; border-radius: 6px; margin-bottom: 6px; }
   .notes-list .note-q { font-weight: 700; color: #1F4E79; }
 
+  /* Detail question cards */
+  .round-section { margin-bottom: 24px; }
+  .round-header {
+    padding: 10px 14px; border-radius: 8px 8px 0 0;
+    color: white; font-weight: 700; font-size: 14px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .round-header .round-stats { font-size: 12px; font-weight: 500; opacity: 0.9; }
+  .round-body {
+    background: #f7fafc; padding: 12px; border-radius: 0 0 8px 8px;
+    border: 1px solid #e2e8f0; border-top: none;
+  }
+  .group-block { margin-bottom: 14px; }
+  .group-block:last-child { margin-bottom: 0; }
+  .group-name {
+    font-size: 12px; font-weight: 700; color: #4a5568;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 4px 8px; background: #e2e8f0; border-radius: 4px;
+    margin-bottom: 8px; display: inline-block;
+  }
+  .qcard {
+    background: white; padding: 12px 14px; border-radius: 8px;
+    margin-bottom: 8px; border-left: 4px solid #cbd5e0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .qcard.s1 { border-color: #C00000; }
+  .qcard.s2 { border-color: #f6ad55; }
+  .qcard.s3 { border-color: #ecc94b; }
+  .qcard.s4 { border-color: #4299e1; }
+  .qcard.s5 { border-color: #00B050; }
+  .qcard-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+  .qcard-text { flex: 1; font-size: 13px; color: #2d3748; line-height: 1.5; }
+  .qcard-text .qid { font-weight: 700; color: #C00000; margin-right: 4px; }
+  .qcard-score {
+    display: flex; flex-direction: column; align-items: center;
+    min-width: 60px; padding: 6px 10px; border-radius: 8px;
+    font-weight: 700; flex-shrink: 0;
+  }
+  .qcard-score.s1 { background: #fed7d7; color: #742a2a; }
+  .qcard-score.s2 { background: #feebc8; color: #7b341e; }
+  .qcard-score.s3 { background: #fefcbf; color: #744210; }
+  .qcard-score.s4 { background: #bee3f8; color: #2c5282; }
+  .qcard-score.s5 { background: #c6f6d5; color: #22543d; }
+  .qcard-score .num { font-size: 20px; line-height: 1; }
+  .qcard-score .lbl { font-size: 10px; margin-top: 2px; }
+  .qcard-note {
+    margin-top: 6px; padding: 8px 10px; background: #f7fafc;
+    border-radius: 6px; font-size: 12px; color: #4a5568;
+    border-left: 2px solid #cbd5e0;
+  }
+  .qcard-note .lbl { font-size: 10px; color: #718096; text-transform: uppercase; font-weight: 700; margin-bottom: 2px; }
+  .qcard-noscore {
+    background: #fafbfc; border-color: #e2e8f0;
+    color: #a0aec0;
+  }
+  .qcard-noscore .qcard-score {
+    background: #edf2f7; color: #a0aec0;
+  }
+
   /* Login overlay */
   .login-overlay {
     position: fixed; inset: 0; background: linear-gradient(135deg, #1F4E79 0%, #163a5c 100%);
@@ -295,6 +354,73 @@
 </div>
 
 <script>
+// ============== QUESTION DATA (để xem chi tiết câu hỏi) ==============
+const QUESTION_DATA = {
+  // VÒNG 1 - HR
+  q1: { round: 'V1', group: '2.1. Câu hỏi giới thiệu', text: 'Bạn hãy giới thiệu ngắn về bản thân trong 2 phút - học vấn, kinh nghiệm, dự án nổi bật.' },
+  q2: { round: 'V1', group: '2.1. Câu hỏi giới thiệu', text: 'Vì sao bạn quan tâm đến vị trí Nhân viên Marketing tại KITA BOOKS?' },
+  q3: { round: 'V1', group: '2.2. Đam mê đọc sách', text: 'Cuốn sách gần đây nhất bạn đọc xong là gì? Cảm nhận thế nào?' },
+  q4: { round: 'V1', group: '2.2. Đam mê đọc sách', text: 'Bạn thường đọc thể loại sách nào nhất? Tại sao?' },
+  q5: { round: 'V1', group: '2.2. Đam mê đọc sách', text: 'Bạn theo dõi kênh review sách nào trên TikTok/YT/FB? Kể tên 1-2 kênh và lý do.' },
+  q6: { round: 'V1', group: '2.3. Mức lương & Thời gian', text: 'Mức lương hiện tại / gần nhất? Mức kỳ vọng?' },
+  q7: { round: 'V1', group: '2.3. Mức lương & Thời gian', text: 'Cơ chế lương KITA có Hoa hồng không giới hạn theo doanh số. Bạn nghĩ gì?' },
+  q8: { round: 'V1', group: '2.3. Mức lương & Thời gian', text: 'Nếu pass phỏng vấn, bạn có thể bắt đầu khi nào?' },
+  q9: { round: 'V1', group: '2.4. Loại bỏ red flags', text: 'Bạn có lo ngại nào về vị trí này? (lương, thời gian, KPI, hình thức làm việc...)' },
+  // VÒNG 2 - TPMKT
+  q10: { round: 'V2', group: 'A.1. KHẢ NĂNG HỌC HỎI NHANH', text: 'Kể 1 lần bạn tự học công cụ/kỹ năng mới trong thời gian ngắn. Approach thế nào?' },
+  q11: { round: 'V2', group: 'A.1. KHẢ NĂNG HỌC HỎI NHANH', text: 'Khi gặp topic Marketing hoàn toàn mới (Threads, AI image gen), làm gì để hiểu trong 1 tuần?' },
+  q12: { round: 'V2', group: 'A.1. KHẢ NĂNG HỌC HỎI NHANH', text: 'Sách / blog / podcast nào về Marketing bạn đang theo dõi?' },
+  q13: { round: 'V2', group: 'A.2. TINH THẦN TRÁCH NHIỆM', text: 'Kể 1 lần bạn FAIL một deadline quan trọng. Xử lý thế nào?' },
+  q14: { round: 'V2', group: 'A.2. TINH THẦN TRÁCH NHIỆM', text: 'Khi đồng nghiệp đùn đẩy việc cho bạn, xử lý ra sao?' },
+  q15: { round: 'V2', group: 'A.2. TINH THẦN TRÁCH NHIỆM', text: 'Bạn từng nhận trách nhiệm về sai lầm nghiêm trọng chưa? Hãy kể.' },
+  q16: { round: 'V2', group: 'A.3. KHẢ NĂNG LÀM VIỆC DƯỚI ÁP LỰC', text: 'Lần áp lực nhất của bạn là khi nào? Vượt qua thế nào?' },
+  q17: { round: 'V2', group: 'A.3. KHẢ NĂNG LÀM VIỆC DƯỚI ÁP LỰC', text: 'Nếu chiến dịch ads ROAS giảm 50% trong 2 ngày, xử lý cảm xúc và hành động ra sao?' },
+  q18: { round: 'V2', group: 'A.3. KHẢ NĂNG LÀM VIỆC DƯỚI ÁP LỰC', text: 'Có 5 việc cùng deadline cuối ngày, priorize thế nào?' },
+  q35: { round: 'V2', group: 'B.0. KIẾN THỨC NỀN TẢNG MARKETING', text: 'Theo bạn, Marketing là gì?' },
+  q36: { round: 'V2', group: 'B.0. KIẾN THỨC NỀN TẢNG MARKETING', text: 'Content là gì? Theo bạn có những dạng content nào?' },
+  q37: { round: 'V2', group: 'B.0. KIẾN THỨC NỀN TẢNG MARKETING', text: 'Content Marketing là gì? Khác gì với quảng cáo trực tiếp?' },
+  q38: { round: 'V2', group: 'B.0. KIẾN THỨC NỀN TẢNG MARKETING', text: 'Trong Marketing, theo bạn yếu tố nào quan trọng nhất? Vì sao?' },
+  q39: { round: 'V2', group: 'B.0. KIẾN THỨC NỀN TẢNG MARKETING', text: 'Làm sao để tạo ra 1 content HAY và HẤP DẪN? Bạn có công thức gì?' },
+  q19: { round: 'V2', group: 'B. CHUYÊN MÔN CONTENT', text: 'Quy trình viết 1 bài review sách từ A đến Z?' },
+  q20: { round: 'V2', group: 'B. CHUYÊN MÔN CONTENT', text: 'Dùng AI (ChatGPT/Claude) trong content production thế nào? Ví dụ cụ thể.' },
+  q21: { round: 'V2', group: 'B. CHUYÊN MÔN CONTENT', text: 'Cuốn sách KD 200k - viết caption FB 100-150 chữ ngay tại chỗ.' },
+  q22: { round: 'V2', group: 'B. CHUYÊN MÔN CONTENT', text: 'Cấu trúc TikTok Reels với book content?' },
+  q23: { round: 'V2', group: 'C. CHUYÊN MÔN ADS & SỐ LIỆU', text: 'Đã từng vận hành FB Ads / Google Ads chưa? Quy mô ngân sách/tháng?' },
+  q24: { round: 'V2', group: 'C. CHUYÊN MÔN ADS & SỐ LIỆU', text: 'Giải thích: CPM, CPC, CTR, CPL, ROAS, AOV. Ví dụ DT 100tr.' },
+  q25: { round: 'V2', group: 'C. CHUYÊN MÔN ADS & SỐ LIỆU', text: 'ROAS 1.5 (mục tiêu 3.0), troubleshoot theo thứ tự nào?' },
+  q26: { round: 'V2', group: 'C. CHUYÊN MÔN ADS & SỐ LIỆU', text: 'Set-up FB Ads cho sách 200k với 30tr - tuần đầu làm gì?' },
+  q27: { round: 'V2', group: 'D. FUNNEL & PHỐI HỢP', text: 'TOFU - MOFU - BOFU là gì? Ví dụ với sách self-help.' },
+  q28: { round: 'V2', group: 'D. FUNNEL & PHỐI HỢP', text: 'Sales chốt đơn từ inbox thấp (10% vs 25%), bạn làm gì?' },
+  q29: { round: 'V2', group: 'E. TÌNH HUỐNG XỬ LÝ', text: 'Khách comment gay gắt fanpage chê sách lừa đảo. Xử lý 30 phút đầu?' },
+  q30: { round: 'V2', group: 'E. TÌNH HUỐNG XỬ LÝ', text: 'Sách mới ra mắt, 50tr ads, 30 ngày đạt 200tr DT. Lập plan 5 phút.' },
+  // VÒNG 3 - BÀI TẬP
+  'bt1-c0': { round: 'V3', group: 'BT1: Viết review sách', text: 'Hook 3 giây đầu thu hút? (Trọng số 30%)' },
+  'bt1-c1': { round: 'V3', group: 'BT1: Viết review sách', text: 'Hiểu nội dung sách qua review? (Trọng số 30%)' },
+  'bt1-c2': { round: 'V3', group: 'BT1: Viết review sách', text: 'CTA rõ ràng dẫn conversion? (Trọng số 20%)' },
+  'bt1-c3': { round: 'V3', group: 'BT1: Viết review sách', text: 'Phù hợp đặc tính platform? (Trọng số 20%)' },
+  'bt2-c0': { round: 'V3', group: 'BT2: Lập kế hoạch Marketing', text: 'Phase + Mục tiêu mỗi phase rõ? (25%)' },
+  'bt2-c1': { round: 'V3', group: 'BT2: Lập kế hoạch Marketing', text: 'Content calendar khả thi? (20%)' },
+  'bt2-c2': { round: 'V3', group: 'BT2: Lập kế hoạch Marketing', text: 'Audience targeting cụ thể? (20%)' },
+  'bt2-c3': { round: 'V3', group: 'BT2: Lập kế hoạch Marketing', text: 'Budget allocation hợp lý? (20%)' },
+  'bt2-c4': { round: 'V3', group: 'BT2: Lập kế hoạch Marketing', text: 'Forecast + Backup plan? (15%)' },
+  'bt3-c0': { round: 'V3', group: 'BT3: Phân tích số liệu', text: 'Phân tích đúng vấn đề & nguyên nhân? (35%)' },
+  'bt3-c1': { round: 'V3', group: 'BT3: Phân tích số liệu', text: 'Đề xuất hành động khả thi? (35%)' },
+  'bt3-c2': { round: 'V3', group: 'BT3: Phân tích số liệu', text: 'Forecast hợp lý? (30%)' },
+  // VÒNG 4 - GĐ
+  q31: { round: 'V4', group: 'Phỏng vấn cuối với Giám đốc', text: 'Sự nghiệp Marketing 3-5 năm tới của bạn?' },
+  q32: { round: 'V4', group: 'Phỏng vấn cuối với Giám đốc', text: 'Nếu được tuyển, đóng góp giá trị gì RIÊNG cho KITA trong 6 tháng đầu?' },
+  q33: { round: 'V4', group: 'Phỏng vấn cuối với Giám đốc', text: 'Vấn đề lớn nhất của ngành sách Việt Nam? KITA có thể giải quyết thế nào?' },
+  q34: { round: 'V4', group: 'Phỏng vấn cuối với Giám đốc', text: 'Chọn (A) Tăng DT 50% giảm chất lượng, hay (B) Giữ chất lượng tăng 20%? Tại sao?' },
+};
+
+const SCORE_LABELS = { 1: 'YẾU', 2: 'DƯỚI TB', 3: 'TRUNG BÌNH', 4: 'TỐT', 5: 'XUẤT SẮC' };
+const ROUND_LABELS = {
+  V1: { label: '🟦 VÒNG 1 - HR SÀNG LỌC', color: '#1F4E79' },
+  V2: { label: '🟪 VÒNG 2 - TPMKT CHUYÊN MÔN', color: '#97266d' },
+  V3: { label: '🟧 VÒNG 3 - BÀI TẬP THỰC TẾ', color: '#744210' },
+  V4: { label: '🟩 VÒNG 4 - PHỎNG VẤN GIÁM ĐỐC', color: '#22543d' },
+};
+
 // ============== LOGIN ==============
 const PASSWORD_HASH = 'a9c82a91311cb01ff918ca5e37029cfd5275608b3dc557f333cc30c4254ba8da';
 const AUTH_KEY = 'kita_list_auth';
@@ -493,25 +619,77 @@ function showDetail(rowNum) {
       </div>
     </div>`;
 
-  // Điểm số
+  // Điểm số + Câu hỏi đầy đủ — nhóm theo vòng
   const scoreEntries = Object.entries(scores).filter(([k,v]) => typeof v === 'number');
-  if (scoreEntries.length > 0) {
-    html += `<div class="modal-section"><h3>📊 Điểm số (${scoreEntries.length} câu)</h3><div class="scores-grid">`;
-    scoreEntries.sort(([a],[b]) => a.localeCompare(b, undefined, {numeric: true}))
-      .forEach(([qid, score]) => {
-        html += `<div class="score-pill sp-${score}"><div>${score}</div><div class="qid">${qid.toUpperCase()}</div></div>`;
-      });
-    html += `</div></div>`;
-  }
+  const noteIds = Object.keys(notes).filter(k => notes[k] && (notes[k]+'').trim());
+  const allIds = Array.from(new Set([...scoreEntries.map(([k]) => k), ...noteIds]));
 
-  // Ghi chú
-  const noteEntries = Object.entries(notes).filter(([k,v]) => v && (v + '').trim());
-  if (noteEntries.length > 0) {
-    html += `<div class="modal-section"><h3>📝 Ghi chú quan sát</h3><div class="notes-list">`;
-    noteEntries.forEach(([qid, note]) => {
-      html += `<div class="note-item"><div class="note-q">${qid.toUpperCase()}</div>${escapeHtml(note)}</div>`;
+  if (allIds.length > 0) {
+    // Nhóm theo round
+    const grouped = { V1: [], V2: [], V3: [], V4: [], OTHER: [] };
+    allIds.forEach(id => {
+      const meta = QUESTION_DATA[id];
+      const round = (meta && meta.round) || 'OTHER';
+      grouped[round].push(id);
     });
-    html += `</div></div>`;
+
+    // Sort trong mỗi nhóm
+    Object.keys(grouped).forEach(r => {
+      grouped[r].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    });
+
+    html += `<div class="modal-section"><h3>📊 Chi tiết câu hỏi & đánh giá (${allIds.length} câu)</h3>`;
+
+    ['V1', 'V2', 'V3', 'V4', 'OTHER'].forEach(round => {
+      if (grouped[round].length === 0) return;
+      const roundInfo = ROUND_LABELS[round] || { label: '🔘 KHÁC', color: '#718096' };
+      const roundScores = grouped[round].map(id => scores[id]).filter(s => typeof s === 'number');
+      const roundAvg = roundScores.length ? (roundScores.reduce((a,b) => a+b, 0) / roundScores.length).toFixed(2) : '--';
+
+      html += `<div class="round-section">
+        <div class="round-header" style="background:${roundInfo.color}">
+          <span>${roundInfo.label}</span>
+          <span class="round-stats">${grouped[round].length} câu · TB ${roundAvg}</span>
+        </div>
+        <div class="round-body">`;
+
+      // Group by sub-group
+      const byGroup = {};
+      grouped[round].forEach(id => {
+        const meta = QUESTION_DATA[id] || {};
+        const groupName = meta.group || 'Khác';
+        if (!byGroup[groupName]) byGroup[groupName] = [];
+        byGroup[groupName].push(id);
+      });
+
+      Object.entries(byGroup).forEach(([groupName, ids]) => {
+        html += `<div class="group-block"><div class="group-name">${escapeHtml(groupName)}</div>`;
+        ids.forEach(id => {
+          const meta = QUESTION_DATA[id] || {};
+          const score = scores[id];
+          const note = notes[id] || '';
+          const text = meta.text || `[ID: ${id} - không có dữ liệu câu hỏi]`;
+          const hasScore = typeof score === 'number';
+          const cardClass = hasScore ? `qcard s${score}` : 'qcard qcard-noscore';
+
+          html += `<div class="${cardClass}">
+            <div class="qcard-head">
+              <div class="qcard-text"><span class="qid">${id.toUpperCase()}.</span>${escapeHtml(text)}</div>
+              <div class="qcard-score s${hasScore ? score : 0}">
+                <div class="num">${hasScore ? score : '–'}</div>
+                <div class="lbl">${hasScore ? SCORE_LABELS[score] : 'Chưa chấm'}</div>
+              </div>
+            </div>
+            ${note ? `<div class="qcard-note"><div class="lbl">📝 Ghi chú quan sát</div>${escapeHtml(note)}</div>` : ''}
+          </div>`;
+        });
+        html += `</div>`;
+      });
+
+      html += `</div></div>`;
+    });
+
+    html += `</div>`;
   }
 
   // Q&A
