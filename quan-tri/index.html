@@ -176,13 +176,48 @@
   <div class="form-group">
     <label>Provider mặc định</label>
     <select id="cfgAiProvider" onchange="onProviderChangeAdmin()">
-      <option value="">Để rỗng — người dùng tự chọn</option>
-      <option value="openai">OpenAI (gọi từ browser)</option>
-      <option value="claude">Claude (qua Apps Script proxy) ⭐</option>
+      <option value="">Để rỗng — người dùng tự chọn từng máy</option>
+      <option value="gemini">🆓 Google Gemini (1500 free/ngày) — Khuyến nghị</option>
+      <option value="manual">📋 Manual (không cần key, copy-paste vào ChatGPT/Claude.ai)</option>
+      <option value="openai">OpenAI (cần trả phí)</option>
+      <option value="claude">Claude qua Apps Script (cần trả phí)</option>
     </select>
   </div>
 
+  <div id="geminiFields" style="display:none;">
+    <div class="alert" style="padding:10px;background:#d1fae5;border-left:4px solid #00B050;font-size:12px;color:#065f46;border-radius:6px;margin-bottom:10px;">
+      🎉 <strong>HOÀN TOÀN MIỄN PHÍ!</strong> Free 1500 requests/ngày, không cần thẻ.<br>
+      Lấy key tại: <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#00B050;font-weight:600;">aistudio.google.com/app/apikey</a>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Gemini API Key</label>
+        <input type="text" id="cfgGeminiKey" placeholder="AIza...">
+        <div class="hint">Key dạng <code>AIza...</code> lấy từ Google AI Studio</div>
+      </div>
+      <div class="form-group">
+        <label>Model</label>
+        <select id="cfgGeminiModel">
+          <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (mới nhất) ⭐</option>
+          <option value="gemini-1.5-flash">Gemini 1.5 Flash (ổn định)</option>
+          <option value="gemini-1.5-pro">Gemini 1.5 Pro (50 free/ngày)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div id="manualFields" style="display:none;">
+    <div class="alert" style="padding:10px;background:#fef3c7;border-left:4px solid #d97706;font-size:12px;color:#78350f;border-radius:6px;">
+      📋 <strong>KHÔNG CẦN KEY GÌ!</strong><br>
+      Khi user phân tích CV, app sẽ tạo prompt sẵn → user copy → paste vào ChatGPT.com / Claude.ai / Gemini web (tài khoản free) → copy kết quả về.<br>
+      Phù hợp khi: HR ít phỏng vấn, đã có sẵn tài khoản free các AI chat.
+    </div>
+  </div>
+
   <div id="openaiFields" style="display:none;">
+    <div class="alert" style="padding:10px;background:#fed7d7;border-left:4px solid #C00000;font-size:12px;color:#742a2a;border-radius:6px;margin-bottom:10px;">
+      💰 <strong>CẦN TRẢ PHÍ</strong> (~$5 free credit cho người mới — sau hết phải nạp).
+    </div>
     <div class="form-row">
       <div class="form-group">
         <label>OpenAI API Key</label>
@@ -192,7 +227,7 @@
       <div class="form-group">
         <label>Model</label>
         <select id="cfgOpenaiModel">
-          <option value="gpt-4o-mini">GPT-4o mini</option>
+          <option value="gpt-4o-mini">GPT-4o mini (rẻ)</option>
           <option value="gpt-4o">GPT-4o</option>
         </select>
       </div>
@@ -200,13 +235,15 @@
   </div>
 
   <div id="claudeFields" style="display:none;">
+    <div class="alert" style="padding:10px;background:#fed7d7;border-left:4px solid #C00000;font-size:12px;color:#742a2a;border-radius:6px;margin-bottom:10px;">
+      💰 <strong>CẦN TRẢ PHÍ</strong> + setup Apps Script. Key đặt trong Apps Script (xem /setup-database/).
+    </div>
     <div class="form-group">
       <label>Claude Model</label>
       <select id="cfgClaudeModel">
         <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (rẻ + nhanh)</option>
         <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (chất lượng cao)</option>
       </select>
-      <div class="hint">Anthropic API Key đặt trong Apps Script — không cần ở đây</div>
     </div>
   </div>
 </div>
@@ -289,31 +326,40 @@ if (sessionStorage.getItem(AUTH_KEY) === '1' || sessionStorage.getItem('kita_int
 // ============== INIT ==============
 function initApp() {
   const cfg = window.KITA_CONFIG || {};
-  // Pre-fill form từ config hiện tại
   document.getElementById('cfgCloudUrl').value = cfg.cloudUrl || '';
   document.getElementById('cfgCloudApiKey').value = cfg.cloudApiKey || '';
   document.getElementById('cfgAiProvider').value = cfg.aiProvider || '';
+  document.getElementById('cfgGeminiKey').value = cfg.geminiKey || '';
+  document.getElementById('cfgGeminiModel').value = cfg.geminiModel || 'gemini-2.0-flash-exp';
   document.getElementById('cfgOpenaiKey').value = cfg.openaiKey || '';
   document.getElementById('cfgOpenaiModel').value = cfg.openaiModel || 'gpt-4o-mini';
   document.getElementById('cfgClaudeModel').value = cfg.claudeModel || 'claude-haiku-4-5-20251001';
   onProviderChangeAdmin();
-
   renderStatus(cfg);
 }
 
 function onProviderChangeAdmin() {
   const v = document.getElementById('cfgAiProvider').value;
+  document.getElementById('geminiFields').style.display = v === 'gemini' ? 'block' : 'none';
+  document.getElementById('manualFields').style.display = v === 'manual' ? 'block' : 'none';
   document.getElementById('openaiFields').style.display = v === 'openai' ? 'block' : 'none';
   document.getElementById('claudeFields').style.display = v === 'claude' ? 'block' : 'none';
 }
 
 function renderStatus(cfg) {
+  const providerLabels = {
+    gemini: '🆓 Gemini (free)',
+    manual: '📋 Manual',
+    openai: 'OpenAI (paid)',
+    claude: 'Claude (paid)'
+  };
   const items = [
     { lbl: 'Cloud URL', val: cfg.cloudUrl, ok: !!cfg.cloudUrl },
-    { lbl: 'Cloud API Key', val: cfg.cloudApiKey ? '✓ Có' : '✗ Chưa', ok: !!cfg.cloudApiKey },
-    { lbl: 'AI Provider', val: cfg.aiProvider || '✗ Chưa', ok: !!cfg.aiProvider },
+    { lbl: 'Cloud API Key', val: cfg.cloudApiKey ? '✓ Đã set' : '✗ Chưa', ok: !!cfg.cloudApiKey },
+    { lbl: 'AI Provider', val: providerLabels[cfg.aiProvider] || cfg.aiProvider || '✗ Chưa', ok: !!cfg.aiProvider },
+    { lbl: 'Gemini Key', val: cfg.geminiKey ? '✓ Đã set' : '✗ Chưa', ok: !!cfg.geminiKey },
     { lbl: 'Phiên bản', val: cfg.configVersion || 'N/A', ok: !!cfg.configVersion },
-    { lbl: 'Cập nhật', val: cfg.updatedAt || 'N/A', ok: !!cfg.updatedAt },
+    { lbl: 'Cập nhật lần cuối', val: cfg.updatedAt || 'N/A', ok: !!cfg.updatedAt },
   ];
   document.getElementById('statusRow').innerHTML = items.map(it => `
     <div class="status-card ${it.ok ? 'green' : 'red'}">
@@ -364,10 +410,12 @@ function getFormConfig() {
     cloudUrl: document.getElementById('cfgCloudUrl').value.trim(),
     cloudApiKey: document.getElementById('cfgCloudApiKey').value.trim(),
     aiProvider: document.getElementById('cfgAiProvider').value,
+    geminiKey: document.getElementById('cfgGeminiKey').value.trim(),
+    geminiModel: document.getElementById('cfgGeminiModel').value,
     openaiKey: document.getElementById('cfgOpenaiKey').value.trim(),
     openaiModel: document.getElementById('cfgOpenaiModel').value,
     claudeModel: document.getElementById('cfgClaudeModel').value,
-    configVersion: '1.0',
+    configVersion: '1.1',
     updatedAt: new Date().toISOString().slice(0, 19).replace('T', ' ')
   };
 }
@@ -389,16 +437,18 @@ window.KITA_CONFIG = {
   // API Key bảo vệ Apps Script
   cloudApiKey: ${JSON.stringify(cfg.cloudApiKey)},
 
-  // AI Provider mặc định
+  // AI Provider mặc định: 'gemini' (free) | 'manual' (no-key) | 'openai' | 'claude' | ''
   aiProvider: ${JSON.stringify(cfg.aiProvider)},
 
-  // OpenAI key
-  openaiKey: ${JSON.stringify(cfg.openaiKey)},
+  // Google Gemini (FREE 1500/day) - lấy tại https://aistudio.google.com/app/apikey
+  geminiKey: ${JSON.stringify(cfg.geminiKey)},
+  geminiModel: ${JSON.stringify(cfg.geminiModel)},
 
-  // OpenAI model
+  // OpenAI (cần trả phí)
+  openaiKey: ${JSON.stringify(cfg.openaiKey)},
   openaiModel: ${JSON.stringify(cfg.openaiModel)},
 
-  // Claude model
+  // Claude (cần trả phí, key đặt trong Apps Script)
   claudeModel: ${JSON.stringify(cfg.claudeModel)},
 
   // Phiên bản & timestamp
