@@ -159,12 +159,12 @@
 
 const SHEET_NAME = 'PhongVan';
 const CV_SHEET_NAME = 'CVQueue';
-const API_KEY = 'KITA-2026-SECRET'; // ⚠️ Đổi key này thành chuỗi bí mật của bạn
+const API_KEY = 'KITA-MyTeam-2026'; // ⚠️ Phải khớp với cloudApiKey trong /config.js
 
 // ⚠️ Drive folder ID để lưu CV (xem bước 5 dưới)
 // Tạo 1 folder mới trên Drive → mở folder → copy ID từ URL
 // VD: drive.google.com/drive/folders/ABCxyz123 → ID là "ABCxyz123"
-const CV_DRIVE_FOLDER_ID = ''; // Ví dụ: '1ABCxyz123_FolderID'
+const CV_DRIVE_FOLDER_ID = '1lKAXidD-Vd46IO2J400ihDr40-Q5_3yr'; // KITA CV Storage folder
 
 // ============== POST: Lưu hồ sơ HOẶC phân tích CV bằng Claude ==============
 function doPost(e) {
@@ -571,7 +571,7 @@ function jsonResponse(obj) {
   </div>
   <div class="form-group">
     <label>API Key (đã set trong code)</label>
-    <input type="text" id="cfgKey" placeholder="KITA-2026-SECRET">
+    <input type="text" id="cfgKey" placeholder="KITA-MyTeam-2026">
   </div>
   <button class="btn btn-test" onclick="testConnection()">🔌 Test kết nối</button>
   <button class="btn btn-success" onclick="saveConfig()" style="margin-left: 8px;">💾 Lưu cấu hình</button>

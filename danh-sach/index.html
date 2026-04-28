@@ -127,6 +127,13 @@
   .badge-V3 { background: #fbd38d; color: #744210; }
   .badge-V4 { background: #c6f6d5; color: #22543d; }
   .badge-all { background: #e2e8f0; color: #2d3748; }
+  .badge-PENDING { background: #fef3c7; color: #78350f; }
+  .badge-POTENTIAL { background: #dbeafe; color: #1e3a8a; }
+  .badge-SCHEDULED { background: #f3e8ff; color: #581c87; }
+  .badge-TEST_SENT { background: #fce7f3; color: #831843; }
+  .badge-TEST_SUBMITTED { background: #c6f6d5; color: #22543d; }
+  .badge-REJECTED { background: #fed7d7; color: #742a2a; }
+  .badge-APPROVED { background: #c6f6d5; color: #22543d; }
   .rec-badge {
     display: inline-block; padding: 3px 10px; border-radius: 12px;
     font-size: 11px; font-weight: 700;
@@ -339,12 +346,23 @@
     <div class="search-dropdown" id="searchDropdown"></div>
   </div>
   <select id="filter-round" onchange="applyFilters()">
-    <option value="">Tất cả vòng</option>
-    <option value="V1">V1 - HR</option>
-    <option value="V2">V2 - TPMKT</option>
-    <option value="V3">V3 - Bài tập</option>
-    <option value="V4">V4 - GĐ</option>
-    <option value="all">Toàn bộ</option>
+    <option value="">Tất cả</option>
+    <optgroup label="📋 Vòng phỏng vấn">
+      <option value="V1">V1 - HR</option>
+      <option value="V2">V2 - TPMKT</option>
+      <option value="V3">V3 - Bài tập</option>
+      <option value="V4">V4 - GĐ</option>
+      <option value="all">Toàn bộ vòng PV</option>
+    </optgroup>
+    <optgroup label="📥 CV Pipeline">
+      <option value="CV">Tất cả CV</option>
+      <option value="PENDING">⏳ Chờ TPMKT</option>
+      <option value="POTENTIAL">🟡 Tiềm năng</option>
+      <option value="SCHEDULED">🟢 Đã hẹn PV</option>
+      <option value="TEST_SENT">📝 Đã gửi test</option>
+      <option value="TEST_SUBMITTED">✅ Đã nộp bài</option>
+      <option value="REJECTED">❌ Loại</option>
+    </optgroup>
   </select>
   <select id="filter-rec" onchange="applyFilters()">
     <option value="">Mọi đề xuất</option>
@@ -539,17 +557,49 @@ async function loadList() {
   document.getElementById('tbody').innerHTML = '<tr><td colspan="8" class="loading">⏳ Đang tải...</td></tr>';
 
   try {
-    const res = await fetch(`${cfg.url}?apiKey=${encodeURIComponent(cfg.apiKey)}&search=`);
-    const result = await res.json();
-    if (!result.ok) {
-      document.getElementById('tbody').innerHTML = `<tr><td colspan="8" class="empty"><div class="icon">❌</div><div class="text">Lỗi: ${result.error}</div></td></tr>`;
-      return;
-    }
-    allRows = result.data || [];
+    // Fetch song song 2 nguồn: PhongVan (interview) + CVQueue (CV pipeline)
+    const [pvRes, cvRes] = await Promise.all([
+      fetch(`${cfg.url}?apiKey=${encodeURIComponent(cfg.apiKey)}&search=`).then(r => r.json()).catch(() => ({ ok: false, data: [] })),
+      fetch(`${cfg.url}?apiKey=${encodeURIComponent(cfg.apiKey)}&action=list_cv_queue`).then(r => r.json()).catch(() => ({ ok: false, data: [] }))
+    ]);
+
+    const pvRows = (pvRes.ok ? pvRes.data : []).map(r => ({ ...r, _source: 'PV' }));
+    const cvRows = (cvRes.ok ? cvRes.data : []).map(r => ({
+      _source: 'CV',
+      _row: r._row,
+      _cvRow: r,
+      'Tên ứng viên': r['Tên'],
+      'Vị trí': r['Vị trí'],
+      'Ngày PV': r['Lịch PV'] || r['Timestamp'],
+      'HR/PV viên': r['Lead reviewer'] || r['HR upload'] || '',
+      'Vòng': r['Status'] || 'PENDING',
+      'SĐT/Email': r['SĐT/Email'],
+      'Nguồn': r['Nguồn'],
+      'Điểm TB': '-',
+      'Đề xuất': cvStatusToRec(r['Status']),
+      'Timestamp': r['Timestamp'],
+      'CV file': r['CV file']
+    }));
+
+    allRows = [...cvRows, ...pvRows];  // CV trước, PV sau
     applyFilters();
   } catch (e) {
     document.getElementById('tbody').innerHTML = `<tr><td colspan="8" class="empty"><div class="icon">⚠️</div><div class="text">Lỗi kết nối: ${e.message}</div></td></tr>`;
   }
+}
+
+// Map CV status → đề xuất label cho cột "Đề xuất"
+function cvStatusToRec(status) {
+  const map = {
+    PENDING: '⏳ CHỜ TPMKT',
+    POTENTIAL: '🟡 TIỀM NĂNG',
+    SCHEDULED: '🟢 ĐÃ HẸN PV',
+    TEST_SENT: '📝 ĐÃ GỬI TEST',
+    TEST_SUBMITTED: '✅ ĐÃ NỘP BÀI',
+    REJECTED: '❌ LOẠI',
+    APPROVED: '✅ PASS'
+  };
+  return map[status] || status || '';
 }
 
 function applyFilters() {
@@ -566,7 +616,13 @@ function applyFilters() {
       ((r['SĐT/Email'] || '') + '').toLowerCase().includes(search)
     );
   }
-  if (round) filtered = filtered.filter(r => r['Vòng'] === round);
+  if (round) {
+    if (round === 'CV') {
+      filtered = filtered.filter(r => r._source === 'CV');
+    } else {
+      filtered = filtered.filter(r => r['Vòng'] === round);
+    }
+  }
   if (rec) filtered = filtered.filter(r => ((r['Đề xuất'] || '') + '').includes(rec));
   if (from) filtered = filtered.filter(r => new Date(r['Timestamp']) >= new Date(from));
   if (to) filtered = filtered.filter(r => new Date(r['Timestamp']) <= new Date(to + 'T23:59:59'));
@@ -674,13 +730,43 @@ function renderTable(rows) {
   }
   tbody.innerHTML = rows.map(r => {
     const rec = (r['Đề xuất'] || '') + '';
-    const recClass = rec.includes('PASS') ? 'rec-pass' : rec.includes('CÂN NHẮC') ? 'rec-consider' : rec.includes('LOẠI') ? 'rec-fail' : '';
-    const rowClass = rec.includes('PASS') ? 'row-pass' : rec.includes('CÂN NHẮC') ? 'row-consider' : rec.includes('LOẠI') ? 'row-fail' : '';
+    const isCv = r._source === 'CV';
+    let recClass = '';
+    if (isCv) {
+      // CV statuses
+      const status = r['Vòng'];
+      recClass = status === 'TEST_SUBMITTED' || status === 'APPROVED' || status === 'SCHEDULED' ? 'rec-pass'
+                : status === 'POTENTIAL' || status === 'TEST_SENT' || status === 'PENDING' ? 'rec-consider'
+                : status === 'REJECTED' ? 'rec-fail' : '';
+    } else {
+      recClass = rec.includes('PASS') ? 'rec-pass' : rec.includes('CÂN NHẮC') ? 'rec-consider' : rec.includes('LOẠI') ? 'rec-fail' : '';
+    }
+    const rowClass = recClass.replace('rec-', 'row-');
     const score = parseFloat(r['Điểm TB']) || 0;
     const scoreClass = score >= 4 ? 'score-high' : score >= 3 ? 'score-mid' : 'score-low';
+
+    // Actions: khác nhau cho CV vs PV
+    let actions = '';
+    if (isCv) {
+      const cvFile = r['CV file'];
+      actions = `
+        ${cvFile ? `<a href="${cvFile}" target="_blank" class="btn btn-blue btn-sm">📄 Xem CV</a>` : '<span style="color:#a0aec0;font-size:11px;">No file</span>'}
+        <a href="/cv/" class="btn btn-green btn-sm" title="Mở /cv/ để review">✍️ Review</a>
+      `;
+    } else {
+      actions = `
+        <button class="btn btn-blue btn-sm" onclick="showDetail(${r._row})">👁️ Xem</button>
+        <button class="btn btn-green btn-sm" onclick="loadToSystem(${r._row})">📥 Tải</button>
+      `;
+    }
+
+    const sourceTag = isCv
+      ? '<span style="font-size:10px;background:#0F766E;color:white;padding:1px 6px;border-radius:8px;margin-right:4px;">CV</span>'
+      : '<span style="font-size:10px;background:#1F4E79;color:white;padding:1px 6px;border-radius:8px;margin-right:4px;">PV</span>';
+
     return `<tr class="${rowClass}">
       <td>
-        <div class="name">${escapeHtml(r['Tên ứng viên'] || '?')}</div>
+        ${sourceTag}<span class="name">${escapeHtml(r['Tên ứng viên'] || '?')}</span>
         <div class="contact">${escapeHtml(r['SĐT/Email'] || '')}</div>
       </td>
       <td>${escapeHtml(r['Vị trí'] || '-')}</td>
@@ -689,18 +775,22 @@ function renderTable(rows) {
       <td>${escapeHtml(r['HR/PV viên'] || '-')}</td>
       <td class="score-cell ${scoreClass}">${r['Điểm TB'] || '-'}</td>
       <td><span class="rec-badge ${recClass}">${rec || '-'}</span></td>
-      <td class="actions-cell">
-        <button class="btn btn-blue btn-sm" onclick="showDetail(${r._row})">👁️ Xem</button>
-        <button class="btn btn-green btn-sm" onclick="loadToSystem(${r._row})">📥 Tải</button>
-      </td>
+      <td class="actions-cell">${actions}</td>
     </tr>`;
   }).join('');
 }
 
 function updateStats(rows) {
   document.getElementById('stat-total').textContent = rows.length;
-  document.getElementById('stat-pass').textContent = rows.filter(r => ((r['Đề xuất']||'')+'').includes('PASS')).length;
-  document.getElementById('stat-consider').textContent = rows.filter(r => ((r['Đề xuất']||'')+'').includes('CÂN NHẮC')).length;
+  // PASS: hồ sơ PV pass + CV TEST_SUBMITTED/APPROVED/SCHEDULED
+  document.getElementById('stat-pass').textContent = rows.filter(r => {
+    const rec = ((r['Đề xuất']||'')+'');
+    return rec.includes('PASS') || rec.includes('ĐÃ NỘP BÀI') || rec.includes('ĐÃ HẸN PV');
+  }).length;
+  document.getElementById('stat-consider').textContent = rows.filter(r => {
+    const rec = ((r['Đề xuất']||'')+'');
+    return rec.includes('CÂN NHẮC') || rec.includes('TIỀM NĂNG') || rec.includes('CHỜ TPMKT') || rec.includes('ĐÃ GỬI TEST');
+  }).length;
   document.getElementById('stat-fail').textContent = rows.filter(r => ((r['Đề xuất']||'')+'').includes('LOẠI')).length;
 }
 
