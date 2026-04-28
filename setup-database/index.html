@@ -271,8 +271,11 @@ function uploadCV(data) {
     let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CV_SHEET_NAME);
     if (!sheet) {
       sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet(CV_SHEET_NAME);
-      sheet.appendRow(['Timestamp','Tên','SĐT/Email','Vị trí','Nguồn','CV file','HR upload','Note HR','Status','Lead reviewer','Note Lead','Lịch PV','Reviewed at']);
+      sheet.appendRow(['Timestamp','Tên','SĐT/Email','Vị trí','Nguồn','CV file','HR upload','Note HR','Status','Lead reviewer','Note Lead','Lịch PV','Reviewed at','HR Score','HR Score Detail']);
     }
+
+    // Đảm bảo có cột HR Score + HR Score Detail
+    ensureHrScoreColumns(sheet);
 
     sheet.appendRow([
       new Date(),
@@ -284,7 +287,9 @@ function uploadCV(data) {
       cand.hrUploader || 'HR',
       cand.hrNote || '',
       'PENDING',
-      '', '', '', ''
+      '', '', '', '',
+      cand.hrScore || '',
+      JSON.stringify(cand.hrScoreDetail || {})
     ]);
 
     return jsonResponse({ ok: true, row: sheet.getLastRow(), fileUrl: fileUrl });
@@ -432,6 +437,18 @@ function getTestInfo(token) {
 function ensureTestColumns(sheet) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const need = ['Test type','Test description','Test deadline','Test token','Test file','Test note','Test submitted at'];
+  let lastCol = headers.length;
+  need.forEach(h => {
+    if (headers.indexOf(h) === -1) {
+      lastCol++;
+      sheet.getRange(1, lastCol).setValue(h);
+    }
+  });
+}
+
+function ensureHrScoreColumns(sheet) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const need = ['HR Score', 'HR Score Detail'];
   let lastCol = headers.length;
   need.forEach(h => {
     if (headers.indexOf(h) === -1) {

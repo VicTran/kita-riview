@@ -103,6 +103,50 @@
   .file-info .name { font-weight: 600; color: #134E4A; font-size: 13px; }
   .file-info .meta { font-size: 11px; color: #718096; }
 
+  /* HR Scoring */
+  .hr-scoring-card {
+    background: #f0fdfa; border: 2px solid #0F766E; border-radius: 10px;
+    padding: 14px 16px; margin: 12px 0;
+  }
+  .hr-scoring-card h3 {
+    color: #0F766E; font-size: 14px; margin-bottom: 8px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .hr-scoring-card h3 .total {
+    background: #0F766E; color: white; padding: 4px 12px; border-radius: 12px;
+    font-size: 13px;
+  }
+  .hr-criteria-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .hr-criteria-table th { background: #134E4A; color: white; padding: 6px 8px; text-align: left; font-weight: 600; }
+  .hr-criteria-table td { padding: 8px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+  .hr-criteria-table .crit-name { font-weight: 600; color: #134E4A; }
+  .hr-criteria-table .crit-hint { font-size: 10px; color: #4a5568; font-style: italic; margin-top: 2px; line-height: 1.4; }
+  .hr-criteria-table .crit-weight { color: #0F766E; font-weight: 700; text-align: center; min-width: 50px; }
+  .hr-score-buttons { display: flex; gap: 3px; }
+  .hr-score-btn {
+    width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid #cbd5e0;
+    background: white; cursor: pointer; font-weight: 700; font-size: 11px;
+    color: #4a5568; transition: all 0.15s; font-family: inherit;
+  }
+  .hr-score-btn:hover { transform: scale(1.1); border-color: #0F766E; }
+  .hr-score-btn.active-1 { background: #C00000; color: white; border-color: #C00000; }
+  .hr-score-btn.active-2 { background: #f6ad55; color: white; border-color: #f6ad55; }
+  .hr-score-btn.active-3 { background: #ecc94b; color: #744210; border-color: #ecc94b; }
+  .hr-score-btn.active-4 { background: #4299e1; color: white; border-color: #4299e1; }
+  .hr-score-btn.active-5 { background: #00B050; color: white; border-color: #00B050; }
+  .hr-scoring-summary {
+    margin-top: 10px; padding: 10px; background: white; border-radius: 8px;
+    font-size: 12px; display: flex; justify-content: space-between; align-items: center;
+    border: 1.5px solid #0F766E;
+  }
+  .hr-scoring-summary .label { color: #718096; }
+  .hr-scoring-summary .score-display { font-size: 22px; font-weight: 700; color: #0F766E; }
+  .hr-scoring-summary .grade { font-size: 13px; padding: 4px 10px; border-radius: 10px; font-weight: 700; }
+  .grade-excellent { background: #c6f6d5; color: #22543d; }
+  .grade-good { background: #bee3f8; color: #2c5282; }
+  .grade-average { background: #fefcbf; color: #744210; }
+  .grade-weak { background: #fed7d7; color: #742a2a; }
+
   /* Queue cards */
   .queue-grid {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -304,6 +348,34 @@
       </div>
     </div>
 
+    <!-- HR Scoring -->
+    <div class="hr-scoring-card">
+      <h3>
+        📊 HR đánh giá nhanh CV (theo Mô tả công việc Marketing KITA)
+        <span class="total" id="hr-total-badge">0.0/5.0</span>
+      </h3>
+      <table class="hr-criteria-table">
+        <thead>
+          <tr>
+            <th style="width:50%;">Tiêu chí</th>
+            <th style="width:60px;">Trọng số</th>
+            <th>Điểm 1-5</th>
+          </tr>
+        </thead>
+        <tbody id="hr-criteria-rows"></tbody>
+      </table>
+      <div class="hr-scoring-summary">
+        <div>
+          <div class="label">Điểm trung bình có trọng số</div>
+          <div class="score-display" id="hr-weighted-score">--</div>
+        </div>
+        <div id="hr-grade" class="grade">Chưa đánh giá</div>
+      </div>
+      <p style="font-size: 11px; color: #4a5568; margin-top: 8px; font-style: italic;">
+        💡 HR đánh giá CV qua tiêu chí phù hợp JD. TPMKT sẽ thấy điểm này khi review.
+      </p>
+    </div>
+
     <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()" style="margin-top: 12px;">
       <div class="upload-icon">📄</div>
       <div class="upload-text"><strong>Bấm chọn file CV</strong> hoặc kéo thả vào đây</div>
@@ -456,6 +528,109 @@ function showSection(id) {
   if (id === 'queue' || id === 'history') loadAllCVs();
 }
 
+// ============== HR SCORING (theo JD Marketing KITA BOOKS) ==============
+const HR_CRITERIA = [
+  {
+    id: 'edu', name: 'Học vấn phù hợp', weight: 10,
+    hint: 'ĐH/CĐ Marketing/Truyền thông/Kinh doanh = 5đ. Ngành liên quan (Báo chí, Ngữ văn, Kinh tế) = 3-4đ. Ngành khác = 1-2đ.'
+  },
+  {
+    id: 'exp', name: 'Kinh nghiệm liên quan', weight: 20,
+    hint: 'Junior 1-2 năm MKT (có sách = ⭐) = 5đ. Có thực tập + project = 3-4đ. Fresher 0 KN = 2đ. Không liên quan = 1đ.'
+  },
+  {
+    id: 'content', name: 'Kỹ năng Content', weight: 15,
+    hint: 'Có portfolio FB/TikTok/blog với link thực tế = 5đ. Có liệt kê + sample = 3-4đ. Chỉ tự nhận = 2đ. Không có = 1đ.'
+  },
+  {
+    id: 'ads', name: 'Kỹ năng Ads / Số liệu', weight: 15,
+    hint: 'Đã chạy ads có ROAS/CPL/CR cụ thể = 5đ. Có học khoá + hiểu CPM/CPC = 3-4đ. Lý thuyết cơ bản = 2đ. Không = 1đ.'
+  },
+  {
+    id: 'reading', name: 'Đam mê đọc sách (KEY KITA)', weight: 15,
+    hint: 'Có kênh review sách / blog đọc / dự án sách = 5đ. CV nhắc sở thích đọc sách + ngành phù hợp = 3-4đ. Không nhắc = 1-2đ.'
+  },
+  {
+    id: 'cv-quality', name: 'Trình bày CV chuyên nghiệp', weight: 10,
+    hint: 'Structure rõ, ảnh đẹp, format Canva/AI, không lỗi chính tả = 5đ. OK = 3-4đ. Sơ sài/lỗi = 1-2đ.'
+  },
+  {
+    id: 'potential', name: 'Tiềm năng phát triển', weight: 15,
+    hint: 'Có ≥2 thứ: project cá nhân + kênh TT/IG + course online + chứng chỉ = 5đ. Có 1-2 thứ = 3-4đ. Không có = 1-2đ.'
+  }
+];
+
+const hrScores = {};
+
+function renderHrCriteria() {
+  const tbody = document.getElementById('hr-criteria-rows');
+  if (!tbody) return;
+  tbody.innerHTML = HR_CRITERIA.map(c => {
+    let btns = '';
+    for (let i = 1; i <= 5; i++) {
+      const active = hrScores[c.id] === i ? `active-${i}` : '';
+      btns += `<button type="button" class="hr-score-btn ${active}" onclick="setHrScore('${c.id}', ${i})">${i}</button>`;
+    }
+    return `<tr>
+      <td>
+        <div class="crit-name">${c.name}</div>
+        <div class="crit-hint">${c.hint}</div>
+      </td>
+      <td class="crit-weight">${c.weight}%</td>
+      <td><div class="hr-score-buttons">${btns}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+function setHrScore(id, score) {
+  hrScores[id] = score;
+  renderHrCriteria();
+  updateHrTotal();
+}
+
+function calcHrTotal() {
+  let total = 0;
+  let totalWeight = 0;
+  HR_CRITERIA.forEach(c => {
+    if (hrScores[c.id]) {
+      total += hrScores[c.id] * c.weight;
+      totalWeight += c.weight;
+    }
+  });
+  if (totalWeight === 0) return null;
+  // Average score (1-5 scale) weighted
+  return total / totalWeight;
+}
+
+function updateHrTotal() {
+  const score = calcHrTotal();
+  const totalEl = document.getElementById('hr-total-badge');
+  const displayEl = document.getElementById('hr-weighted-score');
+  const gradeEl = document.getElementById('hr-grade');
+  if (score === null) {
+    totalEl.textContent = '0.0/5.0';
+    displayEl.textContent = '--';
+    gradeEl.textContent = 'Chưa đánh giá';
+    gradeEl.className = 'grade';
+    return;
+  }
+  const fixed = score.toFixed(2);
+  totalEl.textContent = `${fixed}/5.0`;
+  displayEl.textContent = fixed;
+  let grade, cls;
+  if (score >= 4.0) { grade = '🟢 XUẤT SẮC - Đề xuất PV ngay'; cls = 'grade-excellent'; }
+  else if (score >= 3.0) { grade = '🔵 KHÁ - Nên PV'; cls = 'grade-good'; }
+  else if (score >= 2.0) { grade = '🟡 TB - Cân nhắc'; cls = 'grade-average'; }
+  else { grade = '🔴 YẾU - Không phù hợp'; cls = 'grade-weak'; }
+  gradeEl.textContent = grade;
+  gradeEl.className = 'grade ' + cls;
+}
+
+// Render once at page load
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(renderHrCriteria, 100);
+});
+
 // ============== FILE UPLOAD ==============
 let currentFile = null;
 const uploadArea = document.getElementById('uploadArea');
@@ -514,12 +689,17 @@ async function submitCV() {
 
   try {
     const fileBase64 = await fileToBase64(currentFile);
+    const hrScoreTotal = calcHrTotal();
     const res = await fetch(cfg.url, {
       method: 'POST',
       body: JSON.stringify({
         action: 'upload_cv',
         apiKey: cfg.apiKey,
-        candidate: { name, contact, position, source, hrNote, hrUploader: 'HR' },
+        candidate: {
+          name, contact, position, source, hrNote, hrUploader: 'HR',
+          hrScore: hrScoreTotal !== null ? hrScoreTotal.toFixed(2) : '',
+          hrScoreDetail: { ...hrScores }
+        },
         fileName: currentFile.name,
         fileMimeType: currentFile.type || 'application/pdf',
         fileBase64: fileBase64
@@ -559,6 +739,9 @@ async function submitCV() {
     document.getElementById('newPosition').value = '';
     document.getElementById('newSource').value = '';
     document.getElementById('newHrNote').value = '';
+    Object.keys(hrScores).forEach(k => delete hrScores[k]);
+    renderHrCriteria();
+    updateHrTotal();
     clearFile();
   } catch(e) {
     alert('❌ Lỗi: ' + e.message);
@@ -720,6 +903,51 @@ function formatDate(d) {
   return date.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
+// Render HR scoring trong review modal (TPMKT xem)
+function renderHrScoreReview(c) {
+  const totalScore = c['HR Score'];
+  let detail = {};
+  try { detail = JSON.parse(c['HR Score Detail'] || '{}'); } catch(e) {}
+  const hasScore = totalScore || Object.keys(detail).length > 0;
+  if (!hasScore) return '';
+
+  let scoreClass = 'grade-weak';
+  let label = 'YẾU';
+  const numScore = parseFloat(totalScore) || 0;
+  if (numScore >= 4.0) { scoreClass = 'grade-excellent'; label = 'XUẤT SẮC'; }
+  else if (numScore >= 3.0) { scoreClass = 'grade-good'; label = 'KHÁ'; }
+  else if (numScore >= 2.0) { scoreClass = 'grade-average'; label = 'TB'; }
+
+  let detailHtml = '';
+  if (Object.keys(detail).length > 0) {
+    const critMap = {};
+    HR_CRITERIA.forEach(cr => critMap[cr.id] = cr);
+    detailHtml = '<div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">';
+    Object.entries(detail).forEach(([id, score]) => {
+      const cr = critMap[id];
+      if (!cr) return;
+      const sb = score === 5 ? '#00B050' : score === 4 ? '#4299e1' : score === 3 ? '#ecc94b' : score === 2 ? '#f6ad55' : '#C00000';
+      detailHtml += `<div style="padding:6px 10px;background:#f7fafc;border-radius:6px;font-size:11px;display:flex;justify-content:space-between;align-items:center;">
+        <span>${escHtml(cr.name)}</span>
+        <span style="background:${sb};color:white;padding:2px 8px;border-radius:8px;font-weight:700;">${score}/5</span>
+      </div>`;
+    });
+    detailHtml += '</div>';
+  }
+
+  return `<div class="modal-section">
+    <h4 style="color:#0F766E;margin-bottom:10px;">📊 HR đánh giá CV</h4>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f0fdfa;border:1.5px solid #0F766E;border-radius:8px;">
+      <div>
+        <div style="font-size:11px;color:#718096;text-transform:uppercase;">Điểm HR (theo JD)</div>
+        <div style="font-size:24px;font-weight:700;color:#0F766E;">${totalScore || '?'}/5.0</div>
+      </div>
+      <div class="grade ${scoreClass}" style="padding:6px 12px;border-radius:10px;font-size:13px;font-weight:700;">${label}</div>
+    </div>
+    ${detailHtml}
+  </div>`;
+}
+
 // ============== REVIEW MODAL ==============
 function openReview(rowNum) {
   const c = allCVs.find(x => x._row === rowNum);
@@ -739,6 +967,8 @@ function openReview(rowNum) {
       </div>
       ${c['Note HR'] ? `<div class="info-item" style="margin-top:8px;"><div class="lbl">Note HR</div><div class="val">${escHtml(c['Note HR'])}</div></div>` : ''}
     </div>
+
+    ${renderHrScoreReview(c)}
 
     <div class="modal-section">
       <div style="display:flex;gap:8px;">
