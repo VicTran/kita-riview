@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bài kiểm tra - KITA BOOKS</title>
+<script src="/config.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf3 100%);
+    color: #2d3748; line-height: 1.6; min-height: 100vh; padding: 20px;
+  }
+  .container { max-width: 800px; margin: 0 auto; }
+  header {
+    background: linear-gradient(135deg, #C00000 0%, #8B0000 100%);
+    color: white; padding: 28px 32px; border-radius: 14px;
+    margin-bottom: 18px; box-shadow: 0 4px 20px rgba(192,0,0,0.25); text-align: center;
+  }
+  header .logo { font-size: 38px; margin-bottom: 6px; }
+  header h1 { font-size: 22px; margin-bottom: 4px; }
+  header .sub { opacity: 0.95; font-size: 13px; }
+
+  .card {
+    background: white; padding: 24px 28px; border-radius: 14px;
+    margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .card h2 {
+    color: #C00000; font-size: 17px; margin-bottom: 12px;
+    border-bottom: 2px solid #C00000; padding-bottom: 6px;
+  }
+
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .info-item { padding: 10px 12px; background: #f7fafc; border-radius: 8px; font-size: 13px; }
+  .info-item .lbl { font-size: 10px; color: #718096; text-transform: uppercase; }
+  .info-item .val { font-weight: 700; color: #2d3748; margin-top: 3px; }
+
+  .description-box {
+    background: #fffbeb; border-left: 4px solid #d97706;
+    padding: 16px; border-radius: 8px; margin: 12px 0;
+    font-size: 14px; line-height: 1.7; white-space: pre-wrap; color: #78350f;
+  }
+
+  .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+  .form-group label { font-size: 13px; font-weight: 600; color: #4a5568; }
+  .form-group label .req { color: #C00000; }
+  .form-group input, .form-group textarea {
+    padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px;
+    font-size: 13px; font-family: inherit;
+  }
+  .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #C00000; }
+  .form-group textarea { min-height: 120px; resize: vertical; }
+  .hint { font-size: 11px; color: #718096; font-style: italic; }
+
+  .upload-area {
+    border: 3px dashed #cbd5e0; border-radius: 12px;
+    padding: 32px 20px; text-align: center;
+    cursor: pointer; background: #f7fafc; transition: all 0.2s;
+  }
+  .upload-area:hover, .upload-area.dragover { border-color: #C00000; background: #fff5f5; }
+  .upload-icon { font-size: 40px; margin-bottom: 6px; }
+  #fileInput { display: none; }
+  .file-info {
+    background: #fef3c7; padding: 10px 14px; border-radius: 8px;
+    margin-top: 10px; display: none; align-items: center; gap: 10px;
+  }
+  .file-info.show { display: flex; }
+  .file-info .name { font-weight: 600; color: #78350f; font-size: 13px; }
+
+  .btn {
+    padding: 14px 24px; border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    font-family: inherit; transition: transform 0.15s;
+  }
+  .btn-submit {
+    width: 100%; background: linear-gradient(135deg, #C00000, #8B0000);
+    color: white; padding: 16px;
+  }
+  .btn-submit:hover:not(:disabled) { transform: translateY(-2px); }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .alert {
+    padding: 12px 16px; border-radius: 8px; font-size: 13px; border-left: 4px solid;
+    margin-bottom: 12px;
+  }
+  .alert-warn { background: #fef3c7; color: #78350f; border-color: #d97706; }
+  .alert-success { background: #c6f6d5; color: #22543d; border-color: #00B050; }
+  .alert-error { background: #fed7d7; color: #742a2a; border-color: #C00000; }
+  .alert-info { background: #DDEBF7; color: #1a365d; border-color: #1F4E79; }
+
+  .deadline-warn { color: #C00000; font-weight: 700; }
+
+  /* Loading & success states */
+  .loading-screen { text-align: center; padding: 80px 20px; }
+  .loading-screen .spinner {
+    display: inline-block; width: 40px; height: 40px;
+    border: 4px solid #fee; border-top-color: #C00000;
+    border-radius: 50%; animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .success-screen { text-align: center; padding: 40px 20px; }
+  .success-screen .check { font-size: 64px; color: #00B050; margin-bottom: 12px; }
+  .success-screen h2 { color: #00B050; margin-bottom: 8px; border: none; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<header>
+  <div class="logo">📋</div>
+  <h1>BÀI KIỂM TRA NĂNG LỰC</h1>
+  <div class="sub">KITA BOOKS - Tuyển dụng Marketing</div>
+</header>
+
+<div id="mainContent">
+  <div class="loading-screen">
+    <div class="spinner"></div>
+    <div style="margin-top: 12px; font-size: 14px; color: #4a5568;">Đang tải bài kiểm tra...</div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const token = params.get('token');
+
+const main = document.getElementById('mainContent');
+const cfg = window.KITA_CONFIG || {};
+
+if (!token) {
+  main.innerHTML = `<div class="card">
+    <div class="alert alert-error">
+      ⚠️ <strong>Link không hợp lệ.</strong><br>
+      Vui lòng kiểm tra lại link bài kiểm tra mà HR đã gửi cho bạn.
+    </div>
+  </div>`;
+} else if (!cfg.cloudUrl || !cfg.cloudApiKey) {
+  main.innerHTML = `<div class="card">
+    <div class="alert alert-error">
+      ⚠️ Hệ thống chưa được cấu hình. Vui lòng liên hệ HR để được hỗ trợ.
+    </div>
+  </div>`;
+} else {
+  loadTest();
+}
+
+let testInfo = null;
+
+async function loadTest() {
+  try {
+    const url = `${cfg.cloudUrl}?apiKey=${encodeURIComponent(cfg.cloudApiKey)}&action=get_test_info&token=${encodeURIComponent(token)}`;
+    const res = await fetch(url);
+    const result = await res.json();
+
+    if (!result.ok) {
+      main.innerHTML = `<div class="card">
+        <div class="alert alert-error">⚠️ <strong>Lỗi:</strong> ${escHtml(result.error || 'Token không hợp lệ')}</div>
+      </div>`;
+      return;
+    }
+
+    testInfo = result.data;
+    if (testInfo['Status'] === 'TEST_SUBMITTED') {
+      main.innerHTML = `<div class="card">
+        <div class="success-screen">
+          <div class="check">✓</div>
+          <h2>BẠN ĐÃ NỘP BÀI</h2>
+          <p style="color:#4a5568;">Bài làm của bạn đã được gửi đến HR KITA BOOKS.<br>Chúng tôi sẽ liên hệ lại trong thời gian sớm nhất.</p>
+          ${testInfo['Test submitted at'] ? `<p style="margin-top:14px;font-size:12px;color:#718096;">Đã nộp lúc: ${formatDate(testInfo['Test submitted at'])}</p>` : ''}
+        </div>
+      </div>`;
+      return;
+    }
+
+    renderForm();
+  } catch(e) {
+    main.innerHTML = `<div class="card"><div class="alert alert-error">Lỗi kết nối: ${escHtml(e.message)}</div></div>`;
+  }
+}
+
+function renderForm() {
+  const t = testInfo;
+  const deadline = t['Test deadline'] ? new Date(t['Test deadline']) : null;
+  const overdue = deadline && Date.now() > deadline.getTime();
+
+  main.innerHTML = `
+    <div class="card">
+      <h2>👋 Xin chào ${escHtml(t['Tên'] || 'bạn')}!</h2>
+      <div class="alert alert-info">
+        Đây là bài kiểm tra năng lực cho vị trí <strong>${escHtml(t['Vị trí'] || 'Marketing')}</strong> tại KITA BOOKS.
+        Vui lòng đọc kỹ đề bài và nộp bài làm trước deadline.
+      </div>
+
+      <div class="info-grid">
+        <div class="info-item"><div class="lbl">Vị trí</div><div class="val">${escHtml(t['Vị trí'] || '-')}</div></div>
+        <div class="info-item"><div class="lbl">Loại bài</div><div class="val">${escHtml(t['Test type'] || '-')}</div></div>
+        <div class="info-item"><div class="lbl">⏰ Deadline</div><div class="val ${overdue ? 'deadline-warn' : ''}">${escHtml(t['Test deadline'] || '-')} ${overdue ? '(QUÁ HẠN)' : ''}</div></div>
+        <div class="info-item"><div class="lbl">Trạng thái</div><div class="val">📝 Chờ nộp</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📋 Đề bài</h2>
+      <div class="description-box">${escHtml(t['Test description'] || 'Không có đề bài')}</div>
+    </div>
+
+    <div class="card">
+      <h2>📤 Nộp bài làm</h2>
+
+      <div class="form-group">
+        <label>File bài làm (PDF/DOCX/PPT/Image, tối đa 15MB) <span class="req">*</span></label>
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+          <div class="upload-icon">📄</div>
+          <div><strong>Bấm để chọn file</strong> hoặc kéo thả vào đây</div>
+          <div class="hint">Có thể nộp file Word, PDF, PowerPoint, Excel hoặc ảnh</div>
+          <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,image/*" onchange="handleFile(this.files[0])">
+        </div>
+        <div class="file-info" id="fileInfo">
+          <div style="font-size:24px;">📄</div>
+          <div style="flex:1;">
+            <div class="name" id="fileName">-</div>
+            <div style="font-size:11px;color:#718096;" id="fileMeta">-</div>
+          </div>
+          <button class="btn" style="background:#718096;color:white;padding:6px 10px;font-size:11px;" onclick="clearFile()">Xoá</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Ghi chú thêm (tuỳ chọn)</label>
+        <textarea id="submitNote" placeholder="Vd: Nguồn tham khảo, công cụ đã dùng, tóm tắt cách tiếp cận..."></textarea>
+      </div>
+
+      ${overdue ? `<div class="alert alert-warn">⚠️ Bài đã <strong>quá hạn</strong> nộp. HR có thể từ chối nhận. Bạn vẫn có thể nộp nhưng kèm lời giải thích.</div>` : ''}
+
+      <button class="btn btn-submit" id="submitBtn" onclick="submitTest()">📤 NỘP BÀI</button>
+    </div>
+
+    <div class="card">
+      <p style="text-align:center;font-size:12px;color:#718096;">
+        🔒 Bài làm chỉ được gửi đến HR KITA BOOKS, không chia sẻ với bên thứ ba.<br>
+        Hỗ trợ: Liên hệ HR đã gửi link cho bạn.
+      </p>
+    </div>
+  `;
+
+  // Setup drag-drop
+  const uploadArea = document.getElementById('uploadArea');
+  ['dragover','dragenter'].forEach(ev => uploadArea.addEventListener(ev, e => { e.preventDefault(); uploadArea.classList.add('dragover'); }));
+  ['dragleave','drop'].forEach(ev => uploadArea.addEventListener(ev, e => { e.preventDefault(); uploadArea.classList.remove('dragover'); }));
+  uploadArea.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+}
+
+let currentFile = null;
+function handleFile(file) {
+  if (!file) return;
+  if (file.size > 15 * 1024 * 1024) { alert('File quá lớn (max 15MB)'); return; }
+  currentFile = file;
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileMeta').textContent = `${(file.size/1024).toFixed(1)} KB · ${file.type || 'Unknown'}`;
+  document.getElementById('fileInfo').classList.add('show');
+}
+function clearFile() {
+  currentFile = null;
+  document.getElementById('fileInput').value = '';
+  document.getElementById('fileInfo').classList.remove('show');
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result.split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+async function submitTest() {
+  if (!currentFile) { alert('⚠️ Chọn file bài làm trước'); return; }
+
+  const note = document.getElementById('submitNote').value.trim();
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang upload bài...';
+
+  try {
+    const fileBase64 = await fileToBase64(currentFile);
+    const res = await fetch(cfg.cloudUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'submit_test',
+        apiKey: cfg.cloudApiKey,
+        token: token,
+        note: note,
+        fileName: currentFile.name,
+        fileMimeType: currentFile.type || 'application/octet-stream',
+        fileBase64: fileBase64
+      })
+    });
+    const result = await res.json();
+    if (!result.ok) {
+      alert('❌ Lỗi: ' + (result.error || '?'));
+      btn.disabled = false;
+      btn.textContent = '📤 NỘP BÀI';
+      return;
+    }
+    main.innerHTML = `<div class="card">
+      <div class="success-screen">
+        <div class="check">🎉</div>
+        <h2>NỘP BÀI THÀNH CÔNG!</h2>
+        <p style="color:#4a5568;font-size:15px;margin-top:8px;">Cảm ơn ${escHtml(testInfo['Tên'] || 'bạn')}!</p>
+        <p style="color:#4a5568;margin-top:12px;">Bài làm của bạn đã được gửi đến HR KITA BOOKS.<br>Chúng tôi sẽ review và phản hồi qua email/SĐT trong vòng 3-5 ngày làm việc.</p>
+        <p style="margin-top:18px;font-size:12px;color:#718096;">Đã nộp lúc: ${new Date().toLocaleString('vi-VN')}</p>
+      </div>
+    </div>`;
+  } catch(e) {
+    alert('❌ Lỗi: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '📤 NỘP BÀI';
+  }
+}
+
+function escHtml(s) {
+  return (s + '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function formatDate(d) {
+  if (!d) return '-';
+  const date = new Date(d);
+  if (isNaN(date)) return d;
+  return date.toLocaleString('vi-VN');
+}
+</script>
+</body>
+</html>

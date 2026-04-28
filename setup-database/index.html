@@ -179,9 +179,19 @@ function doPost(e) {
       return uploadCV(data);
     }
 
-    // Action: Lead review CV (approve/reject)
+    // Action: Lead review CV (approve/reject/potential)
     if (data.action === 'review_cv') {
       return reviewCV(data);
+    }
+
+    // Action: Gửi bài test (sau PV V1)
+    if (data.action === 'send_test') {
+      return sendTest(data);
+    }
+
+    // Action: Ứng viên nộp bài test (PUBLIC - không cần API key check ở đây vì token là auth)
+    if (data.action === 'submit_test') {
+      return submitTest(data);
     }
 
     // Action mặc định: lưu hồ sơ vào sheet
@@ -298,7 +308,7 @@ function listCVQueue() {
   }
 }
 
-// ============== REVIEW CV (Lead approve/reject) ==============
+// ============== REVIEW CV (TPMKT: REJECTED/POTENTIAL/SCHEDULED) ==============
 function reviewCV(data) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CV_SHEET_NAME);
@@ -306,17 +316,130 @@ function reviewCV(data) {
     const row = parseInt(data.row);
     if (!row || row < 2) return jsonResponse({ ok: false, error: 'Row không hợp lệ' });
 
-    // Cấu trúc: Status (col 9), Lead reviewer (10), Note Lead (11), Lịch PV (12), Reviewed at (13)
     sheet.getRange(row, 9).setValue(data.decision);
     sheet.getRange(row, 10).setValue(data.leadName || '');
     sheet.getRange(row, 11).setValue(data.leadNote || '');
-    sheet.getRange(row, 12).setValue(data.interviewDate || '');
+    if (data.interviewDate) sheet.getRange(row, 12).setValue(data.interviewDate);
     sheet.getRange(row, 13).setValue(new Date());
 
     return jsonResponse({ ok: true, row: row });
   } catch (err) {
     return jsonResponse({ ok: false, error: err.message });
   }
+}
+
+// ============== SEND TEST (Tạo bài test + token unique) ==============
+function sendTest(data) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CV_SHEET_NAME);
+    if (!sheet) return jsonResponse({ ok: false, error: 'Không tìm thấy sheet CVQueue' });
+    const row = parseInt(data.row);
+
+    // Đảm bảo có đủ cột cho test (cột 14-19): Test type, Test description, Test deadline, Test token, Test file, Test note, Test submitted at
+    ensureTestColumns(sheet);
+
+    // Sinh token unique
+    const token = Utilities.getUuid().replace(/-/g, '').slice(0, 24);
+
+    sheet.getRange(row, 9).setValue('TEST_SENT');
+    sheet.getRange(row, 14).setValue(data.testType || '');
+    sheet.getRange(row, 15).setValue(data.testDescription || '');
+    sheet.getRange(row, 16).setValue(data.testDeadline || '');
+    sheet.getRange(row, 17).setValue(token);
+
+    return jsonResponse({ ok: true, row: row, token: token });
+  } catch (err) {
+    return jsonResponse({ ok: false, error: err.message });
+  }
+}
+
+// ============== SUBMIT TEST (Ứng viên nộp bài qua /bai-test/?token=XYZ) ==============
+function submitTest(data) {
+  try {
+    if (!CV_DRIVE_FOLDER_ID) {
+      return jsonResponse({ ok: false, error: 'Drive folder chưa cấu hình' });
+    }
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CV_SHEET_NAME);
+    if (!sheet) return jsonResponse({ ok: false, error: 'Không tìm thấy CVQueue' });
+
+    // Tìm row theo token
+    const row = findRowByToken(sheet, data.token);
+    if (!row) return jsonResponse({ ok: false, error: 'Token không hợp lệ' });
+
+    // Lưu file lên Drive
+    const folder = DriveApp.getFolderById(CV_DRIVE_FOLDER_ID);
+    const bytes = Utilities.base64Decode(data.fileBase64);
+    const blob = Utilities.newBlob(bytes, data.fileMimeType, data.fileName);
+    const candName = sheet.getRange(row, 2).getValue() || 'unknown';
+    const safeName = (candName + '').replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
+    const fileFinal = 'BaiTest_' + safeName + '_' + new Date().toISOString().slice(0,10) + '_' + data.fileName;
+    const file = folder.createFile(blob).setName(fileFinal);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+    sheet.getRange(row, 9).setValue('TEST_SUBMITTED');
+    sheet.getRange(row, 18).setValue(file.getUrl());
+    sheet.getRange(row, 19).setValue(data.note || '');
+    sheet.getRange(row, 20).setValue(new Date());
+
+    return jsonResponse({ ok: true, fileUrl: file.getUrl() });
+  } catch (err) {
+    return jsonResponse({ ok: false, error: err.message });
+  }
+}
+
+// ============== GET TEST INFO (cho ứng viên xem bài) ==============
+function getTestInfo(token) {
+  try {
+    if (!token) return jsonResponse({ ok: false, error: 'Thiếu token' });
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CV_SHEET_NAME);
+    if (!sheet) return jsonResponse({ ok: false, error: 'Không tìm thấy CVQueue' });
+    const row = findRowByToken(sheet, token);
+    if (!row) return jsonResponse({ ok: false, error: 'Token không hợp lệ hoặc đã bị xoá' });
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const rowData = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const obj = {};
+    headers.forEach((h, i) => {
+      obj[h] = rowData[i] instanceof Date ? rowData[i].toISOString() : rowData[i];
+    });
+
+    // Chỉ trả các field cần thiết cho ứng viên (KHÔNG trả Note Lead, Lead reviewer)
+    const safe = {
+      'Tên': obj['Tên'],
+      'Vị trí': obj['Vị trí'],
+      'Status': obj['Status'],
+      'Test type': obj['Test type'],
+      'Test description': obj['Test description'],
+      'Test deadline': obj['Test deadline'],
+      'Test submitted at': obj['Test submitted at']
+    };
+    return jsonResponse({ ok: true, data: safe });
+  } catch (err) {
+    return jsonResponse({ ok: false, error: err.message });
+  }
+}
+
+function ensureTestColumns(sheet) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const need = ['Test type','Test description','Test deadline','Test token','Test file','Test note','Test submitted at'];
+  let lastCol = headers.length;
+  need.forEach(h => {
+    if (headers.indexOf(h) === -1) {
+      lastCol++;
+      sheet.getRange(1, lastCol).setValue(h);
+    }
+  });
+}
+
+function findRowByToken(sheet, token) {
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const tokenCol = headers.indexOf('Test token');
+  if (tokenCol === -1) return 0;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][tokenCol] === token) return i + 1;
+  }
+  return 0;
 }
 
 // ============== GET: Tải danh sách hồ sơ HOẶC CV queue ==============
@@ -329,6 +452,11 @@ function doGet(e) {
     // Action: list_cv_queue
     if (e.parameter.action === 'list_cv_queue') {
       return listCVQueue();
+    }
+
+    // Action: get_test_info (cho trang public /bai-test/?token=XYZ)
+    if (e.parameter.action === 'get_test_info') {
+      return getTestInfo(e.parameter.token);
     }
 
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);

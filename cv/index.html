@@ -115,6 +115,10 @@
   }
   .queue-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
   .queue-card.pending { border-color: #d97706; }
+  .queue-card.potential { border-color: #4299e1; }
+  .queue-card.scheduled { border-color: #9333ea; }
+  .queue-card.test_sent { border-color: #ec4899; }
+  .queue-card.test_submitted { border-color: #00B050; }
   .queue-card.approved { border-color: #00B050; }
   .queue-card.rejected { border-color: #C00000; }
   .queue-card .name { font-weight: 700; color: #134E4A; font-size: 15px; margin-bottom: 4px; }
@@ -130,6 +134,10 @@
     font-size: 11px; font-weight: 700;
   }
   .status-pending { background: #fef3c7; color: #78350f; }
+  .status-potential { background: #dbeafe; color: #1e3a8a; }
+  .status-scheduled { background: #f3e8ff; color: #581c87; }
+  .status-test_sent { background: #fce7f3; color: #831843; }
+  .status-test_submitted { background: #c6f6d5; color: #22543d; }
   .status-approved { background: #c6f6d5; color: #22543d; }
   .status-rejected { background: #fed7d7; color: #742a2a; }
 
@@ -236,14 +244,20 @@
 
 <div class="stats">
   <div class="stat-card total"><div class="label">Tổng CV</div><div class="value" id="stat-total" style="color:#0F766E;">--</div></div>
-  <div class="stat-card pending"><div class="label">⏳ Chờ duyệt</div><div class="value" id="stat-pending" style="color:#d97706;">--</div></div>
-  <div class="stat-card approved"><div class="label">✅ Hẹn PV</div><div class="value" id="stat-approved" style="color:#00B050;">--</div></div>
+  <div class="stat-card pending"><div class="label">⏳ Chờ TPMKT</div><div class="value" id="stat-pending" style="color:#d97706;">--</div></div>
+  <div class="stat-card" style="border-left-color:#4299e1;"><div class="label">🟡 Tiềm năng</div><div class="value" id="stat-potential" style="color:#4299e1;">--</div></div>
+  <div class="stat-card" style="border-left-color:#9333ea;"><div class="label">🟢 Đã hẹn PV</div><div class="value" id="stat-scheduled" style="color:#9333ea;">--</div></div>
+  <div class="stat-card" style="border-left-color:#ec4899;"><div class="label">📝 Đã gửi test</div><div class="value" id="stat-test-sent" style="color:#ec4899;">--</div></div>
+  <div class="stat-card approved"><div class="label">✅ Đã nộp bài</div><div class="value" id="stat-test-submitted" style="color:#00B050;">--</div></div>
   <div class="stat-card rejected"><div class="label">❌ Loại</div><div class="value" id="stat-rejected" style="color:#C00000;">--</div></div>
 </div>
 
 <nav class="tabs">
-  <button class="tab active" data-section="upload" onclick="showSection('upload')">📤 Upload CV mới</button>
-  <button class="tab" data-section="queue" onclick="showSection('queue')">⏳ Chờ duyệt<span class="tab-badge" id="badge-queue">0</span></button>
+  <button class="tab active" data-section="upload" onclick="showSection('upload')">📤 Upload CV</button>
+  <button class="tab" data-section="queue" onclick="showSection('queue')">⏳ Chờ TPMKT<span class="tab-badge" id="badge-queue">0</span></button>
+  <button class="tab" data-section="potential" onclick="showSection('potential')">🟡 Tiềm năng<span class="tab-badge" id="badge-potential">0</span></button>
+  <button class="tab" data-section="scheduled" onclick="showSection('scheduled')">🟢 Đã hẹn PV<span class="tab-badge" id="badge-scheduled">0</span></button>
+  <button class="tab" data-section="tests" onclick="showSection('tests')">📝 Bài test<span class="tab-badge" id="badge-tests">0</span></button>
   <button class="tab" data-section="history" onclick="showSection('history')">📚 Lịch sử<span class="tab-badge" id="badge-history">0</span></button>
 </nav>
 
@@ -321,6 +335,39 @@
     <div class="queue-grid" id="queueList">
       <div class="loading">⏳ Đang tải...</div>
     </div>
+  </div>
+</section>
+
+<!-- TAB: POTENTIAL -->
+<section class="section" id="section-potential">
+  <div class="card">
+    <h2>🟡 Ứng viên Tiềm năng (chưa hẹn PV)</h2>
+    <div class="alert alert-info">
+      💡 TPMKT đã đánh giá tiềm năng nhưng chưa hẹn PV. Có thể chuyển thành "Hẹn PV" hoặc "Loại" sau.
+    </div>
+    <div class="queue-grid" id="potentialList"><div class="loading">⏳ Đang tải...</div></div>
+  </div>
+</section>
+
+<!-- TAB: SCHEDULED -->
+<section class="section" id="section-scheduled">
+  <div class="card">
+    <h2>🟢 Đã hẹn phỏng vấn V1</h2>
+    <div class="alert alert-info">
+      💡 Sau khi HR phỏng vấn xong V1: bấm <strong>📝 Gửi bài test</strong> để gửi link cho ứng viên, hoặc <strong>❌ Loại</strong>.
+    </div>
+    <div class="queue-grid" id="scheduledList"><div class="loading">⏳ Đang tải...</div></div>
+  </div>
+</section>
+
+<!-- TAB: TESTS -->
+<section class="section" id="section-tests">
+  <div class="card">
+    <h2>📝 Bài test - Đã gửi & Đã nộp</h2>
+    <div class="alert alert-warn">
+      💡 HR copy link bài test → gửi cho ứng viên qua Zalo/Email. Ứng viên mở link, nộp bài. Sau khi nộp, status đổi sang "Đã nộp bài".
+    </div>
+    <div class="queue-grid" id="testsList"><div class="loading">⏳ Đang tải...</div></div>
   </div>
 </section>
 
@@ -513,6 +560,9 @@ async function loadAllCVs() {
     }
     allCVs = result.data || [];
     renderQueue();
+    renderPotential();
+    renderScheduled();
+    renderTests();
     renderHistory();
     updateStats();
   } catch(e) {
@@ -520,65 +570,116 @@ async function loadAllCVs() {
   }
 }
 
+function statusFilter(s) {
+  return allCVs.filter(c => c['Status'] === s);
+}
+
 function updateStats() {
   const total = allCVs.length;
-  const pending = allCVs.filter(c => c['Status'] === 'PENDING').length;
-  const approved = allCVs.filter(c => c['Status'] === 'APPROVED').length;
-  const rejected = allCVs.filter(c => c['Status'] === 'REJECTED').length;
+  const pending = statusFilter('PENDING').length;
+  const potential = statusFilter('POTENTIAL').length;
+  const scheduled = statusFilter('SCHEDULED').length;
+  const testSent = statusFilter('TEST_SENT').length;
+  const testSubmitted = statusFilter('TEST_SUBMITTED').length;
+  const rejected = statusFilter('REJECTED').length;
+
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-pending').textContent = pending;
-  document.getElementById('stat-approved').textContent = approved;
+  document.getElementById('stat-potential').textContent = potential;
+  document.getElementById('stat-scheduled').textContent = scheduled;
+  document.getElementById('stat-test-sent').textContent = testSent;
+  document.getElementById('stat-test-submitted').textContent = testSubmitted;
   document.getElementById('stat-rejected').textContent = rejected;
+
   document.getElementById('badge-queue').textContent = pending;
-  document.getElementById('badge-history').textContent = approved + rejected;
+  document.getElementById('badge-potential').textContent = potential;
+  document.getElementById('badge-scheduled').textContent = scheduled;
+  document.getElementById('badge-tests').textContent = testSent + testSubmitted;
+  document.getElementById('badge-history').textContent = rejected;
 }
 
 function renderQueue() {
-  const pending = allCVs.filter(c => c['Status'] === 'PENDING');
-  const container = document.getElementById('queueList');
-  if (pending.length === 0) {
-    container.innerHTML = '<div class="empty"><div class="icon">✅</div><div>Không có CV chờ duyệt</div></div>';
+  renderList('queueList', statusFilter('PENDING'), 'pending', 'Không có CV chờ TPMKT duyệt');
+}
+function renderPotential() {
+  renderList('potentialList', statusFilter('POTENTIAL'), 'potential', 'Chưa có CV nào ở trạng thái Tiềm năng');
+}
+function renderScheduled() {
+  renderList('scheduledList', statusFilter('SCHEDULED'), 'scheduled', 'Chưa có CV nào đã hẹn PV');
+}
+function renderTests() {
+  const tests = allCVs.filter(c => c['Status'] === 'TEST_SENT' || c['Status'] === 'TEST_SUBMITTED');
+  tests.sort((a, b) => new Date(b['Reviewed at'] || 0) - new Date(a['Reviewed at'] || 0));
+  const container = document.getElementById('testsList');
+  if (!tests.length) {
+    container.innerHTML = '<div class="empty"><div class="icon">📭</div><div>Chưa có bài test nào</div></div>';
     return;
   }
-  container.innerHTML = pending.map(c => renderCVCard(c, 'pending')).join('');
+  container.innerHTML = tests.map(c => renderCVCard(c, c['Status'].toLowerCase())).join('');
 }
 
 function renderHistory() {
-  const reviewed = allCVs.filter(c => c['Status'] === 'APPROVED' || c['Status'] === 'REJECTED');
+  const rejected = statusFilter('REJECTED');
+  rejected.sort((a, b) => new Date(b['Reviewed at'] || 0) - new Date(a['Reviewed at'] || 0));
   const container = document.getElementById('historyList');
-  if (reviewed.length === 0) {
-    container.innerHTML = '<div class="empty"><div class="icon">📭</div><div>Chưa có CV đã review</div></div>';
+  if (!rejected.length) {
+    container.innerHTML = '<div class="empty"><div class="icon">📭</div><div>Chưa có CV bị loại</div></div>';
     return;
   }
-  // Sort: mới nhất trước
-  reviewed.sort((a, b) => new Date(b['Reviewed at'] || 0) - new Date(a['Reviewed at'] || 0));
-  container.innerHTML = reviewed.map(c => {
-    const cls = c['Status'] === 'APPROVED' ? 'approved' : 'rejected';
-    return renderCVCard(c, cls);
-  }).join('');
+  container.innerHTML = rejected.map(c => renderCVCard(c, 'rejected')).join('');
 }
+
+function renderList(elId, list, cls, emptyMsg) {
+  const el = document.getElementById(elId);
+  if (!list.length) {
+    el.innerHTML = `<div class="empty"><div class="icon">📭</div><div>${emptyMsg}</div></div>`;
+    return;
+  }
+  el.innerHTML = list.map(c => renderCVCard(c, cls)).join('');
+}
+
+const STATUS_LABELS = {
+  PENDING: '⏳ Chờ TPMKT', POTENTIAL: '🟡 Tiềm năng', SCHEDULED: '🟢 Đã hẹn PV',
+  TEST_SENT: '📝 Đã gửi test', TEST_SUBMITTED: '✅ Đã nộp bài',
+  APPROVED: '✅ Hẹn PV', REJECTED: '❌ Loại'
+};
 
 function renderCVCard(c, statusClass) {
   const status = c['Status'];
-  const statusLabel = status === 'PENDING' ? '⏳ Chờ duyệt' : status === 'APPROVED' ? '✅ Hẹn PV' : '❌ Loại';
-  const statusBadge = status === 'PENDING' ? 'pending' : status === 'APPROVED' ? 'approved' : 'rejected';
+  const label = STATUS_LABELS[status] || status;
+  const badge = status.toLowerCase();
+  const isPending = status === 'PENDING';
+  const isPotential = status === 'POTENTIAL';
+  const isScheduled = status === 'SCHEDULED';
+  const isTestSent = status === 'TEST_SENT';
+  const isTestSubmitted = status === 'TEST_SUBMITTED';
+
   return `<div class="queue-card ${statusClass}">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
       <div style="flex:1;">
         <div class="name">${escHtml(c['Tên'])}</div>
         <div class="position">${escHtml(c['Vị trí'] || '-')}</div>
       </div>
-      <span class="status-badge status-${statusBadge}">${statusLabel}</span>
+      <span class="status-badge status-${badge}">${label}</span>
     </div>
     <div class="info-row"><span class="lbl">📞</span> ${escHtml(c['SĐT/Email'] || '-')}</div>
     <div class="info-row"><span class="lbl">📍</span> ${escHtml(c['Nguồn'] || '-')}</div>
     <div class="info-row"><span class="lbl">📅</span> ${formatDate(c['Timestamp'])}</div>
-    ${status === 'APPROVED' && c['Lịch PV'] ? `<div class="info-row"><span class="lbl">🗓️</span> <strong>PV: ${escHtml(c['Lịch PV'])}</strong></div>` : ''}
+    ${c['Lịch PV'] ? `<div class="info-row"><span class="lbl">🗓️</span> <strong>PV: ${escHtml(c['Lịch PV'])}</strong></div>` : ''}
+    ${c['Test deadline'] ? `<div class="info-row"><span class="lbl">⏰</span> Hạn nộp: <strong>${escHtml(c['Test deadline'])}</strong></div>` : ''}
     <div class="actions">
       ${c['CV file'] ? `<a href="${c['CV file']}" target="_blank" class="btn btn-blue btn-sm">📄 Xem CV</a>` : ''}
-      <button class="btn btn-primary btn-sm" onclick="openReview(${c._row})">${status === 'PENDING' ? '✍️ Duyệt' : '👁️ Xem'}</button>
+      ${c['Test file'] ? `<a href="${c['Test file']}" target="_blank" class="btn btn-success btn-sm">📋 Xem bài nộp</a>` : ''}
+      <button class="btn btn-primary btn-sm" onclick="openReview(${c._row})">${isPending ? '✍️ Duyệt' : (isScheduled ? '📝 Sau PV V1' : '👁️ Xem')}</button>
+      ${isTestSent ? `<button class="btn btn-warn btn-sm" onclick="copyTestLink('${c['Test token'] || ''}')">🔗 Copy link</button>` : ''}
     </div>
   </div>`;
+}
+
+function copyTestLink(token) {
+  if (!token) { alert('Chưa có token'); return; }
+  const url = `${window.location.origin}/bai-test/?token=${token}`;
+  navigator.clipboard.writeText(url).then(() => alert('✅ Đã copy link bài test!\n\n' + url + '\n\nGửi cho ứng viên qua Zalo/Email.'));
 }
 
 function escHtml(s) {
@@ -619,38 +720,125 @@ function openReview(rowNum) {
     </div>
   `;
 
-  if (isPending) {
+  const status = c['Status'];
+
+  // PENDING (HR vừa upload) → 3 buttons cho TPMKT
+  if (status === 'PENDING' || status === 'POTENTIAL') {
     html += `
     <div class="modal-section">
-      <h4 style="color:#0F766E;margin-bottom:10px;">✍️ Quyết định Lead/TPMKT</h4>
+      <h4 style="color:#0F766E;margin-bottom:10px;">✍️ Quyết định TPMKT</h4>
       <div class="form-group">
-        <label>Note Lead (lý do, điểm cần kiểm tra ở PV...)</label>
-        <textarea id="leadNote" placeholder="Vd: CV có kinh nghiệm content sách. Cần test sâu chuyên môn Ads ở V2."></textarea>
+        <label>Note TPMKT (lý do, điểm cần kiểm tra ở PV...)</label>
+        <textarea id="leadNote" placeholder="Vd: CV có kinh nghiệm content sách. Cần test sâu chuyên môn Ads ở V2.">${escHtml(c['Note Lead'] || '')}</textarea>
+      </div>
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="form-group">
+          <label>Tên TPMKT</label>
+          <input type="text" id="leadName" placeholder="Trưởng phòng MKT" value="${escHtml(c['Lead reviewer'] || '')}">
+        </div>
+        <div class="form-group">
+          <label>📅 Ngày giờ PV V1 (nếu chọn HẸN PV)</label>
+          <input type="datetime-local" id="leadInterviewDate">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px;">
+        <button class="btn btn-danger" onclick="submitReview(${rowNum}, 'REJECTED')" title="Loại - không phù hợp">
+          🔴 KHÔNG TIỀM NĂNG
+        </button>
+        <button class="btn btn-blue" onclick="submitReview(${rowNum}, 'POTENTIAL')" title="Tiềm năng - chưa hẹn ngay, xem xét sau">
+          🟡 TIỀM NĂNG
+        </button>
+        <button class="btn btn-success" onclick="submitReview(${rowNum}, 'SCHEDULED')" title="Hẹn phỏng vấn V1 với HR">
+          🟢 HẸN PV V1
+        </button>
+      </div>
+      <p style="font-size:11px;color:#718096;margin-top:8px;">
+        💡 <strong>Tiềm năng</strong> = chưa quyết hẹn ngay (xem xét sau) · <strong>Hẹn PV</strong> = chuyển HR phỏng vấn V1
+      </p>
+    </div>`;
+  }
+  // SCHEDULED (đã hẹn PV V1) → sau PV: Gửi bài test / Loại
+  else if (status === 'SCHEDULED') {
+    html += `
+    <div class="modal-section">
+      <h4 style="color:#0F766E;margin-bottom:10px;">📋 Đã hẹn PV V1</h4>
+      <div class="info-grid">
+        <div class="info-item"><div class="lbl">Lead reviewer</div><div class="val">${escHtml(c['Lead reviewer'] || '-')}</div></div>
+        <div class="info-item"><div class="lbl">Lịch PV</div><div class="val">${escHtml(c['Lịch PV'] || '-')}</div></div>
+      </div>
+      ${c['Note Lead'] ? `<div class="info-item" style="margin-top:8px;"><div class="lbl">Note TPMKT</div><div class="val">${escHtml(c['Note Lead'])}</div></div>` : ''}
+    </div>
+
+    <div class="modal-section">
+      <h4 style="color:#0F766E;margin-bottom:10px;">📝 Sau PV V1 — Quyết định tiếp theo</h4>
+      <p style="font-size:12px;color:#718096;margin-bottom:10px;">
+        Sau khi HR phỏng vấn V1: nếu ứng viên tốt → gửi bài kiểm tra. Nếu không → loại.
+      </p>
+      <div class="form-group">
+        <label>Loại bài test</label>
+        <select id="testType">
+          <option value="content">Bài 1: Viết review sách (60-90p)</option>
+          <option value="plan">Bài 2: Lập kế hoạch Marketing (60-90p)</option>
+          <option value="data">Bài 3: Phân tích số liệu (45p)</option>
+          <option value="custom">Tự nhập đề bài</option>
+        </select>
       </div>
       <div class="form-group">
-        <label>Tên Lead reviewer</label>
-        <input type="text" id="leadName" placeholder="Trưởng phòng MKT">
+        <label>Mô tả bài test (sẽ hiện cho ứng viên)</label>
+        <textarea id="testDescription" placeholder="Hướng dẫn chi tiết cho ứng viên..." style="min-height:90px;"></textarea>
       </div>
       <div class="form-group">
-        <label>📅 Ngày giờ PV (chỉ cần nếu PASS)</label>
-        <input type="datetime-local" id="leadInterviewDate">
+        <label>⏰ Deadline nộp bài</label>
+        <input type="datetime-local" id="testDeadline">
       </div>
       <div style="display:flex;gap:8px;margin-top:14px;">
-        <button class="btn btn-success" onclick="submitReview(${rowNum}, 'APPROVED')" style="flex:1;">✅ HẸN PHỎNG VẤN</button>
-        <button class="btn btn-danger" onclick="submitReview(${rowNum}, 'REJECTED')" style="flex:1;">❌ LOẠI</button>
+        <button class="btn btn-success" onclick="sendTest(${rowNum})" style="flex:1;">📝 GỬI BÀI TEST</button>
+        <button class="btn btn-danger" onclick="submitReview(${rowNum}, 'REJECTED')" style="flex:1;">❌ LOẠI sau PV V1</button>
       </div>
     </div>`;
-  } else {
+  }
+  // TEST_SENT / TEST_SUBMITTED → view + actions
+  else if (status === 'TEST_SENT' || status === 'TEST_SUBMITTED') {
+    const testUrl = c['Test token'] ? `${window.location.origin}/bai-test/?token=${c['Test token']}` : '';
+    html += `
+    <div class="modal-section">
+      <h4 style="color:#0F766E;margin-bottom:10px;">📝 Bài test</h4>
+      <div class="info-grid">
+        <div class="info-item"><div class="lbl">Trạng thái</div><div class="val">${STATUS_LABELS[status]}</div></div>
+        <div class="info-item"><div class="lbl">Loại bài</div><div class="val">${escHtml(c['Test type'] || '-')}</div></div>
+        <div class="info-item"><div class="lbl">Deadline</div><div class="val">${escHtml(c['Test deadline'] || '-')}</div></div>
+        <div class="info-item"><div class="lbl">Đã nộp lúc</div><div class="val">${formatDate(c['Test submitted at'])}</div></div>
+      </div>
+      ${c['Test description'] ? `<div class="info-item" style="margin-top:8px;"><div class="lbl">Đề bài</div><div class="val" style="white-space:pre-wrap;">${escHtml(c['Test description'])}</div></div>` : ''}
+      ${testUrl ? `<div style="margin-top:10px;display:flex;gap:8px;">
+        <button class="btn btn-warn" onclick="copyTestLink('${c['Test token']}')">🔗 Copy link gửi ứng viên</button>
+        <a href="${testUrl}" target="_blank" class="btn btn-blue">👁️ Mở trang nộp bài</a>
+      </div>` : ''}
+      ${c['Test file'] ? `<div style="margin-top:10px;">
+        <a href="${c['Test file']}" target="_blank" class="btn btn-success">📋 Xem bài đã nộp</a>
+      </div>` : ''}
+      ${c['Test note'] ? `<div class="info-item" style="margin-top:8px;"><div class="lbl">Note ứng viên khi nộp</div><div class="val" style="white-space:pre-wrap;">${escHtml(c['Test note'])}</div></div>` : ''}
+    </div>
+
+    ${status === 'TEST_SUBMITTED' ? `<div class="modal-section">
+      <h4 style="color:#0F766E;margin-bottom:10px;">⚙️ Quyết định sau khi xem bài</h4>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-success" onclick="alert('Hồ sơ đã PASS bài test. Tiếp tục PV V2/V3 trên hệ thống chính.\\n\\nMở /danh-sach/ → tìm ứng viên → Tải vào hệ thống.')" style="flex:1;">✅ PASS - Tiếp tục PV V2</button>
+        <button class="btn btn-danger" onclick="submitReview(${rowNum}, 'REJECTED')" style="flex:1;">❌ Loại</button>
+      </div>
+    </div>` : ''}`;
+  }
+  // REJECTED → view only
+  else {
     html += `
     <div class="modal-section">
       <h4 style="color:#0F766E;margin-bottom:10px;">📋 Đã review</h4>
       <div class="info-grid">
-        <div class="info-item"><div class="lbl">Trạng thái</div><div class="val">${c['Status']}</div></div>
-        <div class="info-item"><div class="lbl">Lead reviewer</div><div class="val">${escHtml(c['Lead reviewer'] || '-')}</div></div>
+        <div class="info-item"><div class="lbl">Trạng thái</div><div class="val">${STATUS_LABELS[status]}</div></div>
+        <div class="info-item"><div class="lbl">Reviewer</div><div class="val">${escHtml(c['Lead reviewer'] || '-')}</div></div>
         <div class="info-item"><div class="lbl">Reviewed at</div><div class="val">${formatDate(c['Reviewed at'])}</div></div>
-        ${c['Lịch PV'] ? `<div class="info-item"><div class="lbl">Lịch PV</div><div class="val">${escHtml(c['Lịch PV'])}</div></div>` : ''}
       </div>
-      ${c['Note Lead'] ? `<div class="info-item" style="margin-top:8px;"><div class="lbl">Note Lead</div><div class="val">${escHtml(c['Note Lead'])}</div></div>` : ''}
+      ${c['Note Lead'] ? `<div class="info-item" style="margin-top:8px;"><div class="lbl">Lý do</div><div class="val">${escHtml(c['Note Lead'])}</div></div>` : ''}
     </div>`;
   }
 
@@ -667,12 +855,16 @@ async function submitReview(rowNum, decision) {
   const cfg = getCloudConfig();
   if (!cfg) return;
 
-  const leadNote = document.getElementById('leadNote').value.trim();
-  const leadName = document.getElementById('leadName').value.trim() || 'Lead';
-  const interviewDate = document.getElementById('leadInterviewDate').value;
+  const leadNoteEl = document.getElementById('leadNote');
+  const leadNameEl = document.getElementById('leadName');
+  const leadDateEl = document.getElementById('leadInterviewDate');
+  const leadNote = leadNoteEl ? leadNoteEl.value.trim() : '';
+  const leadName = leadNameEl ? leadNameEl.value.trim() || 'TPMKT' : 'TPMKT';
+  const interviewDate = leadDateEl ? leadDateEl.value : '';
 
-  if (decision === 'APPROVED' && !interviewDate) {
-    if (!confirm('⚠️ Chưa chọn lịch PV. Vẫn approve?\n(Có thể bổ sung lịch sau)')) return;
+  if (decision === 'SCHEDULED' && !interviewDate) {
+    alert('⚠️ Chọn HẸN PV V1 thì phải chọn ngày giờ PV');
+    return;
   }
 
   toast('⏳ Đang lưu...', 'info');
@@ -693,8 +885,75 @@ async function submitReview(rowNum, decision) {
     const result = await res.json();
     if (!result.ok) { alert('❌ ' + result.error); return; }
     closeReview();
-    toast(decision === 'APPROVED' ? '✅ Đã hẹn PV' : '❌ Đã loại', 'success');
+    const msgMap = {
+      REJECTED: '❌ Đã loại',
+      POTENTIAL: '🟡 Đã chuyển sang Tiềm năng',
+      SCHEDULED: '🟢 Đã hẹn PV V1'
+    };
+    toast(msgMap[decision] || '✅ Đã lưu', 'success');
     loadAllCVs();
+  } catch(e) {
+    alert('❌ Lỗi: ' + e.message);
+  }
+}
+
+// ============== SEND TEST ==============
+const TEST_TEMPLATES = {
+  content: 'BÀI TẬP 1: VIẾT REVIEW SÁCH (60-90 phút)\n\nChọn 1 cuốn sách KITA BOOKS bạn yêu thích nhất.\n\nViết:\n1. Bài review FB 300-500 chữ\n2. Caption IG 100-150 chữ\n3. Script TikTok 30-45 giây\n\nTiêu chí: Hook 3 giây thu hút | Hiểu nội dung sách | CTA rõ | Phù hợp platform',
+  plan: 'BÀI TẬP 2: LẬP KẾ HOẠCH MARKETING (60-90 phút)\n\nGiả định: Tựa sách mới ra, mục tiêu DT 500 triệu/tháng, ngân sách 100 triệu ads, đối tượng phụ nữ 25-40 tuổi.\n\nLập plan 30 ngày bao gồm:\n- Phase + mục tiêu mỗi phase\n- Content calendar khả thi\n- Audience targeting cụ thể\n- Budget allocation\n- Forecast + Backup plan',
+  data: 'BÀI TẬP 3: PHÂN TÍCH SỐ LIỆU (45 phút)\n\nGiả định: Báo cáo FB Ads 30 ngày như sau:\n- Chi tiêu: 50tr | Doanh thu: 75tr | ROAS: 1.5\n- CTR: 0.8% | CPL: 80k | Conversion rate: 12%\n\nYêu cầu:\n1. Phân tích đúng vấn đề & nguyên nhân\n2. Đề xuất hành động khả thi (top 3-5)\n3. Forecast nếu áp dụng đề xuất'
+};
+
+document.addEventListener('change', (e) => {
+  if (e.target && e.target.id === 'testType') {
+    const desc = document.getElementById('testDescription');
+    if (desc && TEST_TEMPLATES[e.target.value]) {
+      desc.value = TEST_TEMPLATES[e.target.value];
+    } else if (desc && e.target.value === 'custom') {
+      desc.value = '';
+    }
+  }
+});
+
+async function sendTest(rowNum) {
+  const cfg = getCloudConfig();
+  if (!cfg) return;
+
+  const testType = document.getElementById('testType').value;
+  const testDescription = document.getElementById('testDescription').value.trim() || TEST_TEMPLATES[testType] || '';
+  const testDeadline = document.getElementById('testDeadline').value;
+
+  if (!testDescription) { alert('⚠️ Nhập đề bài / chọn template'); return; }
+  if (!testDeadline) { alert('⚠️ Chọn deadline'); return; }
+
+  toast('⏳ Đang tạo bài test...', 'info');
+
+  try {
+    const res = await fetch(cfg.url, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'send_test',
+        apiKey: cfg.apiKey,
+        row: rowNum,
+        testType,
+        testDescription,
+        testDeadline: testDeadline.replace('T', ' ')
+      })
+    });
+    const result = await res.json();
+    if (!result.ok) { alert('❌ ' + result.error); return; }
+
+    const link = `${window.location.origin}/bai-test/?token=${result.token}`;
+    closeReview();
+    loadAllCVs();
+
+    // Hiện modal copy link
+    if (confirm(
+      `✅ ĐÃ TẠO BÀI TEST!\n\n🔗 Link gửi cho ứng viên:\n${link}\n\n⏰ Deadline: ${testDeadline.replace('T', ' ')}\n\nOK = Copy link\nCancel = Đóng`
+    )) {
+      navigator.clipboard.writeText(link).then(() => alert('✅ Đã copy link!\n\nGửi qua Zalo / Email cho ứng viên.'));
+    }
+    toast('📝 Đã gửi bài test', 'success');
   } catch(e) {
     alert('❌ Lỗi: ' + e.message);
   }
