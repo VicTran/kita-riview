@@ -515,7 +515,7 @@
 
 <nav class="tabs">
   <button class="tab active" data-section="rubric" onclick="showSection('rubric')">📖 Rubric</button>
-  <button class="tab" data-section="round1" onclick="showSection('round1')">Vòng 1<span class="tab-badge" id="badge-round1">0/9</span></button>
+  <button class="tab" data-section="round1" onclick="showSection('round1')">Vòng 1<span class="tab-badge" id="badge-round1">0/10</span></button>
   <button class="tab" data-section="round2" onclick="showSection('round2')">Vòng 2<span class="tab-badge" id="badge-round2">0/31</span></button>
   <button class="tab" data-section="round3" onclick="showSection('round3')">Vòng 3<span class="tab-badge">3 BT</span></button>
   <button class="tab" data-section="round4" onclick="showSection('round4')">Vòng 4<span class="tab-badge" id="badge-round4">0/4</span></button>
@@ -760,8 +760,8 @@ const QUESTIONS = {
       { id: 'q2', text: 'Vì sao bạn quan tâm đến vị trí Nhân viên Marketing tại KITA BOOKS?', tip: 'Kiểm tra ứng viên có TÌM HIỂU về KITA BOOKS không. Câu trả lời chung chung = red flag.' },
     ]},
     { name: '2.2. Đam mê đọc sách', qs: [
-      { id: 'q3', text: 'Cuốn sách gần đây nhất bạn đọc xong là gì? Cảm nhận thế nào?', tip: 'Người yêu sách kể được rõ tựa, tác giả, điểm thích/không thích. Người không đọc sẽ ậm ừ.' },
-      { id: 'q4', text: 'Bạn thường đọc thể loại sách nào nhất? Tại sao?', tip: 'Phù hợp KITA: kinh doanh, văn học, kỹ năng sống, thiếu nhi. Tiểu thuyết tình cảm thuần → có thể chưa phù hợp.' },
+      { id: 'q3', text: 'Cuốn sách gần đây nhất bạn đọc là gì? Và sách đó để lại ấn tượng cho bạn là gì?', tip: 'Người yêu sách kể được rõ tựa, tác giả, điểm ấn tượng cụ thể. Người không đọc sẽ ậm ừ hoặc kể chung chung.' },
+      { id: 'q4', text: 'Bạn thường dành thời gian cho thể loại sách nào (như kinh doanh, kỹ năng hay văn học...)?', tip: 'Kiểm tra ứng viên có thói quen đọc sách không và gu có lệch pha công ty không (vd: chỉ thích ngôn tình sướt mướt mà KITA làm sách kỹ năng/giáo dục → không phù hợp).' },
       { id: 'q5', text: 'Bạn theo dõi kênh review sách nào trên TikTok/YT/FB? Kể tên 1-2 kênh và lý do.', tip: 'Marketing sách giỏi có hệ sinh thái thông tin riêng. "Không có" = thiếu chủ động.' },
     ]},
     { name: '2.3. Mức lương & Thời gian', qs: [
@@ -771,6 +771,7 @@ const QUESTIONS = {
     ]},
     { name: '2.4. Loại bỏ red flags', qs: [
       { id: 'q9', text: 'Bạn có lo ngại nào về vị trí này? (lương, thời gian, KPI, hình thức làm việc...)', tip: 'Để ứng viên tự nói concern - tránh bỏ sót.' },
+      { id: 'q45', text: 'Lý do bạn nghỉ việc ở công ty cũ là gì?', tip: 'Detect red flags: nói xấu sếp/công ty cũ, nhảy việc liên tục, lý do mơ hồ. TỐT: lý do tích cực (học hỏi/phát triển), tôn trọng nơi cũ.' },
     ]},
   ]},
   round2: { title: 'Vòng 2', groups: [
@@ -861,24 +862,25 @@ const QUESTIONS = {
 };
 
 // SCORECARD theo JD Marketing KITA BOOKS:
-// - KEY: Đam mê đọc sách (20%) — yếu tố quan trọng nhất với KITA BOOKS (sách giấy)
-// - Chuyên môn Marketing: Content (20%) + Ads (15%) + AI (10%) = 45% — kỹ năng cốt lõi
+// - Văn hoá KITA: Đam mê đọc sách (5%) + Khát khao TN (5%) = 10%
 // - Soft Skills: Học hỏi (10%) + Áp lực (10%) + Trách nhiệm (5%) = 25%
-// - Văn hoá + Tư duy: Khát khao thu nhập (5%) + Cultural fit (5%) = 10%
+// - Chuyên môn (CORE): Content+Nền tảng (25%) + Ads (20%) + AI (15%) = 60%
+// - Cultural fit + Red flags: 5%
 // Tổng: 100%
 const SCORECARD_CONFIG = [
-  // 🟦 VÒNG 1 - HR Sàng lọc (Tố chất + Văn hoá KITA: 25%)
-  { name: '🎯 A1. Đam mê đọc sách [V1: Q3-Q5]', weight: 20, qIds: ['q3', 'q4', 'q5'] },
+  // 🟦 VÒNG 1 - HR Sàng lọc (Văn hoá KITA + Red flags: 15%)
+  { name: '🎯 A1. Đam mê đọc sách [V1: Q3-Q5]', weight: 5, qIds: ['q3', 'q4', 'q5'] },
   { name: '💰 A2. Khát khao thu nhập không giới hạn [V1: Q7]', weight: 5, qIds: ['q7'] },
+  { name: '🚩 A3. Loại bỏ Red flags [V1: Q9, Q45]', weight: 5, qIds: ['q9', 'q45'] },
 
   // 🟪 VÒNG 2 - TPMKT Soft Skills (25%)
   { name: '📚 B1. Khả năng học hỏi nhanh [V2: Q10-Q12]', weight: 10, qIds: ['q10', 'q11', 'q12'] },
   { name: '🤝 B2. Tinh thần trách nhiệm [V2: Q13-Q15]', weight: 5, qIds: ['q13', 'q14', 'q15'] },
   { name: '🔥 B3. Làm việc dưới áp lực [V2: Q16-Q18]', weight: 10, qIds: ['q16', 'q17', 'q18'] },
 
-  // 🟪 VÒNG 2 - TPMKT Chuyên môn (45%)
-  { name: '✍️ C1. Chuyên môn Content + Nền tảng MKT [V2: Q19-Q22, Q35-Q39]', weight: 20, qIds: ['q19', 'q20', 'q21', 'q22', 'q35', 'q36', 'q37', 'q38', 'q39'] },
-  { name: '📊 C2. Chuyên môn Ads & Số liệu [V2: Q23-Q27]', weight: 15, qIds: ['q23', 'q24', 'q25', 'q26', 'q27'] },
+  // 🟪 VÒNG 2 - TPMKT Chuyên môn CORE (55%)
+  { name: '✍️ C1. Chuyên môn Content + Nền tảng MKT [V2: Q19-Q22, Q35-Q39]', weight: 25, qIds: ['q19', 'q20', 'q21', 'q22', 'q35', 'q36', 'q37', 'q38', 'q39'] },
+  { name: '📊 C2. Chuyên môn Ads & Số liệu [V2: Q23-Q27]', weight: 20, qIds: ['q23', 'q24', 'q25', 'q26', 'q27'] },
   { name: '🤖 C3. Kỹ năng sử dụng AI [V2: Q40-Q44]', weight: 10, qIds: ['q40', 'q41', 'q42', 'q43', 'q44'] },
 
   // 🟩 VÒNG 4 - Giám đốc + V2 Tình huống (Cultural fit: 5%)
@@ -1218,6 +1220,13 @@ const QUESTION_SCORES = {
     3: ['✓ Trả lời mơ hồ "tuỳ thuộc"', '✓ Hiểu cơ bản nhưng thiếu lập luận sâu', '✓ Chưa có plan upskill rõ'],
     4: ['✓ Quan điểm rõ + lý giải hợp lý', '✓ Phân biệt được task lặp lại vs sáng tạo', '✓ Có ý tưởng upskill bản thân'],
     5: ['✓ Quan điểm rõ + lý giải sâu (AI thay task lặp lại, marketer = chiến lược + sáng tạo + cảm xúc)', '✓ Plan upskill cụ thể (học prompt, học data, học chiến lược)', '✓ Tư duy mở, không sợ AI'],
+  },
+  q45: { // Lý do nghỉ việc công ty cũ
+    1: ['✗ Nói xấu sếp / đồng nghiệp / công ty cũ gay gắt', '✗ Nhảy việc 3+ chỗ trong 1-2 năm không lý do', '✗ Lý do thiếu chuyên nghiệp (cãi nhau, bị đuổi)'],
+    2: ['✗ Lý do mơ hồ "không hợp" / "muốn thay đổi" không cụ thể', '✗ Có nhắc tiêu cực về công ty cũ', '✗ Tránh trả lời / chuyển topic'],
+    3: ['✓ Lý do trung tính: lương / địa điểm / thời gian', '✓ Có suy ngẫm nhưng chưa thuyết phục', '✓ Tôn trọng công ty cũ ở mức cơ bản'],
+    4: ['✓ Lý do hợp lý: muốn phát triển kỹ năng mới / thay đổi môi trường', '✓ Tôn trọng công ty cũ', '✓ Có kế hoạch nghề nghiệp rõ'],
+    5: ['✓ Lý do tích cực + match KITA (muốn làm sách / muốn phát triển dài hạn)', '✓ Cảm ơn công ty cũ vì đã học được gì', '✓ Suy ngẫm trưởng thành về sự nghiệp'],
   },
 };
 

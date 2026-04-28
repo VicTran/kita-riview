@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Báo cáo FB Ads - Bài kiểm tra KITA BOOKS</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", -apple-system, Roboto, Arial, sans-serif;
+    background: #f0f2f5; color: #1c1e21; padding: 12px; line-height: 1.4;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  /* Banner */
+  .banner {
+    background: linear-gradient(135deg, #C00000 0%, #8B0000 100%);
+    color: white; padding: 14px 20px; border-radius: 10px;
+    margin-bottom: 14px; text-align: center;
+  }
+  .banner h1 { font-size: 16px; font-weight: 700; }
+  .banner p { font-size: 12px; opacity: 0.95; margin-top: 4px; }
+
+  /* FB Ads Manager mock */
+  .fb-header {
+    background: #1877F2; color: white; padding: 14px 20px;
+    border-radius: 10px 10px 0 0; display: flex; align-items: center; gap: 12px;
+  }
+  .fb-logo {
+    background: white; color: #1877F2; width: 36px; height: 36px;
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 22px;
+  }
+  .fb-header h2 { font-size: 16px; font-weight: 600; }
+  .fb-header .breadcrumb { font-size: 11px; opacity: 0.9; margin-top: 2px; }
+
+  .dashboard {
+    background: white; border-radius: 0 0 10px 10px; padding: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 14px;
+  }
+
+  /* Account info */
+  .account-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px; background: #f7f8fa; border-radius: 8px; margin-bottom: 12px;
+    font-size: 12px;
+  }
+  .account-bar .acc-name { font-weight: 600; color: #050505; }
+  .account-bar .date-range {
+    background: white; padding: 6px 12px; border: 1px solid #ccd0d5;
+    border-radius: 6px; font-weight: 600;
+  }
+
+  /* Metrics grid */
+  .metrics-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px; margin-bottom: 16px;
+  }
+  .metric-card {
+    background: white; padding: 12px 14px; border-radius: 8px;
+    border: 1px solid #e4e6eb;
+  }
+  .metric-card .lbl { font-size: 11px; color: #65676b; text-transform: uppercase; font-weight: 600; }
+  .metric-card .val { font-size: 22px; font-weight: 700; color: #050505; margin-top: 4px; }
+  .metric-card .change { font-size: 11px; margin-top: 4px; }
+  .change-up { color: #00B050; }
+  .change-down { color: #c00000; }
+  .change-neutral { color: #65676b; }
+  .metric-warn .val { color: #c00000; }
+  .metric-warn { border-color: #fc8181; background: #fff5f5; }
+
+  /* Chart */
+  .chart-section {
+    background: white; padding: 14px; border-radius: 8px; margin-bottom: 14px;
+    border: 1px solid #e4e6eb;
+  }
+  .chart-section h3 { font-size: 13px; color: #050505; margin-bottom: 10px; font-weight: 600; }
+  .bar-chart {
+    display: flex; align-items: flex-end; height: 140px; gap: 2px;
+    padding-top: 8px; border-bottom: 1px solid #e4e6eb;
+  }
+  .bar { background: linear-gradient(to top, #1877F2, #4299e1); flex: 1; min-width: 12px; border-radius: 2px 2px 0 0; transition: 0.2s; position: relative; }
+  .bar:hover { background: linear-gradient(to top, #0d5fc4, #2b6cb0); }
+  .bar.highlight-loss { background: linear-gradient(to top, #c00000, #f56565); }
+  .chart-axis {
+    display: flex; justify-content: space-between; font-size: 10px; color: #65676b;
+    margin-top: 6px;
+  }
+
+  /* Breakdown table */
+  table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+    background: white; border-radius: 8px; overflow: hidden;
+    border: 1px solid #e4e6eb;
+  }
+  th { background: #f7f8fa; padding: 10px 12px; text-align: left; color: #050505; font-weight: 600; border-bottom: 1px solid #e4e6eb; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f0f2f5; }
+  tr:last-child td { border-bottom: none; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.warn { color: #c00000; font-weight: 600; }
+  td.ok { color: #00B050; font-weight: 600; }
+
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 10px; font-weight: 700;
+  }
+  .badge-active { background: #c6f6d5; color: #22543d; }
+  .badge-paused { background: #fefcbf; color: #744210; }
+  .badge-bad { background: #fed7d7; color: #742a2a; }
+
+  /* Note */
+  .note {
+    background: #fff7e0; border-left: 4px solid #d97706;
+    padding: 12px 16px; border-radius: 8px; margin-top: 14px;
+    font-size: 12px; color: #78350f;
+  }
+  .note strong { color: #c00000; }
+
+  @media (max-width: 600px) {
+    body { padding: 8px; }
+    .dashboard { padding: 10px; }
+    .metric-card .val { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div class="banner">
+  <h1>📋 BÀI KIỂM TRA NĂNG LỰC - KITA BOOKS | Bài 3: Phân tích số liệu</h1>
+  <p>Đây là báo cáo FB Ads GIẢ LẬP để bạn phân tích. Hãy đọc kỹ và làm bài theo yêu cầu HR đã gửi.</p>
+</div>
+
+<!-- FB Ads Manager Mockup -->
+<div class="fb-header">
+  <div class="fb-logo">f</div>
+  <div>
+    <h2>Meta Ads Manager</h2>
+    <div class="breadcrumb">KITA BOOKS / Tài khoản 0123456789 / Báo cáo</div>
+  </div>
+</div>
+
+<div class="dashboard">
+  <div class="account-bar">
+    <div>
+      <div class="acc-name">📚 KITA BOOKS - Tài khoản chính</div>
+      <div style="font-size:11px; color:#65676b; margin-top:2px;">Chiến dịch: "Sách self-help nữ 25-40t" · Mục tiêu: Conversions</div>
+    </div>
+    <div class="date-range">📅 30 ngày qua: 28/03/2026 → 28/04/2026</div>
+  </div>
+
+  <!-- Top Metrics -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="lbl">💸 Đã chi tiêu</div>
+      <div class="val">50,000,000₫</div>
+      <div class="change change-neutral">~1.67tr/ngày</div>
+    </div>
+    <div class="metric-card">
+      <div class="lbl">💰 Doanh thu</div>
+      <div class="val">75,000,000₫</div>
+      <div class="change change-down">▼ -25% so target</div>
+    </div>
+    <div class="metric-card metric-warn">
+      <div class="lbl">📊 ROAS</div>
+      <div class="val">1.5x</div>
+      <div class="change change-down">Mục tiêu 3.0x</div>
+    </div>
+    <div class="metric-card">
+      <div class="lbl">📦 Đơn hàng</div>
+      <div class="val">250</div>
+      <div class="change change-neutral">~8.3 đơn/ngày</div>
+    </div>
+    <div class="metric-card">
+      <div class="lbl">💵 AOV</div>
+      <div class="val">300,000₫</div>
+      <div class="change change-neutral">Trung bình ngành</div>
+    </div>
+  </div>
+
+  <!-- Detailed Metrics -->
+  <div class="metrics-grid">
+    <div class="metric-card metric-warn">
+      <div class="lbl">CTR</div>
+      <div class="val">0.80%</div>
+      <div class="change change-down">▼ TB ngành 1.50%</div>
+    </div>
+    <div class="metric-card">
+      <div class="lbl">CPC</div>
+      <div class="val">12,500₫</div>
+      <div class="change change-neutral">Cao hơn TB</div>
+    </div>
+    <div class="metric-card">
+      <div class="lbl">CPM</div>
+      <div class="val">100,000₫</div>
+      <div class="change change-down">▲ +15% MoM</div>
+    </div>
+    <div class="metric-card metric-warn">
+      <div class="lbl">CPL</div>
+      <div class="val">80,000₫</div>
+      <div class="change change-down">▲ Mục tiêu 50k</div>
+    </div>
+    <div class="metric-card">
+      <div class="lbl">CR Landing</div>
+      <div class="val">12%</div>
+      <div class="change change-neutral">Hơi thấp</div>
+    </div>
+    <div class="metric-card metric-warn">
+      <div class="lbl">Bounce Rate</div>
+      <div class="val">65%</div>
+      <div class="change change-down">▲ Cao bất thường</div>
+    </div>
+    <div class="metric-card metric-warn">
+      <div class="lbl">CR Sales (inbox→đơn)</div>
+      <div class="val">15%</div>
+      <div class="change change-down">▼ TB ngành 25%</div>
+    </div>
+  </div>
+
+  <!-- Bar Chart simulating daily spend -->
+  <div class="chart-section">
+    <h3>📈 Chi tiêu hàng ngày (30 ngày qua)</h3>
+    <div class="bar-chart">
+      <div class="bar" style="height:45%"></div>
+      <div class="bar" style="height:50%"></div>
+      <div class="bar" style="height:55%"></div>
+      <div class="bar" style="height:48%"></div>
+      <div class="bar" style="height:52%"></div>
+      <div class="bar" style="height:60%"></div>
+      <div class="bar" style="height:65%"></div>
+      <div class="bar" style="height:55%"></div>
+      <div class="bar" style="height:58%"></div>
+      <div class="bar" style="height:62%"></div>
+      <div class="bar" style="height:70%"></div>
+      <div class="bar" style="height:75%"></div>
+      <div class="bar highlight-loss" style="height:85%"></div>
+      <div class="bar highlight-loss" style="height:90%"></div>
+      <div class="bar highlight-loss" style="height:95%"></div>
+      <div class="bar" style="height:80%"></div>
+      <div class="bar" style="height:72%"></div>
+      <div class="bar" style="height:68%"></div>
+      <div class="bar" style="height:65%"></div>
+      <div class="bar" style="height:60%"></div>
+      <div class="bar" style="height:62%"></div>
+      <div class="bar" style="height:58%"></div>
+      <div class="bar" style="height:55%"></div>
+      <div class="bar" style="height:50%"></div>
+      <div class="bar" style="height:48%"></div>
+      <div class="bar" style="height:52%"></div>
+      <div class="bar" style="height:55%"></div>
+      <div class="bar" style="height:60%"></div>
+      <div class="bar" style="height:58%"></div>
+      <div class="bar" style="height:55%"></div>
+    </div>
+    <div class="chart-axis">
+      <span>D-30</span>
+      <span>D-22</span>
+      <span>D-15 (peak loss)</span>
+      <span>D-7</span>
+      <span>Today</span>
+    </div>
+  </div>
+
+  <!-- Breakdown by Ad Set -->
+  <div class="chart-section">
+    <h3>📊 Breakdown theo Ad Set (5 ad sets đang chạy)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Ad Set</th>
+          <th>Status</th>
+          <th class="num">Chi tiêu</th>
+          <th class="num">Doanh thu</th>
+          <th class="num">ROAS</th>
+          <th class="num">CTR</th>
+          <th class="num">CPL</th>
+          <th class="num">Đơn</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>AS1: Phụ nữ 25-30 - Sách KD</strong></td>
+          <td><span class="badge badge-active">Active</span></td>
+          <td class="num">15,000,000₫</td>
+          <td class="num">28,000,000₫</td>
+          <td class="num ok">1.87x</td>
+          <td class="num">1.20%</td>
+          <td class="num">60,000₫</td>
+          <td class="num">93</td>
+        </tr>
+        <tr>
+          <td><strong>AS2: Phụ nữ 30-40 - Self-help</strong></td>
+          <td><span class="badge badge-active">Active</span></td>
+          <td class="num">12,000,000₫</td>
+          <td class="num">22,000,000₫</td>
+          <td class="num ok">1.83x</td>
+          <td class="num">0.95%</td>
+          <td class="num">70,000₫</td>
+          <td class="num">73</td>
+        </tr>
+        <tr>
+          <td><strong>AS3: Phụ nữ 25-40 - Lookalike 1%</strong></td>
+          <td><span class="badge badge-active">Active</span></td>
+          <td class="num">10,000,000₫</td>
+          <td class="num">15,000,000₫</td>
+          <td class="num">1.50x</td>
+          <td class="num">0.75%</td>
+          <td class="num">90,000₫</td>
+          <td class="num">50</td>
+        </tr>
+        <tr>
+          <td><strong>AS4: Broad targeting</strong></td>
+          <td><span class="badge badge-bad">Bad</span></td>
+          <td class="num">8,000,000₫</td>
+          <td class="num warn">7,500,000₫</td>
+          <td class="num warn">0.94x</td>
+          <td class="num warn">0.45%</td>
+          <td class="num warn">130,000₫</td>
+          <td class="num">25</td>
+        </tr>
+        <tr>
+          <td><strong>AS5: Retargeting (web visitors)</strong></td>
+          <td><span class="badge badge-paused">Paused</span></td>
+          <td class="num">5,000,000₫</td>
+          <td class="num warn">2,500,000₫</td>
+          <td class="num warn">0.50x</td>
+          <td class="num">0.65%</td>
+          <td class="num warn">150,000₫</td>
+          <td class="num">9</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Creative breakdown -->
+  <div class="chart-section">
+    <h3>🎨 Top 5 Creative đang chạy</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Creative</th>
+          <th>Format</th>
+          <th class="num">Lượt xem</th>
+          <th class="num">CTR</th>
+          <th class="num">CPL</th>
+          <th>Trạng thái</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Image - Quote sách KD nổi tiếng</td>
+          <td>Image</td>
+          <td class="num">450,000</td>
+          <td class="num ok">1.40%</td>
+          <td class="num ok">55,000₫</td>
+          <td><span class="badge badge-active">Đang chạy</span></td>
+        </tr>
+        <tr>
+          <td>Carousel - 3 cuốn sách bán chạy</td>
+          <td>Carousel</td>
+          <td class="num">320,000</td>
+          <td class="num">0.95%</td>
+          <td class="num">75,000₫</td>
+          <td><span class="badge badge-active">Đang chạy</span></td>
+        </tr>
+        <tr>
+          <td>Video review - 30s</td>
+          <td>Video</td>
+          <td class="num">180,000</td>
+          <td class="num">0.65%</td>
+          <td class="num warn">110,000₫</td>
+          <td><span class="badge badge-paused">Tạm dừng</span></td>
+        </tr>
+        <tr>
+          <td>Image - Sale 20% off</td>
+          <td>Image</td>
+          <td class="num">280,000</td>
+          <td class="num warn">0.45%</td>
+          <td class="num warn">140,000₫</td>
+          <td><span class="badge badge-bad">Hiệu quả thấp</span></td>
+        </tr>
+        <tr>
+          <td>Story - Poll/Quiz tương tác</td>
+          <td>Story</td>
+          <td class="num">90,000</td>
+          <td class="num">0.85%</td>
+          <td class="num">85,000₫</td>
+          <td><span class="badge badge-active">Đang chạy</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<div class="note">
+  <strong>📌 LƯU Ý KHI LÀM BÀI:</strong><br>
+  • Đây là dữ liệu GIẢ LẬP để kiểm tra năng lực phân tích, không phải số liệu thật<br>
+  • Có thể chụp màn hình trang này để dễ tham khảo khi làm bài<br>
+  • Phân tích cả 2 chiều: macro (toàn campaign) + micro (từng ad set / creative)<br>
+  • Nếu có thắc mắc về số liệu, liên hệ HR đã gửi link cho bạn
+</div>
+
+</div>
+
+</body>
+</html>
