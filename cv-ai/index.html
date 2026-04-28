@@ -228,6 +228,38 @@
   </div>
 </div>
 
+<!-- Manual Mode Modal -->
+<div class="modal" id="manualModal">
+  <div class="modal-content" style="max-width: 800px;">
+    <div class="modal-header">
+      <h3>📋 Manual Mode - Phân tích CV bằng tay</h3>
+      <button class="modal-close" onclick="closeManualModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background: #DDEBF7; border-left: 4px solid #1F4E79; padding: 12px; border-radius: 8px; margin-bottom: 14px; font-size: 13px; color: #1a365d;">
+        <strong>3 bước:</strong> Copy prompt → Paste vào ChatGPT/Claude.ai → Copy kết quả về đây
+      </div>
+
+      <h3 style="font-size: 14px; color: #6B46C1; margin-bottom: 8px;">📝 BƯỚC 1: Copy prompt này</h3>
+      <textarea id="generatedPrompt" readonly style="width:100%;min-height:160px;padding:12px;border:2px solid #e2e8f0;border-radius:8px;font-family:monospace;font-size:11px;background:#1a202c;color:#a0e1ff;line-height:1.5;"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+        <button class="btn btn-blue" onclick="copyPrompt()">📋 Copy prompt</button>
+        <a href="https://chatgpt.com" target="_blank" class="btn btn-success">🤖 Mở ChatGPT</a>
+        <a href="https://claude.ai" target="_blank" class="btn btn-primary">🤖 Mở Claude.ai</a>
+        <a href="https://gemini.google.com" target="_blank" class="btn btn-gray">🤖 Mở Gemini</a>
+      </div>
+
+      <h3 style="font-size: 14px; color: #6B46C1; margin: 18px 0 8px;">📥 BƯỚC 2: Paste kết quả AI trả về</h3>
+      <textarea id="manualResult" placeholder="Paste JSON kết quả AI trả về vào đây... (chấp nhận cả JSON thuần và đoạn có ```json ... ```)" style="width:100%;min-height:140px;padding:12px;border:2px solid #e2e8f0;border-radius:8px;font-family:monospace;font-size:11px;line-height:1.5;"></textarea>
+
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button class="btn btn-success" onclick="parseManualResult()" style="flex:1;">✅ Parse và hiển thị kết quả</button>
+        <button class="btn btn-gray" onclick="closeManualModal()">Đóng</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- API Key Setup Modal -->
 <div class="modal" id="apiModal">
   <div class="modal-content">
@@ -239,9 +271,55 @@
       <div class="form-group">
         <label>🤖 AI Provider</label>
         <select id="providerInput" onchange="onProviderChange()">
-          <option value="openai">OpenAI - GPT (gọi trực tiếp từ browser)</option>
-          <option value="claude">Claude - Anthropic (qua Apps Script proxy) — Khuyến nghị 🌟</option>
+          <option value="gemini">🆓 Google Gemini (1500 free/ngày) — Khuyến nghị</option>
+          <option value="manual">📋 Manual - Không cần key (copy-paste vào ChatGPT/Claude.ai)</option>
+          <option value="openai">OpenAI GPT (cần trả phí, ~$5)</option>
+          <option value="claude">Claude Anthropic (cần trả phí + setup Apps Script)</option>
         </select>
+      </div>
+
+      <!-- Gemini section -->
+      <div id="geminiSection">
+        <div class="alert" style="padding: 10px; background: #d1fae5; border-left: 4px solid #00B050; font-size: 12px; color: #065f46; border-radius: 6px; margin-bottom: 10px;">
+          🎉 <strong>HOÀN TOÀN MIỄN PHÍ</strong> với Google account! Free 1500 requests/ngày, không cần thẻ tín dụng.
+        </div>
+        <h3>Cách lấy key (2 phút):</h3>
+        <ol>
+          <li>Vào <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#6B46C1;font-weight:600;">aistudio.google.com/app/apikey</a></li>
+          <li>Đăng nhập Google → bấm <strong>Create API Key</strong></li>
+          <li>Chọn project (mặc định) → Copy key</li>
+          <li>Paste vào ô dưới + Lưu</li>
+        </ol>
+        <div class="form-group" style="margin-top: 12px;">
+          <label>Gemini API Key</label>
+          <input type="password" id="geminiKeyInput" placeholder="AIza...">
+        </div>
+        <div class="form-group">
+          <label>Model</label>
+          <select id="geminiModelInput">
+            <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (mới nhất, free) - Khuyến nghị</option>
+            <option value="gemini-1.5-flash">Gemini 1.5 Flash (ổn định, free)</option>
+            <option value="gemini-1.5-pro">Gemini 1.5 Pro (chất lượng cao hơn, free 50/ngày)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Manual section -->
+      <div id="manualSection" style="display:none;">
+        <div class="alert" style="padding: 10px; background: #fef3c7; border-left: 4px solid #d97706; font-size: 12px; color: #78350f; border-radius: 6px; margin-bottom: 10px;">
+          📋 <strong>KHÔNG CẦN KEY GÌ!</strong> Hệ thống tạo sẵn prompt — anh chỉ copy + paste vào ChatGPT/Claude.ai web (tài khoản free).
+        </div>
+        <h3>Workflow:</h3>
+        <ol>
+          <li>Upload CV ở trang chính → hệ thống trích xuất text</li>
+          <li>Bấm <strong>🤖 Tạo prompt</strong> → app generate prompt sẵn (đã ghép CV vào)</li>
+          <li>Copy prompt → mở <a href="https://chatgpt.com" target="_blank">chatgpt.com</a> hoặc <a href="https://claude.ai" target="_blank">claude.ai</a> → paste → gửi</li>
+          <li>AI trả về JSON → copy lại → paste vào ô "Kết quả AI" trong app</li>
+          <li>App tự parse và hiển thị đẹp</li>
+        </ol>
+        <p style="font-size: 12px; color: #4a5568; margin-top: 8px;">
+          Phù hợp khi: chỉ phỏng vấn ít người, không muốn setup gì, đã có sẵn tài khoản ChatGPT/Claude.ai.
+        </p>
       </div>
 
       <!-- OpenAI section -->
@@ -470,30 +548,37 @@ function checkAuth() {
 
 // ============== AI PROVIDER CONFIG ==============
 function getApiConfig() {
-  // Ưu tiên config tập trung từ /config.js
+  // Ưu tiên localStorage (per-user, ghi đè config tập trung khi cần)
+  try {
+    const cfg = localStorage.getItem('kita_ai_config');
+    if (cfg) return JSON.parse(cfg);
+  } catch(e) {}
+  // Fallback: config tập trung
   const g = window.KITA_CONFIG;
   if (g && g.aiProvider) {
     return {
       provider: g.aiProvider,
+      geminiKey: g.geminiKey || '',
+      geminiModel: g.geminiModel || 'gemini-2.0-flash-exp',
       key: g.openaiKey || '',
       model: g.openaiModel || 'gpt-4o-mini',
       claudeModel: g.claudeModel || 'claude-haiku-4-5-20251001'
     };
   }
-  // Fallback: localStorage
-  try {
-    const cfg = localStorage.getItem('kita_ai_config');
-    return cfg ? JSON.parse(cfg) : null;
-  } catch(e) { return null; }
+  return null;
 }
 
 function openApiModal() {
   const cfg = getApiConfig();
   if (cfg) {
-    document.getElementById('providerInput').value = cfg.provider || 'openai';
+    document.getElementById('providerInput').value = cfg.provider || 'gemini';
+    document.getElementById('geminiKeyInput').value = cfg.geminiKey || '';
+    document.getElementById('geminiModelInput').value = cfg.geminiModel || 'gemini-2.0-flash-exp';
     document.getElementById('apiKeyInput').value = cfg.key || '';
     document.getElementById('apiModelInput').value = cfg.model || 'gpt-4o-mini';
     document.getElementById('claudeModelInput').value = cfg.claudeModel || 'claude-haiku-4-5-20251001';
+  } else {
+    document.getElementById('providerInput').value = 'gemini';
   }
   onProviderChange();
   document.getElementById('apiModal').classList.add('show');
@@ -501,6 +586,8 @@ function openApiModal() {
 
 function onProviderChange() {
   const provider = document.getElementById('providerInput').value;
+  document.getElementById('geminiSection').style.display = provider === 'gemini' ? 'block' : 'none';
+  document.getElementById('manualSection').style.display = provider === 'manual' ? 'block' : 'none';
   document.getElementById('openaiSection').style.display = provider === 'openai' ? 'block' : 'none';
   document.getElementById('claudeSection').style.display = provider === 'claude' ? 'block' : 'none';
 }
@@ -511,7 +598,17 @@ function closeApiModal() {
 
 function saveApiKey() {
   const provider = document.getElementById('providerInput').value;
-  if (provider === 'openai') {
+  if (provider === 'gemini') {
+    const key = document.getElementById('geminiKeyInput').value.trim();
+    const model = document.getElementById('geminiModelInput').value;
+    if (!key) { alert('⚠️ Nhập Gemini API key (lấy free tại aistudio.google.com)'); return; }
+    if (!key.startsWith('AIza')) { alert('⚠️ Gemini key thường bắt đầu bằng "AIza..."'); return; }
+    localStorage.setItem('kita_ai_config', JSON.stringify({ provider: 'gemini', geminiKey: key, geminiModel: model }));
+    alert('✅ Đã lưu Gemini key!\n\nGiờ anh có thể phân tích CV miễn phí (1500 req/ngày).');
+  } else if (provider === 'manual') {
+    localStorage.setItem('kita_ai_config', JSON.stringify({ provider: 'manual' }));
+    alert('✅ Đã chọn Manual mode!\n\nTừ giờ bấm "Phân tích" sẽ tạo prompt → anh paste vào ChatGPT/Claude.ai → copy kết quả về.');
+  } else if (provider === 'openai') {
     const key = document.getElementById('apiKeyInput').value.trim();
     const model = document.getElementById('apiModelInput').value;
     if (!key) { alert('⚠️ Nhập OpenAI API key'); return; }
@@ -527,7 +624,7 @@ function saveApiKey() {
     }
     const claudeModel = document.getElementById('claudeModelInput').value;
     localStorage.setItem('kita_ai_config', JSON.stringify({ provider: 'claude', claudeModel }));
-    alert('✅ Đã chọn Claude!\n\nLưu ý: Anthropic API Key phải đã được paste vào Apps Script (xem hướng dẫn trong /setup-database/).\n\nGiờ phân tích CV sẽ chạy qua Claude.');
+    alert('✅ Đã chọn Claude!');
   }
   closeApiModal();
 }
@@ -676,9 +773,19 @@ async function analyzeCV() {
   document.getElementById('loadingBox').classList.add('show');
   document.getElementById('resultBox').classList.remove('show');
 
+  // Manual mode: hiện modal copy-paste, không gọi API
+  if (cfg.provider === 'manual') {
+    document.getElementById('analyzeBtn').disabled = false;
+    document.getElementById('loadingBox').classList.remove('show');
+    openManualMode(cvText);
+    return;
+  }
+
   try {
     let analysis;
-    if (cfg.provider === 'claude') {
+    if (cfg.provider === 'gemini') {
+      analysis = await analyzeWithGemini(cvText, cfg);
+    } else if (cfg.provider === 'claude') {
       analysis = await analyzeWithClaude(cvText, cfg);
     } else {
       analysis = await analyzeWithOpenAI(cvText, cfg);
@@ -690,6 +797,78 @@ async function analyzeCV() {
   } finally {
     document.getElementById('analyzeBtn').disabled = false;
     document.getElementById('loadingBox').classList.remove('show');
+  }
+}
+
+async function analyzeWithGemini(cvText, cfg) {
+  const key = cfg.geminiKey;
+  const model = cfg.geminiModel || 'gemini-2.0-flash-exp';
+  if (!key) throw new Error('Chưa có Gemini API Key. Bấm 🔑 API Key để setup (free tại aistudio.google.com)');
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: 'CV ỨNG VIÊN:\n\n' + cvText.slice(0, 12000) }] }],
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.3,
+        maxOutputTokens: 2000
+      }
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Gemini HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error('Gemini trả về rỗng');
+  return JSON.parse(text);
+}
+
+function openManualMode(cvText) {
+  const prompt = SYSTEM_PROMPT + '\n\n---\n\nCV ỨNG VIÊN:\n\n' + cvText.slice(0, 12000) + '\n\n---\n\n⚠️ Trả về CHỈ JSON object hợp lệ theo cấu trúc đã yêu cầu. KHÔNG có markdown wrapper, KHÔNG có giải thích.';
+  document.getElementById('generatedPrompt').value = prompt;
+  document.getElementById('manualResult').value = '';
+  document.getElementById('manualModal').classList.add('show');
+}
+
+function closeManualModal() {
+  document.getElementById('manualModal').classList.remove('show');
+}
+
+function copyPrompt() {
+  const text = document.getElementById('generatedPrompt').value;
+  navigator.clipboard.writeText(text).then(() => alert('✅ Đã copy prompt!\n\nGiờ mở ChatGPT/Claude.ai → paste → gửi → copy kết quả về.'));
+}
+
+function parseManualResult() {
+  const text = document.getElementById('manualResult').value.trim();
+  if (!text) { alert('⚠️ Paste kết quả AI vào ô bên dưới trước'); return; }
+
+  try {
+    // Tìm JSON object trong text (có thể được wrap bằng ```json...``` hoặc text khác)
+    let jsonStr = text;
+    const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (codeBlock) jsonStr = codeBlock[1];
+    else {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) jsonStr = jsonMatch[0];
+    }
+    const analysis = JSON.parse(jsonStr);
+
+    // Validate cấu trúc tối thiểu
+    if (!analysis.summary && !analysis.fit_score) {
+      throw new Error('JSON không có trường summary hoặc fit_score');
+    }
+    lastAnalysis = analysis;
+    closeManualModal();
+    displayResult(analysis);
+  } catch(e) {
+    alert('❌ Lỗi parse JSON: ' + e.message + '\n\nKiểm tra lại nội dung paste — phải là JSON hợp lệ.');
   }
 }
 
