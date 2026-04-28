@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản trị - KITA Interview</title>
+<script src="/config.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf3 100%);
+    color: #2d3748; line-height: 1.5; min-height: 100vh; padding: 16px;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+  header {
+    background: linear-gradient(135deg, #2D3748 0%, #1A202C 100%);
+    color: white; padding: 22px 28px; border-radius: 12px;
+    margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  }
+  header h1 { font-size: 24px; margin-bottom: 4px; }
+  header .sub { opacity: 0.85; font-size: 13px; }
+  header .header-flex { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+  .btn {
+    padding: 10px 16px; border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: inherit; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .btn-light { background: rgba(255,255,255,0.15); color: white; }
+  .btn-light:hover { background: rgba(255,255,255,0.25); }
+  .btn-primary { background: #1F4E79; color: white; }
+  .btn-success { background: #00B050; color: white; }
+  .btn-blue { background: #4299e1; color: white; }
+  .btn-gray { background: #718096; color: white; }
+
+  .card {
+    background: white; padding: 22px; border-radius: 12px;
+    margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .card h2 {
+    color: #2D3748; font-size: 17px; margin-bottom: 14px;
+    border-bottom: 2px solid #2D3748; padding-bottom: 8px;
+  }
+  .card h2 small { font-weight: 400; font-size: 12px; color: #718096; }
+
+  .alert {
+    padding: 12px 16px; border-radius: 8px; font-size: 13px;
+    border-left: 4px solid; margin-bottom: 14px;
+  }
+  .alert-warn { background: #fefcbf; color: #744210; border-color: #d69e2e; }
+  .alert-info { background: #DDEBF7; color: #1a365d; border-color: #1F4E79; }
+  .alert-success { background: #c6f6d5; color: #22543d; border-color: #00B050; }
+
+  .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+  .form-group label {
+    font-size: 13px; font-weight: 600; color: #4a5568;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .form-group label .req { color: #C00000; }
+  .form-group input, .form-group select, .form-group textarea {
+    padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px;
+    font-size: 13px; font-family: inherit; transition: border 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: #1F4E79;
+  }
+  .form-group .hint { font-size: 11px; color: #718096; font-style: italic; margin-top: 2px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+
+  .preview-block {
+    background: #1a202c; color: #a0e1ff; padding: 16px;
+    border-radius: 8px; font-family: 'SF Mono', Consolas, monospace;
+    font-size: 11px; line-height: 1.5; overflow-x: auto;
+    white-space: pre; max-height: 360px; overflow-y: auto;
+  }
+  .test-box {
+    margin-top: 8px; padding: 10px 14px; border-radius: 8px;
+    font-size: 13px; display: none;
+  }
+  .test-box.show { display: block; }
+  .test-box.ok { background: #c6f6d5; color: #22543d; }
+  .test-box.err { background: #fed7d7; color: #742a2a; }
+
+  .step-list { padding-left: 20px; font-size: 13px; line-height: 1.7; color: #4a5568; }
+  .step-list li { margin-bottom: 4px; }
+  code { background: #edf2f7; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #C00000; font-size: 12px; }
+
+  .status-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px; margin-bottom: 12px;
+  }
+  .status-card {
+    padding: 12px 14px; border-radius: 8px; background: #f7fafc;
+    border-left: 4px solid #cbd5e0;
+  }
+  .status-card.green { border-color: #00B050; background: #f0fff4; }
+  .status-card.red { border-color: #C00000; background: #fff5f5; }
+  .status-card .label { font-size: 11px; color: #718096; text-transform: uppercase; }
+  .status-card .value { font-weight: 700; margin-top: 4px; word-break: break-all; font-size: 13px; }
+  .status-card.green .value { color: #22543d; }
+  .status-card.red .value { color: #742a2a; }
+
+  /* Login */
+  .login-overlay { position: fixed; inset: 0; background: linear-gradient(135deg, #2D3748 0%, #1A202C 100%); z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .login-overlay.hidden { display: none; }
+  .login-card { background: white; padding: 36px 28px; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 380px; width: 100%; text-align: center; }
+  .login-card.shake { animation: shake 0.4s; }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+  .login-logo { width: 56px; height: 56px; margin: 0 auto 14px; background: linear-gradient(135deg, #2D3748, #1A202C); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; }
+  .login-card h1 { color: #2D3748; font-size: 20px; margin-bottom: 6px; }
+  .login-sub { color: #718096; font-size: 12px; margin-bottom: 20px; }
+  .login-card input { width: 100%; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-family: inherit; margin-bottom: 10px; }
+  .login-card input:focus { outline: none; border-color: #2D3748; }
+  .login-card button { width: 100%; padding: 12px; background: linear-gradient(135deg, #2D3748, #1A202C); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .login-error { color: #C00000; font-size: 12px; min-height: 16px; margin-bottom: 8px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card" id="loginCard">
+    <div class="login-logo">⚙️</div>
+    <h1>QUẢN TRỊ HỆ THỐNG</h1>
+    <div class="login-sub">KITA Interview - Admin only</div>
+    <form onsubmit="event.preventDefault(); doLogin();">
+      <input type="password" id="loginPassword" placeholder="Mật khẩu admin..." autofocus>
+      <div class="login-error" id="loginError"></div>
+      <button type="submit">ĐĂNG NHẬP</button>
+    </form>
+  </div>
+</div>
+
+<div class="container">
+
+<header>
+  <div class="header-flex">
+    <div>
+      <h1>⚙️ Quản trị hệ thống</h1>
+      <div class="sub">Tạo file <code style="background:rgba(255,255,255,0.15);color:white;">config.js</code> dùng chung cho mọi máy / trình duyệt</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <a href="/" class="btn btn-light">📋 Hệ thống</a>
+      <a href="/setup-database/" class="btn btn-light">📖 Setup DB</a>
+    </div>
+  </div>
+</header>
+
+<!-- Trạng thái hiện tại -->
+<div class="card">
+  <h2>📊 Trạng thái cấu hình hiện tại</h2>
+  <div class="status-row" id="statusRow"></div>
+  <div class="alert alert-info" style="margin-top: 8px;">
+    💡 Trạng thái này lấy từ file <code>config.js</code> đang load. Nếu rỗng → người dùng phải tự setup từng máy. Sau khi anh điền form bên dưới + push file mới → mọi máy tự đồng bộ.
+  </div>
+</div>
+
+<!-- Form cấu hình -->
+<div class="card">
+  <h2>📝 Cấu hình hệ thống <small>(điền các giá trị muốn áp dụng cho tất cả browsers)</small></h2>
+
+  <h3 style="color: #1F4E79; font-size: 14px; margin-bottom: 10px; padding: 6px 10px; background: #DDEBF7; border-radius: 6px;">☁️ Google Sheet Cloud</h3>
+  <div class="form-group">
+    <label>Web App URL <span class="req">*</span></label>
+    <input type="text" id="cfgCloudUrl" placeholder="https://script.google.com/macros/s/AKfy.../exec">
+    <div class="hint">Lấy ở /setup-database/ Bước 3 sau khi Deploy Web App</div>
+  </div>
+  <div class="form-group">
+    <label>API Key (Apps Script) <span class="req">*</span></label>
+    <input type="text" id="cfgCloudApiKey" placeholder="KITA-2026-SECRET">
+    <div class="hint">Phải khớp với <code>const API_KEY</code> trong Apps Script</div>
+  </div>
+
+  <h3 style="color: #6B46C1; font-size: 14px; margin: 16px 0 10px; padding: 6px 10px; background: #ede9fe; border-radius: 6px;">🤖 AI Provider (cho trang /cv-ai/)</h3>
+  <div class="form-group">
+    <label>Provider mặc định</label>
+    <select id="cfgAiProvider" onchange="onProviderChangeAdmin()">
+      <option value="">Để rỗng — người dùng tự chọn</option>
+      <option value="openai">OpenAI (gọi từ browser)</option>
+      <option value="claude">Claude (qua Apps Script proxy) ⭐</option>
+    </select>
+  </div>
+
+  <div id="openaiFields" style="display:none;">
+    <div class="form-row">
+      <div class="form-group">
+        <label>OpenAI API Key</label>
+        <input type="text" id="cfgOpenaiKey" placeholder="sk-proj-...">
+        <div class="hint" style="color:#C00000;">⚠️ Key sẽ ở source code — chỉ dùng nếu hệ thống behind login</div>
+      </div>
+      <div class="form-group">
+        <label>Model</label>
+        <select id="cfgOpenaiModel">
+          <option value="gpt-4o-mini">GPT-4o mini</option>
+          <option value="gpt-4o">GPT-4o</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div id="claudeFields" style="display:none;">
+    <div class="form-group">
+      <label>Claude Model</label>
+      <select id="cfgClaudeModel">
+        <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (rẻ + nhanh)</option>
+        <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (chất lượng cao)</option>
+      </select>
+      <div class="hint">Anthropic API Key đặt trong Apps Script — không cần ở đây</div>
+    </div>
+  </div>
+</div>
+
+<!-- Test connection -->
+<div class="card">
+  <h2>🔌 Test kết nối Google Sheet</h2>
+  <button class="btn btn-blue" onclick="testConnection()">🔌 Kiểm tra ngay</button>
+  <div class="test-box" id="testBox"></div>
+</div>
+
+<!-- Generate + Download -->
+<div class="card">
+  <h2>💾 Tạo file config.js mới</h2>
+  <div class="alert alert-warn">
+    📌 Sau khi điền xong form: bấm <strong>Generate</strong> → bấm <strong>Download config.js</strong> → thay file <code>config.js</code> trong thư mục <code>kita-riview/</code> → Push GitHub → mọi máy/trình duyệt tự đồng bộ.
+  </div>
+  <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+    <button class="btn btn-primary" onclick="generateConfig()">⚙️ Generate Preview</button>
+    <button class="btn btn-success" onclick="downloadConfig()">💾 Download config.js</button>
+    <button class="btn btn-blue" onclick="copyConfig()">📋 Copy nội dung</button>
+  </div>
+  <div class="preview-block" id="configPreview">// Bấm "Generate Preview" để xem trước nội dung file...</div>
+</div>
+
+<!-- Hướng dẫn -->
+<div class="card">
+  <h2>📖 Hướng dẫn deploy file mới</h2>
+  <ol class="step-list">
+    <li>Bấm <strong>💾 Download config.js</strong> ở khung trên → file lưu vào <code>~/Downloads</code></li>
+    <li>Mở Finder/Explorer → thư mục <code>Mô tả công việc/kita-riview/</code></li>
+    <li>Kéo file <code>config.js</code> mới đè lên file cũ (hoặc copy + replace)</li>
+    <li>Mở <strong>GitHub Desktop</strong> → thấy <code>config.js</code> đã thay đổi</li>
+    <li>Bấm <strong>Commit to main</strong> → <strong>Push origin</strong></li>
+    <li>Đợi 30-60 giây → vào <code>phongvanmkt.kitagroupvn.com/</code> bằng máy/trình duyệt khác → ✅ Auto load config mới</li>
+  </ol>
+  <div class="alert alert-success" style="margin-top: 10px;">
+    🎉 Từ giờ trở đi: HR mở bất kỳ trang nào trên bất kỳ máy nào — không cần setup gì, dùng được ngay.
+  </div>
+</div>
+
+</div>
+
+<script>
+// ============== LOGIN ==============
+const PASSWORD_HASH = 'a9c82a91311cb01ff918ca5e37029cfd5275608b3dc557f333cc30c4254ba8da';
+const AUTH_KEY = 'kita_admin_auth';
+
+async function sha256(text) {
+  const buf = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function doLogin() {
+  const pwd = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  if (!pwd) { errEl.textContent = 'Nhập mật khẩu'; return; }
+  const hash = await sha256(pwd);
+  if (hash === PASSWORD_HASH) {
+    sessionStorage.setItem(AUTH_KEY, '1');
+    document.getElementById('loginOverlay').classList.add('hidden');
+    initApp();
+  } else {
+    errEl.textContent = '❌ Sai mật khẩu';
+    document.getElementById('loginCard').classList.add('shake');
+    setTimeout(() => document.getElementById('loginCard').classList.remove('shake'), 400);
+    document.getElementById('loginPassword').value = '';
+  }
+}
+
+if (sessionStorage.getItem(AUTH_KEY) === '1' || sessionStorage.getItem('kita_interview_auth') === '1') {
+  sessionStorage.setItem(AUTH_KEY, '1');
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  document.getElementById('loginPassword').focus();
+}
+
+// ============== INIT ==============
+function initApp() {
+  const cfg = window.KITA_CONFIG || {};
+  // Pre-fill form từ config hiện tại
+  document.getElementById('cfgCloudUrl').value = cfg.cloudUrl || '';
+  document.getElementById('cfgCloudApiKey').value = cfg.cloudApiKey || '';
+  document.getElementById('cfgAiProvider').value = cfg.aiProvider || '';
+  document.getElementById('cfgOpenaiKey').value = cfg.openaiKey || '';
+  document.getElementById('cfgOpenaiModel').value = cfg.openaiModel || 'gpt-4o-mini';
+  document.getElementById('cfgClaudeModel').value = cfg.claudeModel || 'claude-haiku-4-5-20251001';
+  onProviderChangeAdmin();
+
+  renderStatus(cfg);
+}
+
+function onProviderChangeAdmin() {
+  const v = document.getElementById('cfgAiProvider').value;
+  document.getElementById('openaiFields').style.display = v === 'openai' ? 'block' : 'none';
+  document.getElementById('claudeFields').style.display = v === 'claude' ? 'block' : 'none';
+}
+
+function renderStatus(cfg) {
+  const items = [
+    { lbl: 'Cloud URL', val: cfg.cloudUrl, ok: !!cfg.cloudUrl },
+    { lbl: 'Cloud API Key', val: cfg.cloudApiKey ? '✓ Có' : '✗ Chưa', ok: !!cfg.cloudApiKey },
+    { lbl: 'AI Provider', val: cfg.aiProvider || '✗ Chưa', ok: !!cfg.aiProvider },
+    { lbl: 'Phiên bản', val: cfg.configVersion || 'N/A', ok: !!cfg.configVersion },
+    { lbl: 'Cập nhật', val: cfg.updatedAt || 'N/A', ok: !!cfg.updatedAt },
+  ];
+  document.getElementById('statusRow').innerHTML = items.map(it => `
+    <div class="status-card ${it.ok ? 'green' : 'red'}">
+      <div class="label">${it.lbl}</div>
+      <div class="value">${escHtml(it.val ? (typeof it.val === 'string' && it.val.length > 30 ? it.val.slice(0, 30) + '...' : it.val) : '✗ Trống')}</div>
+    </div>
+  `).join('');
+}
+
+function escHtml(s) {
+  return (s + '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// ============== TEST CONNECTION ==============
+async function testConnection() {
+  const url = document.getElementById('cfgCloudUrl').value.trim();
+  const key = document.getElementById('cfgCloudApiKey').value.trim();
+  const box = document.getElementById('testBox');
+
+  if (!url || !key) {
+    box.className = 'test-box show err';
+    box.textContent = '⚠️ Nhập đủ Cloud URL và API Key trước khi test';
+    return;
+  }
+
+  box.className = 'test-box show';
+  box.textContent = '⏳ Đang kết nối...';
+
+  try {
+    const res = await fetch(`${url}?apiKey=${encodeURIComponent(key)}&search=`);
+    const data = await res.json();
+    if (data.ok) {
+      box.className = 'test-box show ok';
+      box.innerHTML = `✅ <strong>KẾT NỐI OK!</strong> Số hồ sơ: ${data.total || 0}`;
+    } else {
+      box.className = 'test-box show err';
+      box.innerHTML = `❌ <strong>Lỗi:</strong> ${data.error}`;
+    }
+  } catch(e) {
+    box.className = 'test-box show err';
+    box.innerHTML = `❌ Lỗi kết nối: ${e.message}`;
+  }
+}
+
+// ============== GENERATE CONFIG ==============
+function getFormConfig() {
+  return {
+    cloudUrl: document.getElementById('cfgCloudUrl').value.trim(),
+    cloudApiKey: document.getElementById('cfgCloudApiKey').value.trim(),
+    aiProvider: document.getElementById('cfgAiProvider').value,
+    openaiKey: document.getElementById('cfgOpenaiKey').value.trim(),
+    openaiModel: document.getElementById('cfgOpenaiModel').value,
+    claudeModel: document.getElementById('cfgClaudeModel').value,
+    configVersion: '1.0',
+    updatedAt: new Date().toISOString().slice(0, 19).replace('T', ' ')
+  };
+}
+
+function generateConfigText() {
+  const cfg = getFormConfig();
+  return `// ============== KITA INTERVIEW - CẤU HÌNH TẬP TRUNG ==============
+// File này được load trên TẤT CẢ trang. Edit file này → Push GitHub → mọi máy/trình duyệt
+// đều tự đồng bộ. Không cần setup từng browser.
+//
+// 👉 Để sửa: Mở /quan-tri/ → điền form → Download file mới → thay file này → Push.
+//
+// Sinh tự động bởi /quan-tri/ - đừng sửa thủ công nếu không hiểu cấu trúc.
+
+window.KITA_CONFIG = {
+  // Google Sheet Web App URL
+  cloudUrl: ${JSON.stringify(cfg.cloudUrl)},
+
+  // API Key bảo vệ Apps Script
+  cloudApiKey: ${JSON.stringify(cfg.cloudApiKey)},
+
+  // AI Provider mặc định
+  aiProvider: ${JSON.stringify(cfg.aiProvider)},
+
+  // OpenAI key
+  openaiKey: ${JSON.stringify(cfg.openaiKey)},
+
+  // OpenAI model
+  openaiModel: ${JSON.stringify(cfg.openaiModel)},
+
+  // Claude model
+  claudeModel: ${JSON.stringify(cfg.claudeModel)},
+
+  // Phiên bản & timestamp
+  configVersion: ${JSON.stringify(cfg.configVersion)},
+  updatedAt: ${JSON.stringify(cfg.updatedAt)}
+};
+`;
+}
+
+function generateConfig() {
+  const text = generateConfigText();
+  document.getElementById('configPreview').textContent = text;
+}
+
+function downloadConfig() {
+  const text = generateConfigText();
+  const blob = new Blob([text], { type: 'application/javascript' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'config.js';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  alert(
+    '✅ ĐÃ TẢI FILE config.js\n\n' +
+    'Bước tiếp theo:\n' +
+    '1. Mở Finder → ~/Downloads → thấy file config.js\n' +
+    '2. Kéo vào thư mục Mô tả công việc/kita-riview/ (đè file cũ)\n' +
+    '3. Mở GitHub Desktop → Commit + Push\n' +
+    '4. Đợi 60s → các máy khác mở web đều tự đồng bộ.'
+  );
+}
+
+function copyConfig() {
+  const text = generateConfigText();
+  navigator.clipboard.writeText(text).then(() => alert('✅ Đã copy nội dung config.js'));
+}
+</script>
+</body>
+</html>

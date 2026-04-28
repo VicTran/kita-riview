@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vòng 1 - HR Sàng lọc | KITA BOOKS</title>
+<script src="/config.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -703,6 +704,10 @@ function getDataObject() {
 
 // ============== GOOGLE SHEET CLOUD ==============
 function getCloudConfig() {
+  const g = window.KITA_CONFIG;
+  if (g && g.cloudUrl && g.cloudApiKey) {
+    return { url: g.cloudUrl, apiKey: g.cloudApiKey };
+  }
   try {
     const cfg = localStorage.getItem('kita_cloud_config');
     return cfg ? JSON.parse(cfg) : null;

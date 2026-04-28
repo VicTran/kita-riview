@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI đánh giá CV - KITA Interview</title>
+<script src="/config.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <style>
@@ -469,6 +470,17 @@ function checkAuth() {
 
 // ============== AI PROVIDER CONFIG ==============
 function getApiConfig() {
+  // Ưu tiên config tập trung từ /config.js
+  const g = window.KITA_CONFIG;
+  if (g && g.aiProvider) {
+    return {
+      provider: g.aiProvider,
+      key: g.openaiKey || '',
+      model: g.openaiModel || 'gpt-4o-mini',
+      claudeModel: g.claudeModel || 'claude-haiku-4-5-20251001'
+    };
+  }
+  // Fallback: localStorage
   try {
     const cfg = localStorage.getItem('kita_ai_config');
     return cfg ? JSON.parse(cfg) : null;
@@ -806,6 +818,10 @@ async function saveToCloud() {
 }
 
 function getCloudConfig() {
+  const g = window.KITA_CONFIG;
+  if (g && g.cloudUrl && g.cloudApiKey) {
+    return { url: g.cloudUrl, apiKey: g.cloudApiKey };
+  }
   try { return JSON.parse(localStorage.getItem('kita_cloud_config') || 'null'); }
   catch(e) { return null; }
 }

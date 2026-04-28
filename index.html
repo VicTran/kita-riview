@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hệ thống phỏng vấn - Marketing KITA BOOKS</title>
+<script src="/config.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -464,7 +465,7 @@
       <button class="btn btn-light" onclick="cloudSave()">☁️ Lưu Cloud</button>
       <button class="btn btn-light" onclick="cloudLoad()">🔍 Tải Cloud</button>
       <button class="btn btn-light" onclick="window.print()">🖨️ In/PDF</button>
-      <a href="/setup-database/" class="btn btn-light" style="text-decoration:none; display:inline-flex; align-items:center;" target="_blank">⚙️ Setup DB</a>
+      <a href="/quan-tri/" class="btn btn-light" style="text-decoration:none; display:inline-flex; align-items:center;" target="_blank">⚙️ Quản trị</a>
       <button class="btn btn-light btn-logout" onclick="doLogout()">🚪 Đăng xuất</button>
     </div>
   </div>
@@ -1549,6 +1550,12 @@ function loadData() {
 
 // ============== GOOGLE SHEET CLOUD DATABASE ==============
 function getCloudConfig() {
+  // Ưu tiên config tập trung từ /config.js
+  const g = window.KITA_CONFIG;
+  if (g && g.cloudUrl && g.cloudApiKey) {
+    return { url: g.cloudUrl, apiKey: g.cloudApiKey };
+  }
+  // Fallback: localStorage (per-browser, legacy)
   try {
     const cfg = localStorage.getItem('kita_cloud_config');
     if (!cfg) return null;
