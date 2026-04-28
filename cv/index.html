@@ -1029,20 +1029,37 @@ function openReview(rowNum) {
     <div class="modal-section">
       <h4 style="color:#0F766E;margin-bottom:10px;">📝 Sau PV V1 — Quyết định tiếp theo</h4>
       <p style="font-size:12px;color:#718096;margin-bottom:10px;">
-        Sau khi HR phỏng vấn V1: nếu ứng viên tốt → gửi bài kiểm tra. Nếu không → loại.
+        Sau khi HR phỏng vấn V1: chọn các bài test phù hợp (có thể chọn nhiều) → ứng viên làm và nộp 1 file tổng hợp.
       </p>
       <div class="form-group">
-        <label>Loại bài test</label>
-        <select id="testType">
-          <option value="content">Bài 1: Viết review sách (60-90p)</option>
-          <option value="plan">Bài 2: Lập kế hoạch Marketing (60-90p)</option>
-          <option value="data">Bài 3: Phân tích số liệu (45p)</option>
-          <option value="custom">Tự nhập đề bài</option>
-        </select>
+        <label>Chọn bài test (có thể tick nhiều bài)</label>
+        <div style="display:flex;flex-direction:column;gap:6px;padding:10px;background:#f7fafc;border-radius:8px;border:1.5px solid #e2e8f0;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" class="test-check" value="content" onchange="updateTestDesc()">
+            <strong>Bài 1: Viết review sách</strong> <span style="color:#718096;">(60-90p)</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" class="test-check" value="plan" onchange="updateTestDesc()">
+            <strong>Bài 2: Lập kế hoạch Marketing</strong> <span style="color:#718096;">(60-90p)</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" class="test-check" value="data" onchange="updateTestDesc()">
+            <strong>Bài 3: Phân tích số liệu</strong> <span style="color:#718096;">(45p)</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" class="test-check" value="ai" onchange="updateTestDesc()">
+            <strong>Bài 4: Sử dụng AI tạo content</strong> <span style="color:#718096;">(30-45p)</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" class="test-check" value="caption" onchange="updateTestDesc()">
+            <strong>Bài 5: Viết caption FB tại chỗ</strong> <span style="color:#718096;">(15-20p)</span>
+          </label>
+        </div>
+        <div id="totalTime" style="margin-top:6px;font-size:11px;color:#0F766E;font-weight:600;"></div>
       </div>
       <div class="form-group">
-        <label>Mô tả bài test (sẽ hiện cho ứng viên)</label>
-        <textarea id="testDescription" placeholder="Hướng dẫn chi tiết cho ứng viên..." style="min-height:90px;"></textarea>
+        <label>📋 Đề bài (auto-generate khi tick. Có thể chỉnh sửa thêm)</label>
+        <textarea id="testDescription" placeholder="Tick các bài ở trên để auto-generate đề bài..." style="min-height:160px;font-family:monospace;font-size:11px;"></textarea>
       </div>
       <div class="form-group">
         <label>⏰ Deadline nộp bài</label>
@@ -1156,31 +1173,169 @@ async function submitReview(rowNum, decision) {
 
 // ============== SEND TEST ==============
 const TEST_TEMPLATES = {
-  content: 'BÀI TẬP 1: VIẾT REVIEW SÁCH (60-90 phút)\n\nChọn 1 cuốn sách KITA BOOKS bạn yêu thích nhất.\n\nViết:\n1. Bài review FB 300-500 chữ\n2. Caption IG 100-150 chữ\n3. Script TikTok 30-45 giây\n\nTiêu chí: Hook 3 giây thu hút | Hiểu nội dung sách | CTA rõ | Phù hợp platform',
-  plan: 'BÀI TẬP 2: LẬP KẾ HOẠCH MARKETING (60-90 phút)\n\nGiả định: Tựa sách mới ra, mục tiêu DT 500 triệu/tháng, ngân sách 100 triệu ads, đối tượng phụ nữ 25-40 tuổi.\n\nLập plan 30 ngày bao gồm:\n- Phase + mục tiêu mỗi phase\n- Content calendar khả thi\n- Audience targeting cụ thể\n- Budget allocation\n- Forecast + Backup plan',
-  data: 'BÀI TẬP 3: PHÂN TÍCH SỐ LIỆU (45 phút)\n\nGiả định: Báo cáo FB Ads 30 ngày như sau:\n- Chi tiêu: 50tr | Doanh thu: 75tr | ROAS: 1.5\n- CTR: 0.8% | CPL: 80k | Conversion rate: 12%\n\nYêu cầu:\n1. Phân tích đúng vấn đề & nguyên nhân\n2. Đề xuất hành động khả thi (top 3-5)\n3. Forecast nếu áp dụng đề xuất'
+  content: { name: 'Bài 1: Viết review sách', duration: 90, desc: `📚 BÀI 1: VIẾT REVIEW SÁCH (60-90 phút)
+
+🎯 MỤC TIÊU: Đánh giá kỹ năng content cơ bản (review + caption + script video)
+
+📋 ĐỀ BÀI:
+Bạn vừa được giao quảng bá 1 cuốn sách self-help mới của KITA BOOKS dành cho phụ nữ 25-40 tuổi (giá bán 200.000đ). Hãy hoàn thành 3 nội dung sau:
+
+1️⃣ Bài review trên Facebook fanpage (300-500 chữ)
+   • Hook 3 giây đầu thu hút
+   • Insight chính của sách (1-2 điểm)
+   • Quote nổi bật + CTA mua hàng
+
+2️⃣ Caption Instagram (100-150 chữ)
+   • Pain point ngắn gọn
+   • Lợi ích cuốn sách + Hashtag + CTA
+
+3️⃣ Script TikTok 30-45 giây
+   • Hook (0-3s) → Body insight (3-30s) → CTA (30-45s)
+
+✅ TIÊU CHÍ: Hook 3 giây (30%) | Hiểu sách (30%) | CTA rõ (20%) | Phù hợp platform (20%)
+
+💡 GỢI Ý: Bạn có thể tự chọn cuốn sách bạn thích để làm bài.` },
+
+  plan: { name: 'Bài 2: Lập kế hoạch Marketing', duration: 90, desc: `📊 BÀI 2: LẬP KẾ HOẠCH MARKETING 30 NGÀY (60-90 phút)
+
+🎯 MỤC TIÊU: Đánh giá tư duy chiến lược + khả năng plan từ A-Z
+
+📦 BÀI TẬP:
+- Tựa sách self-help mới của KITA BOOKS
+- Đối tượng: Phụ nữ 25-40 tuổi, thu nhập 10-20tr/tháng
+- Giá: 250.000đ | Mục tiêu DT: 500tr/tháng | Ads: 100tr
+- Kênh: Facebook + TikTok + Website
+
+📋 PLAN GỒM:
+1. Phase 7-15-30 + Mục tiêu mỗi phase
+2. Content calendar khả thi (3-5 chủ đề chính)
+3. Audience targeting cụ thể (interest, behavior, age...)
+4. Budget allocation theo tuần/phase/kênh
+5. KPI từng phase (CPL, CR, ROAS)
+6. Forecast doanh thu
+7. Backup plan nếu KPI không đạt
+
+✅ TIÊU CHÍ: Phase + Mục tiêu (25%) | Content calendar (20%) | Audience (20%) | Budget (20%) | Forecast + Backup (15%)
+
+💡 GỢI Ý: Có thể trình bày bằng PowerPoint, Excel hoặc Word.` },
+
+  data: { name: 'Bài 3: Phân tích số liệu', duration: 45, desc: `📈 BÀI 3: PHÂN TÍCH SỐ LIỆU FB ADS (45 phút)
+
+🎯 MỤC TIÊU: Đánh giá tư duy số liệu + khả năng đề xuất tối ưu
+
+📊 BÁO CÁO FB ADS 30 NGÀY KITA BOOKS:
+• Chi tiêu: 50tr | Doanh thu: 75tr | ROAS: 1.5 (mục tiêu 3.0)
+• Số đơn: 250 | AOV: 300k
+• CTR: 0.8% (TB ngành 1.5%) | CPL: 80k
+• Conversion rate landing: 12% | Bounce rate: 65%
+• Tỷ lệ inbox → đơn (Sales chốt): 15%
+
+📋 YÊU CẦU:
+1. Phân tích các vấn đề chính (xếp theo độ ưu tiên)
+2. Xác định nguyên nhân gốc rễ cho top 3 vấn đề
+3. Đề xuất 5 hành động cụ thể (kèm KPI mong muốn)
+4. Forecast: Nếu áp dụng đề xuất, ROAS có thể đạt bao nhiêu sau 30 ngày?
+
+✅ TIÊU CHÍ: Phân tích đúng vấn đề (35%) | Đề xuất khả thi (35%) | Forecast hợp lý (30%)
+
+💡 GỢI Ý: Trình bày dạng bảng + diễn giải. Càng cụ thể số càng tốt.` },
+
+  ai: { name: 'Bài 4: Sử dụng AI tạo content', duration: 45, desc: `🤖 BÀI 4: SỬ DỤNG AI TẠO CONTENT (30-45 phút)
+
+🎯 MỤC TIÊU: Đánh giá kỹ năng tận dụng AI trong workflow Marketing
+
+📋 YÊU CẦU 3 PHẦN:
+
+1️⃣ VIẾT 1 PROMPT CHẤT LƯỢNG bằng tiếng Việt
+   • Để AI viết bài quảng bá sách self-help cho phụ nữ 30+
+   • Prompt structured: Role + Context + Task + Audience + Tone + Format + Constraints
+   • Copy luôn output AI trả về để minh chứng
+
+2️⃣ MÔ TẢ WORKFLOW 5 BƯỚC dùng AI tạo 1 video TikTok hoàn chỉnh
+   • Bước 1: Tool nào, làm gì
+   • Bước 2: ...
+   • Output cuối: Video gì, dài bao lâu, format
+
+3️⃣ PHÂN TÍCH CASE
+   AI vừa tạo content quảng bá sách self-help nhưng có 3 lỗi (sai sự thật, lệch tone, thiếu CTA).
+   • Liệt kê 3 lỗi điển hình bạn phát hiện
+   • Cách sửa cụ thể từng lỗi
+   • Quy trình check trước khi đăng
+
+✅ TIÊU CHÍ: Prompt chất lượng + output (40%) | Workflow rõ + tools cụ thể (30%) | Phát hiện + sửa lỗi AI (30%)
+
+💡 GỢI Ý: Có thể nộp screenshot conversation AI + giải thích.` },
+
+  caption: { name: 'Bài 5: Viết caption FB tại chỗ', duration: 20, desc: `✍️ BÀI 5: VIẾT CAPTION FACEBOOK TẠI CHỖ (15-20 phút)
+
+🎯 MỤC TIÊU: Test khả năng viết content nhanh dưới áp lực
+
+📦 BÀI TẬP:
+• Cuốn sách: "Đắc Nhân Tâm" - Dale Carnegie (200.000đ)
+• Đối tượng: Phụ nữ văn phòng 25-35 tuổi
+• Mục đích: Tăng engagement + dẫn về website đặt hàng
+
+📝 VIẾT 3 CAPTION FACEBOOK (mỗi caption 100-150 chữ):
+1. Caption HOOK (kéo người dừng scroll)
+2. Caption STORY (kể chuyện gắn pain point)
+3. Caption CTA mạnh (giảm giá / urgency)
+
+✅ TIÊU CHÍ: Hook 3s (25%) | Pain point đúng (25%) | CTA rõ (25%) | Emoji + format (25%)
+
+💡 LƯU Ý: Đây là bài test SPEED - nộp gọn, không cần dài.` }
 };
 
-document.addEventListener('change', (e) => {
-  if (e.target && e.target.id === 'testType') {
-    const desc = document.getElementById('testDescription');
-    if (desc && TEST_TEMPLATES[e.target.value]) {
-      desc.value = TEST_TEMPLATES[e.target.value];
-    } else if (desc && e.target.value === 'custom') {
-      desc.value = '';
-    }
+function updateTestDesc() {
+  const checked = Array.from(document.querySelectorAll('.test-check:checked')).map(c => c.value);
+  const desc = document.getElementById('testDescription');
+  const totalTimeEl = document.getElementById('totalTime');
+  if (!desc) return;
+
+  if (checked.length === 0) {
+    desc.value = '';
+    if (totalTimeEl) totalTimeEl.textContent = '';
+    return;
   }
-});
+
+  let totalMin = 0;
+  let combined = '📋 BÀI KIỂM TRA NĂNG LỰC MARKETING - KITA BOOKS\n';
+  combined += '═══════════════════════════════════════════════\n\n';
+  combined += `Xin chào! Bạn đã được mời thực hiện ${checked.length} bài kiểm tra dưới đây.\n\n`;
+  combined += `📌 Hãy đọc kỹ đề bài, làm cẩn thận và NỘP MỘT FILE TỔNG HỢP (PDF / Word / PPT / ZIP nhiều file).\n`;
+  combined += `📌 Đặt tên file rõ ràng: VD "BaiTest_NguyenVanA_2026.pdf"\n\n`;
+
+  checked.forEach((id) => {
+    const t = TEST_TEMPLATES[id];
+    if (!t) return;
+    totalMin += t.duration;
+    combined += '═══════════════════════════════════════════════\n\n';
+    combined += t.desc + '\n\n';
+  });
+
+  combined += '═══════════════════════════════════════════════\n';
+  combined += '📦 LƯU Ý CHUNG KHI NỘP BÀI:\n';
+  combined += '• Có thể nộp 1 file tổng hợp (PDF/Word/PPT) hoặc 1 file ZIP chứa nhiều file\n';
+  combined += '• Đặt tên rõ ràng theo bài (vd: 01_review_sach.pdf, 02_plan.pptx)\n';
+  combined += '• Trước hạn nộp, có thể nộp lại nếu muốn cập nhật (lần nộp cuối được ghi nhận)\n';
+  combined += '• Nếu có thắc mắc, liên hệ HR đã gửi link cho bạn\n';
+  combined += '\n💪 Chúc bạn làm bài tốt! KITA BOOKS đang chờ tài năng của bạn.';
+
+  desc.value = combined;
+  if (totalTimeEl) {
+    totalTimeEl.textContent = `⏱️ Tổng thời gian: ${totalMin} phút (~${Math.round(totalMin/60*10)/10}h) | Đã chọn ${checked.length} bài`;
+  }
+}
 
 async function sendTest(rowNum) {
   const cfg = getCloudConfig();
   if (!cfg) return;
 
-  const testType = document.getElementById('testType').value;
-  const testDescription = document.getElementById('testDescription').value.trim() || TEST_TEMPLATES[testType] || '';
+  const checked = Array.from(document.querySelectorAll('.test-check:checked')).map(c => c.value);
+  const testType = checked.length > 0 ? checked.join(',') : 'custom';
+  const testDescription = document.getElementById('testDescription').value.trim();
   const testDeadline = document.getElementById('testDeadline').value;
 
-  if (!testDescription) { alert('⚠️ Nhập đề bài / chọn template'); return; }
+  if (!testDescription) { alert('⚠️ Tick bài test hoặc tự nhập đề bài'); return; }
   if (!testDeadline) { alert('⚠️ Chọn deadline'); return; }
 
   toast('⏳ Đang tạo bài test...', 'info');
